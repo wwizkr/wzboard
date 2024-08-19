@@ -52,5 +52,47 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // 입력폼 탭 nav
+    var navbar = document.querySelector('.navbar');
+    var navTabs = document.querySelector('.nav-tabs');
+    var stickyOffset = navTabs.offsetTop;
+
+    function updateTabPosition() {
+        var navbarHeight = navbar.offsetHeight;
+        navTabs.style.top = navbarHeight + 'px';
+    }
+
+    // 처음 로드 시 위치 설정
+    updateTabPosition();
+
+    // 창 크기가 변경될 때마다 위치 업데이트
+    window.addEventListener('resize', updateTabPosition);
+
+    // 탭이 스크롤에 따라 고정되도록 처리
+    window.addEventListener('scroll', function() {
+        if (window.pageYOffset > stickyOffset - navbar.offsetHeight) {
+            navTabs.classList.add('sticky-tabs');
+        } else {
+            navTabs.classList.remove('sticky-tabs');
+        }
+    });
+
+    // 탭 클릭 시 스크롤 조정
+    var navLinks = document.querySelectorAll('.nav-tabs .nav-link');
+    if (navLinks.length > 0) {
+        navLinks.forEach(function(tab) {
+            tab.addEventListener('click', function(event) {
+                event.preventDefault();
+                var target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    window.scrollTo({
+                        top: target.offsetTop - navbar.offsetHeight - navTabs.offsetHeight, // navbar와 tab의 높이를 고려하여 스크롤
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    }
 });
 </script>
