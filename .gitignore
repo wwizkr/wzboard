@@ -34,4 +34,4 @@ node_modules/
 *.map
 
 # 환경설정파일
-/config/config.php
+/config/database.php
