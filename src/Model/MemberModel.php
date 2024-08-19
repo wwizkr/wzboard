@@ -45,7 +45,7 @@ class MemberModel
 
     /*
      * 회원의 개별 레벨 정보를 가져옴
-     * @param email [email 또는 mb_id]
+     * @param level 
      */
     public function getMemberLevelData($level)
     {

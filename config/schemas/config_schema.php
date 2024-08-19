@@ -40,7 +40,7 @@ $schema = [
                                 `cf_left_width` INT(11) NOT NULL DEFAULT 0,
                                 `cf_right_width` INT(11) NOT NULL DEFAULT 0,
                                 `cf_index_wide` TINYINT(4) NOT NULL DEFAULT 0,
-                                `cf_skin_basic` VARCHAR(25) NOT NULL DEFAULT 'basic',
+                                `cf_skin_assets` VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 `cf_skin_header` VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 `cf_skin_footer` VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 `cf_skin_content` VARCHAR(25) NOT NULL DEFAULT 'basic',
