@@ -15,7 +15,7 @@ class MenuHelper
             ],
             'members' => [
                 'label' => '회원관리',
-                'url' => '/admin/members',
+                'url' => '/admin/members/all',
                 'icon' => 'bi-people',  // Bootstrap Icons 사용자 아이콘
                 'submenu' => [
                     'all_users' => [
@@ -30,7 +30,7 @@ class MenuHelper
             ],
             'settings' => [
                 'label' => '환경설정',
-                'url' => '/admin/settings',
+                'url' => '/admin/settings/general',
                 'icon' => 'bi-gear',  // Bootstrap Icons 설정 아이콘
                 'submenu' => [
                     'general' => [

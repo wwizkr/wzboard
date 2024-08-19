@@ -14,26 +14,36 @@ use FastRoute\RouteCollector;
 use function FastRoute\simpleDispatcher;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\View\ViewRenderer;
+use Web\Admin\View\AdminViewRenderer;
+use Web\PublicHtml\Middleware\AuthMiddleware;
 
-// 의존성 컨테이너 생성
-$container = DependencyContainer::getInstance();
-
-// ViewRenderer 클래스 인스턴스 생성
+// ViewRenderer 클래스 인스턴스 생성 (일반 웹사이트와 관리자용)
 $viewRenderer = new ViewRenderer($container);
+$adminViewRenderer = new AdminViewRenderer($container);
 
 // FastRoute 설정을 위한 디스패처 생성
-$dispatcher = simpleDispatcher(function(RouteCollector $r) {
-    // DatabaseInstallerController 라우트 추가
-    $r->addRoute('GET', '/install', 'Web\PublicHtml\Controller\DatabaseInstallerController@install');
+$dispatcher = simpleDispatcher(function (RouteCollector $r) {
+    // 관리자 게시판 경로
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/admin/board/{boardId}/{method}/{param}', 'Web\\Admin\\Controller\\BoardController@handle');
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/admin/board/{boardId}/{method}', 'Web\\Admin\\Controller\\BoardController@handle');
 
-    // 게시판 라우트 정의 (이 규칙이 위에 있어야 함)
-    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/board/{boardId}/{method}/{param}', 'BoardController@handle');
-    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/board/{boardId}/{method}', 'BoardController@handle');
+    // DashboardController를 /admin 경로에 매핑
+    $r->addRoute('GET', '/admin', 'Web\\Admin\\Controller\\DashboardController@index');
+
+    // 관리자 기본 패턴 라우트 추가 (동적 라우팅)
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/admin/{controller}/{method}/{id:\d+}', 'AdminDynamicController');
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/admin/{controller}/{method}', 'AdminDynamicController');
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/admin/{controller}', 'AdminDynamicController@index');
 
     // API 라우트 정의
     $apiBaseUrl = $_ENV['API_BASE_URL'] ?? '/api/v1';
     $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], "{$apiBaseUrl}/{controller}/{method}/{id:\d+}", 'ApiController');
     $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], "{$apiBaseUrl}/{controller}/{method}", 'ApiController');
+
+    // 웹사이트 게시판 라우트 정의
+    $r->addRoute('GET', '/install', 'Web\\PublicHtml\\Controller\\DatabaseInstallerController@install');
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/board/{boardId}/{method}/{param}', 'Web\\PublicHtml\\Controller\\BoardController@handle');
+    $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/board/{boardId}/{method}', 'Web\\PublicHtml\\Controller\\BoardController@handle');
 
     // 웹 라우트 정의 (다양한 HTTP 메서드를 지원)
     $r->addRoute(['GET', 'POST', 'PUT', 'DELETE'], '/{controller}/{method}/{id:\d+}', 'DynamicController');
@@ -52,6 +62,13 @@ if (false !== $pos = strpos($uri, '?')) {
 }
 $uri = rawurldecode($uri);
 
+// cf_id 설정
+if (!isset($_SESSION['cf_id'])) {
+    $_SESSION['cf_id'] = 1;  // 첫 접속 시 cf_id를 1로 설정
+}
+//인스턴스 등록
+$container->set('cf_id', 1);
+
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 
@@ -67,59 +84,58 @@ switch ($routeInfo[0]) {
         $handler = $routeInfo[1];
         $vars = $routeInfo[2];
 
-        /*
-         * $r->addRoute('GET', '/install', 'Web\PublicHtml\Controller\DatabaseInstallerController@install'); 별도 처리 필요
-        */
-        if ($handler === 'ApiController') {
-            // API 컨트롤러 처리 로직
-            $controller = 'Web\\PublicHtml\\Api\\v1\\' . ucfirst($vars['controller']) . 'Controller';
-            $method = $vars['method'] ?? 'index'; // 기본 메서드를 설정 (예: index)
-        } else if ($handler === 'DynamicController') {
-            $controller = 'Web\\PublicHtml\\Controller\\' . ucfirst($vars['controller']) . 'Controller';
-            $method = $vars['method'] ?? 'index'; // 기본 메서드를 설정 (예: index)
-        } else if ($handler === 'BoardController@handle') {
-            // 게시판 컨트롤러 처리 로직
-            $controller = 'Web\\PublicHtml\\Controller\\BoardController';
-            $method = 'handle';
-        } else {
-            list($controller, $method) = explode('@', $handler);
-        }
-
-        if (class_exists($controller)) {
-            $controllerInstance = new $controller($container);
-            
-            // $method가 설정되지 않은 경우 기본 메서드 설정
-            if (!isset($method) || !$method) {
-                $method = 'index'; // 예를 들어 기본 메서드를 'index'로 설정
-            }
-            
-            if (method_exists($controllerInstance, $method)) {
-                list($viewPath, $viewData) = $controllerInstance->$method($vars);
-                $viewRenderer->renderPage($viewPath, [], [], $viewData, []);
+        if (strpos($uri, '/admin') === 0) {
+            // 관리자 페이지 처리
+            if (strpos($handler, '@') !== false) {
+                list($controller, $method) = explode('@', $handler);
             } else {
-                echo 'Method not found';
+                // 동적 라우팅을 위해 컨트롤러와 메서드를 동적으로 결정
+                $controllerName = ucfirst($vars['controller']) . 'Controller';
+                $controller = "Web\\Admin\\Controller\\{$controllerName}";
+                $method = $vars['method'] ?? 'index'; // 기본 메서드로 index 설정
+            }
+
+            if (class_exists($controller)) {
+                $controllerInstance = new $controller($container);
+                if (method_exists($controllerInstance, $method)) {
+                    list($viewPath, $viewData) = $controllerInstance->$method($vars);
+                    $adminViewRenderer->renderPage($viewPath, [], [], [], $viewData, [], []);
+                } else {
+                    echo 'Method not found';
+                }
+            } else {
+                echo 'Controller not found';
             }
         } else {
-            echo 'Controller not found';
+            // 일반 웹사이트 처리
+            if ($handler === 'ApiController') {
+                // API 컨트롤러 처리 로직
+                $controller = 'Web\\PublicHtml\\Api\\v1\\' . ucfirst($vars['controller']) . 'Controller';
+                $method = $vars['method'] ?? 'index'; // 기본 메서드를 설정 (예: index)
+            } else if ($handler === 'DynamicController') {
+                $controller = 'Web\\PublicHtml\\Controller\\' . ucfirst($vars['controller']) . 'Controller';
+                $method = $vars['method'] ?? 'index'; // 기본 메서드를 설정 (예: index)
+            } else if ($handler === 'BoardController@handle') {
+                // 게시판 컨트롤러 처리 로직
+                $controller = 'Web\\PublicHtml\\Controller\\BoardController';
+                $method = 'handle';
+            } else {
+                list($controller, $method) = explode('@', $handler);
+            }
+
+            if (class_exists($controller)) {
+                $controllerInstance = new $controller($container);
+                
+                if (method_exists($controllerInstance, $method)) {
+                    list($viewPath, $viewData) = $controllerInstance->$method($vars);
+                    // renderPage($path,$headData,$headerData,$layoutData,$viewData,$footerData,$footData)
+                    $viewRenderer->renderPage($viewPath, [], [], [], $viewData, [], []);
+                } else {
+                    echo 'Method not found';
+                }
+            } else {
+                echo 'Controller not found';
+            }
         }
-            
         break;
 }
-
-/*
- * 웹라우트
- 도매인/user => /src/Controller/UserController.php index() 호출
- 도매인/user/list => /src/Controller/UserController.php list() 호출
- 도매인/user/view/id  => /src/Controller/UserController.php view(id) 호출
-
- * 게시판
- 설명:
-BoardController 라우트 처리:
-
-BoardController의 handle 메서드는 boardId, method, param 변수를 받아, 해당 게시판의 작업을 처리합니다.
-예를 들어 /board/free/list 같은 URL은 BoardController의 list 메서드를 호출하고, /board/free/view/12는 view 메서드를 호출하게 됩니다.
-라우팅:
-
-라우터에서 BoardController를 처리할 때, 다른 컨트롤러들과 마찬가지로 클래스와 메서드를 동적으로 호출합니다.
-이 구조를 통해 게시판 라우트 또한 동적으로 처리할 수 있으며, boardId에 따라 다양한 게시판을 유연하게 처리할 수 있습니다.
-*/
