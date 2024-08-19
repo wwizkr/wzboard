@@ -1,0 +1,34 @@
+/home/web/public_html
+├── /public               # 공개 디렉토리 (웹 서버의 Document Root)
+│   ├── index.php         # 사용자 애플리케이션의 진입점
+│   └── .htaccess         # URL 라우팅을 위한 설정 (Apache 서버일 경우)
+│
+├── /src                  # 애플리케이션 소스 코드 디렉토리
+│   ├── /Admin            # 관리자 페이지 관련 소스 코드
+│   │   ├── /Controller   # 관리자 요청 처리 컨트롤러
+│   │   ├── /View         # 관리자 페이지 뷰 템플릿
+│   │   ├── /Helper       # 관리자 페이지 유틸리티 함수 및 도우미 클래스
+│   │   └── /Model        # 관리자 페이지 데이터베이스 모델
+│   ├── /Api              # API 관련 코드 -- API 필요 시 
+│   │   ├── /V1           # API 버전 1
+│   │   │   └── UserController.php  # 사용자 컨트롤러 예시
+│   │   └── /V2           # API 버전 2 (필요시 추가)
+│   ├── /Controller       # 웹 요청 처리 컨트롤러 (사용자용)
+│   ├── /Helper           # 유틸리티 함수 및 도우미 클래스 (공통)
+│   ├── /Model            # 데이터베이스 모델 (공통)
+│   ├── /Service          # 비즈니스 로직 처리 클래스 (공통)
+│   ├── /View             # 사용자 페이지 뷰 템플릿
+│   └── /Middleware       # 인증 등 미들웨어
+│
+├── /config               # 환경 설정 파일
+│   └── database.php      # 데이터베이스 설정
+│
+├── /storage              # 파일 저장, 로그, 캐시 관리
+│   ├── /logs             # 로그 파일 저장
+│   ├── /cache            # 캐시 파일 저장
+│   └── /uploads          # 사용자 업로드 파일 저장
+│
+├── /vendor               # Composer로 설치된 외부 패키지 (자동 생성)
+├── bootstrap.php         # 시작시 환경 설정 등 파일
+├── composer.json         # Composer 설정 파일
+└── .env                  # 환경 변수 파일

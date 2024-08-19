@@ -1,0 +1,37 @@
+# 로그 파일을 제외
+logs/
+*.log
+
+# 런타임 데이터 (캐시, 업로드된 파일)를 제외
+cache/
+uploads/
+
+# Composer로 설치된 의존성 파일을 제외
+vendor/
+composer.lock
+composer.phar
+
+# 환경 변수 파일을 제외
+.env
+
+# Node.js 의존성 파일을 제외
+node_modules/
+
+# IDE 또는 에디터의 설정 디렉토리 및 파일을 제외
+.vscode/
+.idea/
+
+# 동적으로 생성되는 public 디렉토리의 에셋 파일을 제외
+/public/assets/*
+
+# .gitignore 파일을 제외한 storage 디렉토리 내의 모든 파일을 제외
+/storage/*
+
+# 특정 파일 확장자 (예: 컴파일된 파일)를 제외
+*.compiled
+*.min.js
+*.min.css
+*.map
+
+# 환경설정파일
+/config/config.php

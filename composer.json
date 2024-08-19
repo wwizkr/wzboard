@@ -1,0 +1,20 @@
+{
+    "name": "web/public_html",
+    "autoload": {
+        "psr-4": {
+            "Web\\PublicHtml\\": "src/",
+            "Web\\Admin\\": "src/Admin/"
+        }
+    },
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "nikic/fast-route": "^1.3",
+        "firebase/php-jwt": "^6.10",
+        "ramsey/uuid": "^4.7",
+        "guzzlehttp/guzzle": "^7.9",
+        "monolog/monolog": "^3.7"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.3"
+    }
+}
