@@ -13,10 +13,13 @@ class ViewRenderer
     // 생성자에서 스킨 디렉토리 설정
     public function __construct(DependencyContainer $container)
     {
+        // 컨테이너에서 config_domain 배열을 가져옴
+        $configDomain = $container->get('config_domain');
+
         // 컨테이너에서 각 스킨 이름을 가져옴, 기본값은 'basic'
-        $headerSkin = $container->get('headerSkin') ?? 'basic';
-        $footerSkin = $container->get('footerSkin') ?? 'basic';
-        $layoutSkin = $container->get('layoutSkin') ?? 'basic';
+        $headerSkin = $configDomain['cf_skin_header'] ?? 'basic';
+        $footerSkin = $configDomain['cf_skin_footer'] ?? 'basic';
+        $layoutSkin = $configDomain['cf_skin_layout'] ?? 'basic';
         
         // 각 스킨 디렉토리의 절대 경로를 설정
         $this->headerSkinDirectory = __DIR__ . "/Header/{$headerSkin}/";
@@ -73,12 +76,12 @@ class ViewRenderer
     // 전체 페이지를 렌더링하는 메서드
     public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null)
     {
-        $this->render('/partials/head', $headData ?? []);
+        $this->render('/partials/basic/head', $headData ?? []);
         $this->renderHeader($headerData ?? []);
         $this->renderLayoutOpen($layoutData ?? []);
         $this->render($view, $viewData ?? []);
         $this->renderLayoutClose($layoutData ?? []);
         $this->renderFooter($footerData ?? []);
-        $this->render('/partials/foot', $footData ?? []);
+        $this->render('/partials/basic/foot', $footData ?? []);
     }
 }

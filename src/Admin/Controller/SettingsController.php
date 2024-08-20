@@ -3,9 +3,12 @@
 
 namespace Web\Admin\Controller;
 
+use Web\Admin\Helper\SettingsHelper;
 use Web\PublicHtml\Model\SettingsModel;
 use Web\PublicHtml\Service\SettingsService;
 use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Helper\CommonHelper;
+
 
 class SettingsController
 {
@@ -33,8 +36,9 @@ class SettingsController
 
     public function general()
     {
-        // 컨테이너에서 cf_id를 가져옴
-        $cf_id = $this->container->get('cf_id');
+        // 컨테이너에서 config_domain 배열을 가져옴
+        $configDomain = $this->container->get('config_domain');
+        $cf_id = $configDomain['cf_id'] ?? 1;
 
         // 환경설정을 가져옴
         $config_domain = $this->settingsService->getGeneralSettings($cf_id);
@@ -48,29 +52,9 @@ class SettingsController
             'anc_cf_etc' => '기타 설정',
         ];
 
-        //기본 스킨 정보 설정 == 스킨 디렉토리 목록을 불러오는 Helper 필요 => 관리자에서만 사용, 관리자 Helper로 등록. 차후 설정.
-        $skin = [
-            'index' => '메인화면 스킨','홈페이지 메인화면 스킨',
-            'header' => '상단 스킨',
-            'footer' => '하단 스킨',
-            'layout' => '레이아웃 스킨', //이건 거의 필요없을 것 같긴 하다.
-            'content' => '내용 스킨', //content에 들어가는 스킨명을 통일, 게시판 또는 차후 쇼핑몰 추가 시 페이지별 스킨 추가 생성 가능(ex=> list,view,cart.... 등으로 skin을 세분화 가능하게 함)
-            'assets' => 'css, javascript', //이것도 편의를 위해 미리 생성
-        ];
-        
-        // SNS 목록
-        $seo_sns = [
-            'naver_blog'=>'네이버 블로그,ex)https://blog.naver.com/myblog',
-            'naver_post'=>'네이버 포스트,ex)https://post.naver.com/mypost',
-            'naver_know'=>'네이버 지식인,ex)https://kin.naver.com/profile/index.naver?u=XXXXXXXXXXXXXXXXXXXXXXXXX',
-            'naver_modoo'=>'네이버 모두홈페이지,ex)https://myhomepage.modoo.at ',
-            'sns_utv'=>'유튜브,ex)https://www.youtube.com/@mychannel',
-            'sns_facebook'=>'페이스북,ex)https://www.facebook.com/myfacebook',
-            'sns_twitter'=>'트위터,ex)https://twitter.com/mytwitter',
-            'sns_insta'=>'인스타그램,ex)https://www.instagram.com/myinsta',
-            'sns_kakaostory'=>'카카오스토리,ex)https://story.kakao.com/mystory',
-            'sns_tistory'=>'티스토리,ex)https://mytistory.tistory.com',
-        ];
+        // Settings 클래스를 통해 설정값 불러오기
+        $skin = SettingsHelper::getSkin();
+        $sns_seo = SettingsHelper::getSnsSeo();
 
         $viewData = [
             'title' => '기본환경 설정',
@@ -78,9 +62,53 @@ class SettingsController
             'config_domain' => $config_domain, // 환경설정 데이터를 viewData에 포함
             'anchor' => $anchor,
             'skin' => $skin,
-            'seo_sns' => $seo_sns,
+            'sns_seo' => $sns_seo,
         ];
 
         return ['Settings/general', $viewData];
+    }
+
+    public function update()
+    {
+        $cf_id = SettingsHelper::pickNumber($_POST['cf_id'],1) ?? 1;
+
+        /*
+         * post data 는 formData 배열로 전송 됨.
+         * 특정 필드명일 경우 변환 후 $data 변수에 저장
+         */
+        $formData = $_POST['formData'] ?? null;
+        if(empty($formData)) {
+            CommonHelper::alertAndBack("입력정보가 비어 있습니다. 잘못된 접속입니다.");
+        }
+        
+        $data = [];
+        $i = ['cf_max_width']; // $i 배열에는 숫자형으로 처리할 필드
+        foreach($formData as $key=>$val) {
+            // 만약 값이 배열이라면, '-'로 묶어서 하나의 문자열로 변환
+            if (is_array($val)) {
+                $val = implode('-', $val);
+            }
+            
+            $value = $val;
+
+            // $key가 $i 배열에 속해 있으면 ['i', $value] 형식으로, 아니면 ['s', $value] 형식으로 저장
+            if (in_array($key, $i)) {
+                $data[$key] = ['i', $value];
+            } else {
+                $data[$key] = ['s', $value];
+            }
+        }
+
+        // 데이터베이스 업데이트
+        $updated = $this->settingsService->updateGeneralSettings($cf_id, $data);
+
+        if ($updated) {
+            CommonHelper::alertAndRedirect("환경설정을 업데이트 하였습니다.","http://web.wizcash.kr/admin/settings/general");
+        } else {
+            // 업데이트 실패한 경우
+            CommonHelper::alertAndBack("업데이트에 실패하였습니다. 다시 시도해 주세요!.");
+        }
+
+        return ['Settings/update', $viewData];
     }
 }

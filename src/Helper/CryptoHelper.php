@@ -104,6 +104,30 @@ class CryptoHelper
     }
 
     /**
+     * 데이터를 JSON으로 변환한 후 암호화합니다.
+     *
+     * @param array $data 암호화할 데이터 배열
+     * @return string 암호화된 데이터
+     */
+    public static function encryptJson(array $data): string
+    {
+        $jsonData = json_encode($data);
+        return self::encrypt($jsonData);
+    }
+
+    /**
+     * 암호화된 데이터를 복호화한 후 JSON을 디코드합니다.
+     *
+     * @param string $encryptedData 복호화할 암호화된 데이터
+     * @return array 복호화된 데이터 배열
+     */
+    public static function decryptJson(string $encryptedData): array
+    {
+        $jsonData = self::decrypt($encryptedData);
+        return json_decode($jsonData, true);
+    }
+
+    /**
      * JWT 토큰을 생성합니다.
      *
      * @param array $payload JWT 페이로드

@@ -55,4 +55,28 @@ class SettingsModel
 
         return $result;
     }
+
+    /*
+     * 환경 설정 데이터를 업데이트 함
+     * @return boolean
+     */
+    public function updateConfigByCfId($cf_id, array $data)
+    {
+        $columns = [];
+        $params = [];
+
+        /*
+         * $data = $param ===> $field_name = ['s',$val];
+         */
+
+        $param = $data;
+        $where['cf_id'] = ['i',$cf_id];
+        $options = [];
+        $columns = implode(', ', $columns);
+        $params[':cf_id'] = $cf_id;
+
+        $result = $this->db->sqlBindQuery('update', $this->getTableName('config_domain'), $param, [], $options);
+
+        return $result;
+    }
 }

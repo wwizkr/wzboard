@@ -61,6 +61,9 @@ if (false !== $pos = strpos($uri, '?')) {
 }
 $uri = rawurldecode($uri);
 
+/*
+ * 아래의 cf_id 도 config_domain 사용. 삭제 예정
+ */
 // cf_id 설정
 if (!isset($_SESSION['cf_id'])) {
     $_SESSION['cf_id'] = 1;  // 첫 접속 시 cf_id를 1로 설정
