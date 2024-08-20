@@ -4,15 +4,15 @@
 $schema = [
     'schema_group' => '회원 관련 테이블',
     'schema_array' => [
-                        'members' => '게시판 그룹 테이블',
-                        'members_level' => '게시판 설정 테이블',
+                        'members' => '회원 테이블',
+                        'members_level' => '회원 레벨 설정 테이블',
                         'initial_data' => '설치 시 게시판별 기본 입력값'
                       ],
     'schema_content' => [
                         'members' => "
                             CREATE TABLE IF NOT EXISTS members (
                                 mb_no INT AUTO_INCREMENT PRIMARY KEY,
-                                cf_id INT UNSIGNED NOT NULL DEFAULT 0,
+                                cf_id INT UNSIGNED NOT NULL DEFAULT 1,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
                                 nickName VARCHAR(50) NOT NULL DEFAULT '',
                                 password VARCHAR(255) NOT NULL DEFAULT '',
@@ -48,7 +48,7 @@ $schema = [
                         'members_level' => "
                             CREATE TABLE IF NOT EXISTS members_level (
                                 level_id TINYINT UNSIGNED PRIMARY KEY,
-                                cf_id INT UNSIGNED NOT NULL DEFAULT 0,
+                                cf_id INT UNSIGNED NOT NULL DEFAULT 1,
                                 level_name VARCHAR(50) NOT NULL DEFAULT '',
                                 min_point INT UNSIGNED NOT NULL DEFAULT 0,
                                 min_posts INT UNSIGNED NOT NULL DEFAULT 0,

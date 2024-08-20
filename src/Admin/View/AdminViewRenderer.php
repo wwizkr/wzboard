@@ -10,9 +10,10 @@ class AdminViewRenderer
 
     public function __construct(DependencyContainer $container)
     {
+        // 컨테이너에서 config_domain 배열을 가져옴
+        $configDomain = $container->get('config_domain');
         // 관리 페이지용 스킨 이름을 컨테이너에서 가져옴, 기본값은 'basic'
-        $adminSkin = $container->get('adminSkin') ?? 'basic';
-
+        $adminSkin = $configDomain['cf_skin_admin'] ?? 'basic';
         // 스킨 디렉토리 설정
         $this->skinDirectory = __DIR__ . "/{$adminSkin}/";
     }

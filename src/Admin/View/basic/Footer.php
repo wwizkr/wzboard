@@ -56,11 +56,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 입력폼 탭 nav
     var navbar = document.querySelector('.navbar');
     var navTabs = document.querySelector('.nav-tabs');
+    var fixTop = document.querySelector('.content-fixed-top');
     var stickyOffset = navTabs.offsetTop;
+    if (fixTop) {
+        var fixTopHeight = fixTop.offsetHeight;
+    } else {
+        var fixTopHeight = 0;
+    }
 
     function updateTabPosition() {
         var navbarHeight = navbar.offsetHeight;
-        navTabs.style.top = navbarHeight + 'px';
+        navTabs.style.top = (navbarHeight + fixTopHeight) + 'px';
     }
 
     // 처음 로드 시 위치 설정
@@ -71,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 탭이 스크롤에 따라 고정되도록 처리
     window.addEventListener('scroll', function() {
-        if (window.pageYOffset > stickyOffset - navbar.offsetHeight) {
+        if (window.pageYOffset > stickyOffset - navbar.offsetHeight - fixTop.offsetHeight) {
             navTabs.classList.add('sticky-tabs');
         } else {
             navTabs.classList.remove('sticky-tabs');
@@ -87,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var target = document.querySelector(this.getAttribute('href'));
                 if (target) {
                     window.scrollTo({
-                        top: target.offsetTop - navbar.offsetHeight - navTabs.offsetHeight, // navbar와 tab의 높이를 고려하여 스크롤
+                        top: target.offsetTop - navbar.offsetHeight - navTabs.offsetHeight - fixTop.offsetHeight, // navbar와 tab의 높이를 고려하여 스크롤
                         behavior: 'smooth'
                     });
                 }

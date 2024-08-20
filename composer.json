@@ -2,6 +2,7 @@
     "name": "web/public_html",
     "autoload": {
         "psr-4": {
+            "Web\\": "/",
             "Web\\PublicHtml\\": "src/",
             "Web\\Admin\\": "src/Admin/"
         }
@@ -12,7 +13,8 @@
         "firebase/php-jwt": "^6.10",
         "ramsey/uuid": "^4.7",
         "guzzlehttp/guzzle": "^7.9",
-        "monolog/monolog": "^3.7"
+        "monolog/monolog": "^3.7",
+        "symfony/cache": "^7.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.3"

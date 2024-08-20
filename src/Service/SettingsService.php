@@ -18,4 +18,12 @@ class SettingsService
     {
         return $this->settingsModel->getConfigByCfId($cf_id);
     }
+
+    public function updateGeneralSettings($cf_id, array $data)
+    {
+        /*
+         * Data 업데이트 후 캐시 갱신
+         */
+        return $this->settingsModel->updateConfigByCfId($cf_id, $data);
+    }
 }

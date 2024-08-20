@@ -21,6 +21,6 @@ class DashboardController
             'content' => 'Welcome to the Admin Dashboard',
         ];
 
-        return ["Dashboard/basic/index", $viewData]; // Dashboard 스킨에서 index 뷰 사용
+        return ["Dashboard/index", $viewData]; // Dashboard 스킨에서 index 뷰 사용
     }
 }

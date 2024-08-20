@@ -57,41 +57,6 @@ class DatabaseQuery
         }
     }
 
-    // 추가된 query 메서드
-    public function query(string $sql, array $params = []): \PDOStatement
-    {
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-            return $stmt;
-        } catch (PDOException $e) {
-            throw new Exception("쿼리 실패: " . $e->getMessage());
-        }
-    }
-
-    // 추가된 exec 메서드
-    public function exec(string $sql): int
-    {
-        $sql = rtrim($sql, ', ');  // 마지막 콤마 제거
-        if (trim($sql) === '') {
-            error_log("경고: 빈 SQL 문 실행 시도");
-            return 0;
-        }
-        
-        try {
-            $result = $this->pdo->exec($sql);
-            return $result;
-        } catch (PDOException $e) {
-            $errorInfo = $this->pdo->errorInfo();
-            throw new Exception("실행 실패: " . $e->getMessage() . "\nSQL: " . $sql);
-        }
-    }
-
-    public function getPdoInstance()
-    {
-        return $this->pdo; // 실제 PDO 인스턴스를 반환합니다.
-    }
-
     /**
      * SQL 쿼리 실행 메서드
      * @param string $mode 쿼리 모드 (select, insert, update, delete)
@@ -262,6 +227,151 @@ class DatabaseQuery
         } catch (PDOException $e) {
             throw new Exception("데이터베이스 쿼리 실패: " . $e->getMessage());
         }
+    }
+
+    /**
+     * 쿼리 준비 메서드
+     */
+    public function prepare(string $sql): \PDOStatement
+    {
+        try {
+            return $this->pdo->prepare($sql);
+        } catch (PDOException $e) {
+            throw new Exception("쿼리 준비 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 쿼리 실행 메서드
+     */
+    public function execute(\PDOStatement $stmt, array $params = []): bool
+    {
+        try {
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            throw new Exception("쿼리 실행 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 단일 행 가져오기
+     */
+    public function fetch(\PDOStatement $stmt): ?array
+    {
+        try {
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (PDOException $e) {
+            throw new Exception("데이터 가져오기 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 모든 행 가져오기
+     */
+    public function fetchAll(\PDOStatement $stmt): array
+    {
+        try {
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("데이터 가져오기 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 특정 열 가져오기
+     */
+    public function fetchColumn(string $sql, array $params = [], int $columnNumber = 0)
+    {
+        try {
+            $stmt = $this->query($sql, $params);
+            return $stmt->fetchColumn($columnNumber);
+        } catch (PDOException $e) {
+            throw new Exception("컬럼 가져오기 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 트랜잭션 시작 메서드
+     */
+    public function beginTransaction(): void
+    {
+        try {
+            $this->pdo->beginTransaction();
+        } catch (PDOException $e) {
+            throw new Exception("트랜잭션 시작 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 트랜잭션 커밋 메서드
+     */
+    public function commit(): void
+    {
+        try {
+            $this->pdo->commit();
+        } catch (PDOException $e) {
+            throw new Exception("트랜잭션 커밋 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 트랜잭션 롤백 메서드
+     */
+    public function rollBack(): void
+    {
+        try {
+            $this->pdo->rollBack();
+        } catch (PDOException $e) {
+            throw new Exception("트랜잭션 롤백 실패: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 마지막 삽입 ID 가져오기
+     */
+    public function lastInsertId(): string
+    {
+        try {
+            return $this->pdo->lastInsertId();
+        } catch (PDOException $e) {
+            throw new Exception("마지막 삽입 ID 가져오기 실패: " . $e->getMessage());
+        }
+    }
+
+    // 추가된 query 메서드
+    public function query(string $sql, array $params = []): \PDOStatement
+    {
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new Exception("쿼리 실패: " . $e->getMessage());
+        }
+    }
+
+    // 추가된 exec 메서드
+    public function exec(string $sql): int
+    {
+        $sql = rtrim($sql, ', ');  // 마지막 콤마 제거
+        if (trim($sql) === '') {
+            error_log("경고: 빈 SQL 문 실행 시도");
+            return 0;
+        }
+        
+        try {
+            $result = $this->pdo->exec($sql);
+            return $result;
+        } catch (PDOException $e) {
+            $errorInfo = $this->pdo->errorInfo();
+            throw new Exception("실행 실패: " . $e->getMessage() . "\nSQL: " . $sql);
+        }
+    }
+
+    public function getPdoInstance()
+    {
+        return $this->pdo; // 실제 PDO 인스턴스를 반환합니다.
     }
 
     // 싱글톤 패턴을 위한 매직 메서드

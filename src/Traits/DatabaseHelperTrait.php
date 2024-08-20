@@ -11,7 +11,7 @@ trait DatabaseHelperTrait
      * @param string $tableName
      * @return string
      */
-    protected function getTableName($tableName)
+    public function getTableName($tableName)
     {
         $prefix = $_ENV['DB_TABLE_PREFIX'] ?? 'prefix_';
         return $prefix . trim($tableName, '`');

@@ -24,9 +24,12 @@ class AuthController
     // 로그인 폼을 렌더링
     public function login($vars)
     {
+        $configDomain = $this->container->get('config_domain');
+        $contentSkin = $configDomain['cf_skin_content'] ?? 'basic';
+        $viewPath = 'Content/{$conftentSkin}/Auth/login_form';
+
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // 로그인 폼을 보여줌
-            $viewPath = 'Auth/basic/login_form';
             $viewData = [];
             return [$viewPath, $viewData];
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -54,9 +57,7 @@ class AuthController
                 setcookie('jwtToken', $jwtToken, 0, '/'); // 0은 브라우저 종료 시 쿠키 삭제
                 // 로그인 성공 후 리다이렉트
                 header('Location: /');
-            } else {
-                // 로그인 실패
-                $viewPath = 'Auth/basic/login_form';
+            } else { // 로그인 실패
                 $viewData = ['error' => 'Invalid email or password'];
                 return [$viewPath, $viewData];
             }

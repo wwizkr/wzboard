@@ -61,13 +61,6 @@ if (false !== $pos = strpos($uri, '?')) {
 }
 $uri = rawurldecode($uri);
 
-// cf_id 설정
-if (!isset($_SESSION['cf_id'])) {
-    $_SESSION['cf_id'] = 1;  // 첫 접속 시 cf_id를 1로 설정
-}
-//인스턴스 등록
-$container->set('cf_id', 1);
-
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 
