@@ -15,8 +15,8 @@ use function FastRoute\simpleDispatcher;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\View\ViewRenderer;
 use Web\Admin\View\AdminViewRenderer;
-use Web\PublicHtml\Middleware\AuthMiddleware;
 use Web\PublicHtml\Helper\RouteHelper;
+use Web\PublicHtml\Middleware\AuthMiddleware;
 
 // ViewRenderer 클래스 인스턴스 생성 (일반 웹사이트와 관리자용)
 $viewRenderer = new ViewRenderer($container);
@@ -60,6 +60,9 @@ if (false !== $pos = strpos($uri, '?')) {
     $uri = substr($uri, 0, $pos);
 }
 $uri = rawurldecode($uri);
+
+// AuthMiddleware
+AuthMiddleware::handle($uri);
 
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);

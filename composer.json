@@ -2,7 +2,6 @@
     "name": "web/public_html",
     "autoload": {
         "psr-4": {
-            "Web\\": "/",
             "Web\\PublicHtml\\": "src/",
             "Web\\Admin\\": "src/Admin/"
         }

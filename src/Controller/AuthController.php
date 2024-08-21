@@ -18,15 +18,15 @@ class AuthController
     {
         $this->container = $container;
         $this->memberModel = new MemberModel($container);
-        $this->session = new SessionManager();
+        $this->session = new SessionManager(); //세션 사용안함.
     }
 
-    // 로그인 폼을 렌더링
+    // 로그인
     public function login($vars)
     {
         $configDomain = $this->container->get('config_domain');
         $contentSkin = $configDomain['cf_skin_content'] ?? 'basic';
-        $viewPath = 'Content/{$conftentSkin}/Auth/login_form';
+        $viewPath = 'Content/'.$contentSkin.'/Auth/login_form';
 
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // 로그인 폼을 보여줌
@@ -49,7 +49,6 @@ class AuthController
                     'nickName' => $member['nickName'],
                     'is_admin' => $level['is_admin'],
                     'is_super' => $level['is_super_admin'],
-                    // 추가로 필요한 정보를 여기에 포함할 수 있습니다.
                 ];
                 // JWT 토큰 생성 (유효시간은 토큰 자체에서 관리)
                 $jwtToken = CryptoHelper::generateJwtToken($payload);

@@ -32,7 +32,7 @@ class MemberModel
     {
         $param = [];
         $where = [];
-        $where['cf_id'] = ['i', $this->config_domain['cf_id'];
+        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
         $where['mb_id'] = ['s', $email];
         $where['email'] = ['s', $email, 'or'];
         $options = [
@@ -52,7 +52,7 @@ class MemberModel
     {
         $param = [];
         $where = [];
-        $where['cf_id'] = ['i', $this->config_domain['cf_id'];
+        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
         $where['level_id'] = ['i', $level];
         $options = [
             'order' => 'level_id DESC',

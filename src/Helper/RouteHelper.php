@@ -2,10 +2,17 @@
 
 namespace Web\PublicHtml\Helper;
 
+use Web\PublicHtml\Middleware\AuthMiddleware;
+
 class RouteHelper
 {
     public static function handleAdminRoute($handler, $vars, $container, $adminViewRenderer)
     {
+        if (!isset($_COOKIE['jwtToken']) || !CryptoHelper::verifyJwtToken($_COOKIE['jwtToken'])) {
+            header('Location: /auth/login');
+            exit;
+        }
+
         if (is_string($handler) && strpos($handler, '@') !== false) {
             list($controller, $method) = explode('@', $handler);
         } else {
