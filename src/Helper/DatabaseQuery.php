@@ -429,7 +429,7 @@ class DatabaseQuery
         $errorMessage .= "\nParameters: " . json_encode($params, JSON_PARTIAL_OUTPUT_ON_ERROR);
         
         error_log($errorMessage);
-        throw new Exception($errorMessage, $e->getCode(), $e);
+        throw new Exception($errorMessage, $e);
     }
 
     // 싱글톤 패턴을 위한 매직 메서드

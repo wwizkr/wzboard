@@ -24,7 +24,6 @@ class BoardsController
     protected $membersModel;
     protected $membersService;
     protected $configDomain;
-    protected $levelData;
 
     public function __construct(DependencyContainer $container)
     {
@@ -34,7 +33,31 @@ class BoardsController
         $membersModel = new MembersModel($container);
         $this->membersService = new MembersService($membersModel);
         $this->configDomain = $container->get('config_domain');
-        $this->levelData = $this->membersService->getMemberLevelData();
+    }
+
+    protected function getGroupData()
+    {
+        return $this->boardsService->getBoardsGroup(null);
+    }
+
+    protected function getCategoryData()
+    {
+        return $this->boardsService->getBoardsCategory(null);
+    }
+
+    protected function getBoardData()
+    {
+        return $this->boardsService->getBoardsList(null);
+    }
+
+    protected function getLevelData()
+    {
+        return $this->membersService->getMemberLevelData();
+    }
+
+    protected function getSkinData()
+    {
+        return BoardsHelper::getBoardSkinDir();
     }
 
     // ---------------------------
@@ -46,16 +69,12 @@ class BoardsController
      */
     public function group()
     {
-        // 그룹 목록
-        $group = '';
-        $groupData = $this->boardsService->getBoardsGroup($group);
-
         $viewData = [
             'title' => '게시판 그룹 관리',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'groupData' => $groupData,
-            'levelData' => $this->levelData,
+            'groupData' => $this->getGroupData(),
+            'levelData' => $this->getLevelData(),
         ];
 
         return ['Boards/group', $viewData];
@@ -107,16 +126,12 @@ class BoardsController
      */
     public function category()
     {
-        // 카테고리 목록
-        $category_no = null;
-        $categoryData = $this->boardsService->getBoardsCategory($category_no);
-
         $viewData = [
             'title' => '게시판 카테고리 관리',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'categoryData' => $categoryData,
-            'levelData' => $this->levelData,
+            'categoryData' => $this->getCategoryData(),
+            'levelData' => $this->getLevelData(),
         ];
 
         return ['Boards/category', $viewData];
@@ -163,18 +178,74 @@ class BoardsController
     // ------------------------------------------------------
     // 게시판 관리 메서드 목록, 생성, 수정, 삭제
     // ------------------------------------------------------
-    public function configs() {
-        $board_id = '';
-        $boardData = $this->boardsService->getBoardsList($board_id);
-
+    public function configs()
+    {
         $viewData = [
             'title' => '게시판 관리',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'boardData' => $boardData,
-            'levelData' => $this->levelData,
+            'boardData' => $this->getBoardData(),
+            'levelData' => $this->getLevelData(),
         ];
 
         return ['Boards/configs', $viewData];
+    }
+
+    /*
+     * 게시판 생성 / 수정폼
+     * array $this->levelData, array categoryData, array skinDir
+    */
+    public function boardform($vars)
+    {
+        $action = $vars['param'] ?? 'create';
+        $selectBoard = []; //update일때.
+        $viewData = [
+            'title' => '게시판 생성',
+            'content' => '',
+            'config_domain' => $this->configDomain,
+            'groupData' => $this->getGroupData(),
+            'categoryData' => $this->getCategoryData(),
+            'levelData' => $this->getLevelData(),
+            'skinData' => $this->getSkinData(),
+            'selectBoard' => $selectBoard,
+            'action' => $action,
+        ];
+
+        return ['Boards/boardForm', $viewData];
+    }
+
+    /**
+     * 게시판 설정 정보를 업데이트.
+     * 업데이트할 그룹 NO와 폼 데이터를 받아 처리함.
+     */
+    public function boardUpdate()
+    {
+        $action = $_POST['action'] ?? null;
+        $board_no = CommonHelper::pickNumber($_POST['board_no'],0) ?? 0;
+        $formData = $_POST['formData'] ?? null;
+        
+        if(empty($formData)) {
+            $jsonData = [
+                'result' => 'failer',
+                'message' => '입력정보가 비어 있습니다.'
+            ];
+            header('Content-Type: application/json');
+            die(json_encode($jsonData));
+        }
+
+        $i = ['group_no','read_level','write_level','download_level','is_use_file','file_size_limit','use_separate_table']; // $i 배열에는 숫자형으로 처리할 필드
+        $data = CommonHelper::processFormData($formData, $i);
+        if($action == 'update') {
+            $result = $this->boardsService->updateBoardsConfig($board_no, $data);
+        } else {
+            $result = $this->boardsService->insertBoardsConfig($data);
+        }
+
+        $jsonData = [
+            'result' => 'success',
+            'message' => '처리하였습니다.'
+        ];
+        header('Content-Type: application/json');
+        die(json_encode($jsonData));
     }
 }

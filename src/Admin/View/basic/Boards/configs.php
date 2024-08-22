@@ -1,3 +1,12 @@
+<form name="flist" id="flist">
+<div class="content-fixed-top">
+    <div class="fixed-top-inner">
+        <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
+        <div class="fixed-top-btn">
+            <a href="/admin/boards/boardform/create">게시판 생성</a>
+        </div>
+    </div>
+</div>
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <h2>목록</h2>
@@ -33,3 +42,4 @@
         </div>
     </div>
 </div>
+</form>

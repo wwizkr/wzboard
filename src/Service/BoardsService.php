@@ -27,9 +27,9 @@ class BoardsService
         return $this->boardsModel->insertBoardsGroup($data);
     }
 
-    public function updateBoardsGroup($board_no, $data)
+    public function updateBoardsGroup($group_no, $data)
     {
-        return $this->boardsModel->updateBoardsGroup($board_no, $data);
+        return $this->boardsModel->updateBoardsGroup($group_no, $data);
     }
     
     // ---------------------------
@@ -65,5 +65,15 @@ class BoardsService
     public function getBoardsList($board_id='')
     {
         return $this->boardsModel->getBoardsList($board_id);
+    }
+
+    public function insertBoardsConfig($data)
+    {
+        return $this->boardsModel->insertBoardsConfig($data);
+    }
+
+    public function updateBoardsConfig($board_no, $data)
+    {
+        return $this->boardsModel->updateBoardsConfig($board_no, $data);
     }
 }

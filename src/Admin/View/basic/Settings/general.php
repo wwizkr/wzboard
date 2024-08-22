@@ -18,7 +18,7 @@
         </div>
     </div>
 </div>
-<div class="table-container">
+<div class="page-container">
     <h2>홈페이지 정보</h2>
     <div id="anc_cf_basic" class="table-form">
         <div class="table-row row mb-3">
@@ -95,7 +95,7 @@
             </div>
             <div class="table-td col-md-10">
                 <div class="d-flex align-items-center mb-2">
-                    <input type="text" name="formData[cf_company_zip" id="cf_company_zip" class="form-control me-2" placeholder="우편번호" maxlength="5" style="max-width: 100px;">
+                    <input type="text" name="formData[cf_company_zip]" id="cf_company_zip" class="form-control me-2" placeholder="우편번호" maxlength="5" style="max-width: 100px;">
                     <button type="button" class="btn btn-primary">우편번호 찾기</button>
                 </div>
                 <div class="mb-2">

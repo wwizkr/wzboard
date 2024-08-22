@@ -183,4 +183,34 @@ class BoardsModel
 
         return $boardData;
     }
+
+    /*
+     * 게시판 설정 등록, 게시판 생성
+     * @param array $data
+     * @return boolean
+     */
+    public function insertBoardsConfig($data)
+    {
+        $param = $data;
+        $where = [];
+        $options = [];
+        $result = $this->db->sqlBindQuery('insert', $this->getTableName('board_configs'), $param, $where, $options);
+
+        return $result;
+    }
+    
+    /*
+     * 게시판 그룹 정보 업데이트
+     * @param int $group_no, $data
+     * @return boolean
+     */
+    public function updateBoardsConfig($board_no, $data)
+    {
+        $param = $data;
+        $where['no'] = ['i',$board_no];
+        $options = [];
+        $result = $this->db->sqlBindQuery('update', $this->getTableName('board_configs'), $param, $where, $options);
+
+        return $result;
+    }
 }

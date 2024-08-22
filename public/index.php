@@ -26,29 +26,28 @@ $adminViewRenderer = new AdminViewRenderer($container);
 $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     // 공통으로 사용되는 HTTP 메서드 배열
     $httpMethods = ['GET', 'POST', 'PUT', 'DELETE'];
-
+    
     // 관리자 라우트 그룹
     $r->addGroup('/admin', function (RouteCollector $r) use ($httpMethods) {
         $r->addRoute('GET', '', 'Web\\Admin\\Controller\\DashboardController@index');
-        $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\Admin\\Controller\\BoardController@handle');
         
-        // 관리자 동적 라우트
-        $r->addRoute($httpMethods, '/{controller}[/{method}[/{id:\d+}]]', 'AdminDynamicController');
+        // 관리자 동적 라우트 (board 라우트를 포함)
+        $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'AdminDynamicController');
     });
-
+    
     // API 라우트 그룹
     $apiBaseUrl = $_ENV['API_BASE_URL'] ?? '/api/v1';
     $r->addGroup($apiBaseUrl, function (RouteCollector $r) use ($httpMethods) {
-        $r->addRoute($httpMethods, '/{controller}/{method}[/{id:\d+}]', 'ApiController');
+        $r->addRoute($httpMethods, '/{controller}/{method}[/{param}]', 'ApiController');
     });
-
+    
     // 웹사이트 게시판 라우트
     $r->addRoute('GET', '/install', 'Web\\PublicHtml\\Controller\\DatabaseInstallerController@install');
     $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\PublicHtml\\Controller\\BoardController@handle');
-
+    
     // 일반 웹 라우트
     $r->addRoute('GET', '/', 'Web\\PublicHtml\\Controller\\HomeController@index');
-    $r->addRoute($httpMethods, '/{controller}[/{method}[/{id:\d+}]]', 'DynamicController');
+    $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'DynamicController');
 });
 
 // HTTP 메서드와 요청 URI를 가져옴
@@ -66,7 +65,6 @@ AuthMiddleware::handle($uri);
 
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
-
 switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
         echo '404 Not Found';
