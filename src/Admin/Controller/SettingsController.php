@@ -3,12 +3,11 @@
 
 namespace Web\Admin\Controller;
 
+use Web\PublicHtml\Helper\CommonHelper;
 use Web\Admin\Helper\SettingsHelper;
 use Web\PublicHtml\Model\SettingsModel;
 use Web\PublicHtml\Service\SettingsService;
 use Web\PublicHtml\Helper\DependencyContainer;
-use Web\PublicHtml\Helper\CommonHelper;
-
 
 class SettingsController
 {
@@ -70,7 +69,7 @@ class SettingsController
 
     public function update()
     {
-        $cf_id = SettingsHelper::pickNumber($_POST['cf_id'],1) ?? 1;
+        $cf_id = CommonHelper::pickNumber($_POST['cf_id'],1) ?? 1;
 
         /*
          * post data 는 formData 배열로 전송 됨.
@@ -81,27 +80,11 @@ class SettingsController
             CommonHelper::alertAndBack("입력정보가 비어 있습니다. 잘못된 접속입니다.");
         }
         
-        $data = [];
         $i = ['cf_max_width']; // $i 배열에는 숫자형으로 처리할 필드
-        foreach($formData as $key=>$val) {
-            // 만약 값이 배열이라면, '-'로 묶어서 하나의 문자열로 변환
-            if (is_array($val)) {
-                $val = implode('-', $val);
-            }
-            
-            $value = $val;
-
-            // $key가 $i 배열에 속해 있으면 ['i', $value] 형식으로, 아니면 ['s', $value] 형식으로 저장
-            if (in_array($key, $i)) {
-                $data[$key] = ['i', $value];
-            } else {
-                $data[$key] = ['s', $value];
-            }
-        }
-
+        $data = CommonHelper::processFormData($formData, $i);
+        
         // 데이터베이스 업데이트
         $updated = $this->settingsService->updateGeneralSettings($cf_id, $data);
-
         if ($updated) {
             CommonHelper::alertAndRedirect("환경설정을 업데이트 하였습니다.","http://web.wizcash.kr/admin/settings/general");
         } else {

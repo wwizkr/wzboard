@@ -3,7 +3,8 @@
 
 namespace Web\PublicHtml\Controller;
 
-use Web\PublicHtml\Model\MemberModel;
+use Web\PublicHtml\Model\MembersModel;
+use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\CryptoHelper;
@@ -11,14 +12,15 @@ use Web\PublicHtml\Helper\CryptoHelper;
 class AuthController
 {
     protected $container;
-    protected $memberModel;
+    protected $membersModel;
+    protected $membersService;
     protected $session;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->memberModel = new MemberModel($container);
-        $this->session = new SessionManager(); //세션 사용안함.
+        $this->membersModel = new MembersModel($container);
+        $this->membersService = new MembersService($this->membersModel);
     }
 
     // 로그인
@@ -37,8 +39,8 @@ class AuthController
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            $member = $this->memberModel->getMemberData($email);
-            $level  = $this->memberModel->getMemberLevelData($member['member_level']) ?? 0;
+            $member = $this->membersService->getMemberData($email);
+            $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
 
             // 비밀번호 검증
             if ($member && CryptoHelper::verifyPassword($password, $member['password'])) {

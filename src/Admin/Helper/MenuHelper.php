@@ -11,27 +11,46 @@ class MenuHelper
             'dashboard' => [
                 'label' => '대쉬보드',
                 'url' => '/admin',
-                'icon' => 'bi-speedometer2',  // Bootstrap Icons 대쉬보드 아이콘
+                'icon' => 'bi-speedometer2',
             ],
             'members' => [
                 'label' => '회원관리',
                 'url' => '/admin/members/all',
-                'icon' => 'bi-people',  // Bootstrap Icons 사용자 아이콘
+                'icon' => 'bi-people',
                 'submenu' => [
-                    'all_users' => [
+                    'all' => [
                         'label' => '전체 회원',
                         'url' => '/admin/members/all',
                     ],
-                    'add_user' => [
+                    'add' => [
                         'label' => '회원등록',
                         'url' => '/admin/members/add',
+                    ],
+                ],
+            ],
+            'boards' => [
+                'label' => '게시판관리',
+                'url' => '/admin/boards/list',
+                'icon' => 'bi-people',
+                'submenu' => [
+                    'group' => [
+                        'label' => '게시판 그룹관리',
+                        'url' => '/admin/boards/group',
+                    ],
+                    'categories' => [
+                        'label' => '게시판 카테고리',
+                        'url' => '/admin/boards/category',
+                    ],
+                    'config' => [
+                        'label' => '게시판 관리',
+                        'url' => '/admin/boards/config',
                     ],
                 ],
             ],
             'settings' => [
                 'label' => '환경설정',
                 'url' => '/admin/settings/general',
-                'icon' => 'bi-gear',  // Bootstrap Icons 설정 아이콘
+                'icon' => 'bi-gear',
                 'submenu' => [
                     'general' => [
                         'label' => '기본 환경설정',
