@@ -52,7 +52,7 @@ class BoardsController
 
         $viewData = [
             'title' => '게시판 그룹 관리',
-            'content' => 'This is the general settings.',
+            'content' => '',
             'config_domain' => $this->configDomain,
             'groupData' => $groupData,
             'levelData' => $this->levelData,
@@ -113,7 +113,7 @@ class BoardsController
 
         $viewData = [
             'title' => '게시판 카테고리 관리',
-            'content' => 'This is the general settings.',
+            'content' => '',
             'config_domain' => $this->configDomain,
             'categoryData' => $categoryData,
             'levelData' => $this->levelData,
@@ -158,5 +158,23 @@ class BoardsController
         ];
         header('Content-Type: application/json');
         die(json_encode($jsonData));
+    }
+
+    // ------------------------------------------------------
+    // 게시판 관리 메서드 목록, 생성, 수정, 삭제
+    // ------------------------------------------------------
+    public function configs() {
+        $board_id = '';
+        $boardData = $this->boardsService->getBoardsList($board_id);
+
+        $viewData = [
+            'title' => '게시판 관리',
+            'content' => '',
+            'config_domain' => $this->configDomain,
+            'boardData' => $boardData,
+            'levelData' => $this->levelData,
+        ];
+
+        return ['Boards/configs', $viewData];
     }
 }

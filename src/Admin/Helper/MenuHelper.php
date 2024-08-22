@@ -30,7 +30,7 @@ class MenuHelper
             ],
             'boards' => [
                 'label' => '게시판관리',
-                'url' => '/admin/boards/list',
+                'url' => '/admin/boards/configs',
                 'icon' => 'bi-people',
                 'submenu' => [
                     'group' => [
@@ -43,7 +43,7 @@ class MenuHelper
                     ],
                     'config' => [
                         'label' => '게시판 관리',
-                        'url' => '/admin/boards/config',
+                        'url' => '/admin/boards/configs',
                     ],
                 ],
             ],

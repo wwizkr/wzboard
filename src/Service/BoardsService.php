@@ -58,4 +58,12 @@ class BoardsService
     {
         return $this->boardsModel->updateBoardsGroup($board_no, $data);
     }
+
+    // ---------------------------
+    // 게시판 관리
+    // ---------------------------
+    public function getBoardsList($board_id='')
+    {
+        return $this->boardsModel->getBoardsList($board_id);
+    }
 }

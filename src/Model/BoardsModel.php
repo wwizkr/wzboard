@@ -145,4 +145,42 @@ class BoardsModel
         $result = $this->db->sqlBindQuery('update', $this->getTableName('board_categories'), $param, $where, $options);
 
     }
+
+    /*
+     * 생성된 게시판 목록을 가져옴
+     * @return array
+     */
+    public function getBoardsList($board_id='')
+    {
+        $param = [];
+        $where = [];
+        if ($board_id) {
+            $where[$this->getTableName('board_configs') . '.board_id'] = ['s', $board_id];
+        }
+        
+        $options = [
+            'field' => $this->getTableName('board_configs') . '.*, ' . 
+                       $this->getTableName('board_groups') . '.group_name, ' . 
+                       $this->getTableName('board_groups') . '.group_id',
+            'joins' => [
+                [
+                    'type' => 'LEFT',
+                    'table' => $this->getTableName('board_groups'),
+                    'on' => $this->getTableName('board_configs') . '.group_no = ' . $this->getTableName('board_groups') . '.no'
+                ]
+            ],
+            'order' => $this->getTableName('board_groups') . '.order_num ASC, ' . 
+                       $this->getTableName('board_configs') . '.board_name ASC'
+        ];
+
+        $result = $this->db->sqlBindQuery('select', $this->getTableName('board_configs'), $param, $where, $options);
+
+        if($board_id) {
+            $boardData = $result[0] ?? null;
+        } else {
+            $boardData = $result;
+        }
+
+        return $boardData;
+    }
 }
