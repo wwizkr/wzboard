@@ -1,5 +1,5 @@
 <?php
-// 파일위치 : src/Model/MembersModel.php
+// 파일위치 : src/Model/MemberModel.php
 
 namespace Web\PublicHtml\Model;
 
@@ -8,7 +8,7 @@ use PDOException;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Helper\DependencyContainer;
 
-class MembersModel
+class MemberModel
 {
     use DatabaseHelperTrait;
 
@@ -45,28 +45,21 @@ class MembersModel
     }
 
     /*
-     * 회원의 개별 레벨 정보 또는 전체 정보를 가져옴
+     * 회원의 개별 레벨 정보를 가져옴
      * @param level 
      */
-    public function getMemberLevelData($level=0, $sort='ASC')
+    public function getMemberLevelData($level)
     {
         $param = [];
         $where = [];
         $where['cf_id'] = ['i', $this->config_domain['cf_id']];
-        if($level) {
-            $where['level_id'] = ['i', $level];
-        }
+        $where['level_id'] = ['i', $level];
         $options = [
-            'order' => 'level_id '. $sort,
+            'order' => 'level_id DESC',
+            'limit' => 1,
         ];
         $result = $this->db->sqlBindQuery('select',$this->getTableName('members_level'),$param,$where,$options);
 
-        if($level) {
-            $levelData = $result[0];
-        } else {
-            $levelData = $result;
-        }
-
-        return $levelData;
+        return $result[0];
     }
 }

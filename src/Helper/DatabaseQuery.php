@@ -53,7 +53,7 @@ class DatabaseQuery
             $this->pdo = new PDO($dsn, $this->config['user'], $this->config['password']);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
-            throw new Exception("연결 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $dsn);
         }
     }
 
@@ -106,6 +106,7 @@ class DatabaseQuery
         $columns = array_keys($param);
 
         // 쿼리 파라미터 처리
+        /*
         foreach ($param as $key=>$val) {
             if (is_array($val) && $val[0] === 'r') {
                 // 'r'은 Raw SQL 표현식을 의미
@@ -113,6 +114,26 @@ class DatabaseQuery
             } else {
                 $sqlSet[] = "$key = ?";
                 $values[] = is_array($val) ? ($val[1] ?? ($val[0] === 'i' ? 0 : '')) : $val;
+            }
+        }
+        */
+        // 쿼리 파라미터 처리 (수정된 부분)
+        foreach ($param as $key => $val) {
+            if (is_array($val) && isset($val[0]) && $val[0] === 'r') {
+                $sqlSet[] = "$key = {$val[1]}";
+            } else {
+                $sqlSet[] = "$key = ?";
+                if (is_array($val)) {
+                    if (isset($val[1])) {
+                        $values[] = $val[1];
+                    } elseif ($val[0] === 'i') {
+                        $values[] = 0;
+                    } else {
+                        $values[] = '';
+                    }
+                } else {
+                    $values[] = $val;
+                }
             }
         }
 
@@ -140,7 +161,13 @@ class DatabaseQuery
                     $values[] = "$value%";
                     break;
                 case 'in':
-                    $inValues = is_array($value) ? $value : explode(',', $value);
+                    if (is_array($value)) {
+                        $inValues = $value;
+                    } elseif (is_string($value)) {
+                        $inValues = explode(',', $value);
+                    } else {
+                        throw new Exception("IN 연산자에 대한 잘못된 값 형식");
+                    }
                     $sqlWhere .= "$key IN (" . implode(',', array_fill(0, count($inValues), '?')) . ")";
                     $values = array_merge($values, $inValues);
                     break;
@@ -149,8 +176,20 @@ class DatabaseQuery
                     $values[] = $value;
                     break;
                 case 'between':
-                    $sqlWhere .= "$key BETWEEN ? AND ?";
-                    $values = array_merge($values, is_array($value) ? $value : explode(',', $value));
+                    if (is_array($value) && count($value) === 2) {
+                        $sqlWhere .= "$key BETWEEN ? AND ?";
+                        $values = array_merge($values, $value);
+                    } elseif (is_string($value)) {
+                        $betweenValues = explode(',', $value);
+                        if (count($betweenValues) === 2) {
+                            $sqlWhere .= "$key BETWEEN ? AND ?";
+                            $values = array_merge($values, $betweenValues);
+                        } else {
+                            throw new Exception("BETWEEN 연산자에 대한 잘못된 값 형식");
+                        }
+                    } else {
+                        throw new Exception("BETWEEN 연산자에 대한 잘못된 값 형식");
+                    }
                     break;
                 default:
                     $sqlWhere .= "$key $operator ?";
@@ -212,7 +251,7 @@ class DatabaseQuery
         // 쿼리 실행
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($values);
+            $this->executeStatement($stmt, $values); // 새로운 메서드 사용
 
             if ($mode === 'select') {
                 return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -225,7 +264,28 @@ class DatabaseQuery
                 ];
             }
         } catch (PDOException $e) {
-            throw new Exception("데이터베이스 쿼리 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $sql, $values);
+        }
+    }
+
+    /**
+     * PDOStatement 실행을 위한 내부 메서드
+     */
+    private function executeStatement(\PDOStatement $stmt, array $params = []): bool
+    {
+        try {
+            foreach ($params as $key => $value) {
+                if (is_array($value)) {
+                    $params[$key] = json_encode($value);
+                } elseif (is_object($value)) {
+                    throw new \InvalidArgumentException("Invalid parameter type for key '$key': Object");
+                }
+            }
+
+            $result = $stmt->execute($params);
+            return $result;
+        } catch (PDOException $e) {
+            $this->handleQueryError($e, $stmt->queryString, $params);
         }
     }
 
@@ -237,19 +297,19 @@ class DatabaseQuery
         try {
             return $this->pdo->prepare($sql);
         } catch (PDOException $e) {
-            throw new Exception("쿼리 준비 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $sql);
         }
     }
 
     /**
-     * 쿼리 실행 메서드
+     * 외부에서 사용할 수 있는 쿼리 실행 메서드
      */
     public function execute(\PDOStatement $stmt, array $params = []): bool
     {
         try {
             return $stmt->execute($params);
         } catch (PDOException $e) {
-            throw new Exception("쿼리 실행 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $stmt->queryString, $params);
         }
     }
 
@@ -262,7 +322,7 @@ class DatabaseQuery
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result ?: null;
         } catch (PDOException $e) {
-            throw new Exception("데이터 가져오기 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $stmt->queryString);
         }
     }
 
@@ -274,7 +334,7 @@ class DatabaseQuery
         try {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            throw new Exception("데이터 가져오기 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $stmt->queryString);
         }
     }
 
@@ -287,7 +347,7 @@ class DatabaseQuery
             $stmt = $this->query($sql, $params);
             return $stmt->fetchColumn($columnNumber);
         } catch (PDOException $e) {
-            throw new Exception("컬럼 가져오기 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $sql, $params);
         }
     }
 
@@ -299,7 +359,7 @@ class DatabaseQuery
         try {
             $this->pdo->beginTransaction();
         } catch (PDOException $e) {
-            throw new Exception("트랜잭션 시작 실패: " . $e->getMessage());
+            $this->handleQueryError($e, "BEGIN TRANSACTION");
         }
     }
 
@@ -311,7 +371,7 @@ class DatabaseQuery
         try {
             $this->pdo->commit();
         } catch (PDOException $e) {
-            throw new Exception("트랜잭션 커밋 실패: " . $e->getMessage());
+            $this->handleQueryError($e, "COMMIT");
         }
     }
 
@@ -323,7 +383,7 @@ class DatabaseQuery
         try {
             $this->pdo->rollBack();
         } catch (PDOException $e) {
-            throw new Exception("트랜잭션 롤백 실패: " . $e->getMessage());
+            $this->handleQueryError($e, "ROLLBACK");
         }
     }
 
@@ -335,7 +395,7 @@ class DatabaseQuery
         try {
             return $this->pdo->lastInsertId();
         } catch (PDOException $e) {
-            throw new Exception("마지막 삽입 ID 가져오기 실패: " . $e->getMessage());
+            $this->handleQueryError($e, "GET LAST INSERT ID");
         }
     }
 
@@ -347,7 +407,7 @@ class DatabaseQuery
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            throw new Exception("쿼리 실패: " . $e->getMessage());
+            $this->handleQueryError($e, $sql, $params);
         }
     }
 
@@ -365,13 +425,27 @@ class DatabaseQuery
             return $result;
         } catch (PDOException $e) {
             $errorInfo = $this->pdo->errorInfo();
-            throw new Exception("실행 실패: " . $e->getMessage() . "\nSQL: " . $sql);
+            $this->handleQueryError($e, $sql);
         }
     }
 
     public function getPdoInstance()
     {
         return $this->pdo; // 실제 PDO 인스턴스를 반환합니다.
+    }
+
+     /**
+     * 쿼리 에러 처리 메서드
+     */
+    private function handleQueryError(PDOException $e, string $sql, array $params = []): void
+    {
+        $errorInfo = $e->errorInfo;
+        $errorMessage = "Database Error: " . $e->getMessage();
+        $errorMessage .= "\nSQL: " . $sql;
+        $errorMessage .= "\nParameters: " . json_encode($params, JSON_PARTIAL_OUTPUT_ON_ERROR);
+        
+        error_log($errorMessage);
+        throw new Exception($errorMessage, $e->getCode(), $e);
     }
 
     // 싱글톤 패턴을 위한 매직 메서드

@@ -29,14 +29,33 @@ class BoardsService
 
     public function updateBoardsGroup($board_no, $data)
     {
-        return $this->boardsModel->insertBoardsGroup($board_no, $data);
+        return $this->boardsModel->updateBoardsGroup($board_no, $data);
     }
     
     // ---------------------------
     // 카테고리 관리
     // ---------------------------
-    public function getBoardsCategory()
+    public function getBoardsCategory($category_no)
     {
-        return $this->boardsModel->getBoardsCategory();
+        return $this->boardsModel->getBoardsCategory($category_no);
+    }
+
+    public function insertBoardsCategory($data)
+    {
+        $result = $this->boardsModel->checkBoardsCategoryName($data['category_name']);
+        if($result === false) {
+            $jsonData = [
+                'result' => 'failer',
+                'message' => '카테고리명이 중복되었습니다.'
+            ];
+            return $jsonData;
+        }
+
+        return $this->boardsModel->insertBoardsCategory($data);
+    }
+
+    public function updateBoardsCategory($category_no, $data, $categoryData)
+    {
+        return $this->boardsModel->updateBoardsGroup($board_no, $data);
     }
 }

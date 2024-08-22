@@ -63,7 +63,7 @@ class BoardsController
     
     /**
      * 게시판 그룹 정보를 업데이트.
-     * 업데이트할 그룹 ID와 폼 데이터를 받아 처리함.
+     * 업데이트할 그룹 NO와 폼 데이터를 받아 처리함.
      */
     public function groupUpdate()
     {
@@ -108,7 +108,8 @@ class BoardsController
     public function category()
     {
         // 카테고리 목록
-        $categoryData = $this->boardsService->getBoardsCategory();
+        $category_no = null;
+        $categoryData = $this->boardsService->getBoardsCategory($category_no);
 
         $viewData = [
             'title' => '게시판 카테고리 관리',
@@ -119,5 +120,43 @@ class BoardsController
         ];
 
         return ['Boards/category', $viewData];
+    }
+
+    /**
+     * 게시판 카테고리 정보를 업데이트.
+     * 업데이트할 카테고리 NO와 폼 데이터를 받아 처리함.
+     */
+    public function categoryUpdate()
+    {
+        $action = $_POST['action'] ?? null;
+        $category_no = CommonHelper::pickNumber($_POST['category_no'],0) ?? 0;
+        $formData = $_POST['formData'] ?? null;
+        
+        if(empty($formData)) {
+            $jsonData = [
+                'result' => 'failer',
+                'message' => '입력정보가 비어 있습니다.'
+            ];
+            header('Content-Type: application/json');
+            die(json_encode($jsonData));
+        }
+
+        $i = ['allow_level','order_num']; // $i 배열에는 숫자형으로 처리할 필드
+        $data = CommonHelper::processFormData($formData, $i);
+
+        if($action == 'update') {
+            // 업데이트의 경우 기존카테고리 데이터를 가져와서 서비스레이어에 넘겨줍니다.
+            $categoryData = $this->boardsService->getBoardsCategory($category_no);
+            $result = $this->boardsService->updateBoardsCategory($category_no, $data, $categoryData);
+        } else {
+            $result = $this->boardsService->insertBoardsCategory($data);
+        }
+
+        $jsonData = [
+            'result' => 'success',
+            'message' => '처리하였습니다.'
+        ];
+        header('Content-Type: application/json');
+        die(json_encode($jsonData));
     }
 }

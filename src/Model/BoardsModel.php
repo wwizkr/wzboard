@@ -64,8 +64,8 @@ class BoardsModel
     }
     
     /*
-     * 게시판 그룹 목록 또는 특정 그룹을 가져옴
-     * @param int $cf_id
+     * 게시판 그룹 정보 업데이트
+     * @param int $group_no, $data
      * @return array
      */
     public function updateBoardsGroup($group_no, $data)
@@ -82,15 +82,67 @@ class BoardsModel
      * 게시판 카테고리 목록을 가져옴
      * @return array
      */
-    public function getBoardsCategory()
+    public function getBoardsCategory($category_no=null)
     {
         $param = [];
         $where = [];
+        if ($category_no) {
+            $where['no'] = ['i', $category_no];
+        }
         $options = [
             'order' => 'no DESC',
         ];
+
         $result = $this->db->sqlBindQuery('select', $this->getTableName('board_categories'), $param, $where, $options);
 
+        if($category_no) {
+            $categoryData = $result[0] ?? null;
+        } else {
+            $categoryData = $result;
+        }
+
+        return $categoryData;
+    }
+
+    /*
+     * 게시판 카테고리 등록
+     * @param array $data
+     * @return boolean
+     */
+    public function checkBoardsCategoryName($category_name)
+    {
+        // 카테고리명 중복확인
+        $param = [];
+        $where['category_name'] = ['s',$category_name];
+        $options = ['field'=>'count(*) as cnt'];
+        $result = $this->db->sqlBindQuery('select', $this->getTableName('board_categories'), $param, $where, $options);
+        if($result[0]['cnt'] > 0) {
+            return false;
+        }
+        return true;
+    }
+
+    public function insertBoardsCategory($data)
+    {
+        $param = $data;
+        $where = [];
+        $options = [];
+        $result = $this->db->sqlBindQuery('insert', $this->getTableName('board_categories'), $param, $where, $options);
+
         return $result;
+    }
+    
+    /*
+     * 게시판 카테고리 정보 업데이트
+     * @param int $category_no, array $data
+     * @return array
+     */
+    public function updateBoardsCategory($category_no, $data)
+    {
+        $param = $data;
+        $where['no'] = ['i',$category_no];
+        $options = [];
+        $result = $this->db->sqlBindQuery('update', $this->getTableName('board_categories'), $param, $where, $options);
+
     }
 }

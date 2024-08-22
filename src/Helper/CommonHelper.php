@@ -32,7 +32,7 @@ class CommonHelper
         exit;
     }
     
-    // 문자열에서 숫자만 가져옴.
+    // 문자열에서 숫자만 가져옴. "."도 포함하여 소수점 반영
     public static function pickNumber($string,$default=0)
     {
         $number = $default;
@@ -41,7 +41,7 @@ class CommonHelper
             return $number;
         }
         
-        $number = preg_replace('/[^0-9]/i','',$string);
+        $number = preg_replace('/[^0-9.]/i','',$string);
 
         return $number;
     }
