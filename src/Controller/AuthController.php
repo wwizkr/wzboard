@@ -21,6 +21,7 @@ class AuthController
         $this->container = $container;
         $this->membersModel = new MembersModel($container);
         $this->membersService = new MembersService($this->membersModel);
+        $this->session = $this->container->get('session_manager');
     }
 
     // 로그인
@@ -48,18 +49,33 @@ class AuthController
                 $payload = [
                     'mb_no' => $member['mb_no'],
                     'mb_id' => $member['mb_id'],
+                    'mb_level' => $member['member_level'],
                     'nickName' => $member['nickName'],
                     'is_admin' => $level['is_admin'],
                     'is_super' => $level['is_super_admin'],
                 ];
-                // JWT 토큰 생성 (유효시간은 토큰 자체에서 관리)
                 $jwtToken = CryptoHelper::generateJwtToken($payload);
-                // JWT 토큰을 쿠키에 저장 (유효시간은 토큰에 의해 관리되므로 쿠키 유효시간은 설정하지 않음)
-                setcookie('jwtToken', $jwtToken, 0, '/'); // 0은 브라우저 종료 시 쿠키 삭제
-                // 로그인 성공 후 리다이렉트
-                header('Location: /');
+                $refreshTokenPayload = [
+                    'mb_no' => $member['mb_no'],
+                    'mb_id' => $member['mb_id'],
+                    'type' => 'refresh'
+                ];
+                $refreshToken = CryptoHelper::generateJwtToken($refreshTokenPayload, 60 * 60 * 24 * 30);
+
+                // JWT 토큰을 쿠키에 저장
+                setcookie('jwtToken', $jwtToken, 0, '/');
+                setcookie('refreshToken', $refreshToken, time() + (60 * 60 * 24 * 30), '/');
+
+                // 관리자 권한이 있는 경우 관리자용 CSRF 토큰 생성
+                if ($level['is_admin']) {
+                    $this->session->generateCsrfToken($_ENV['ADMIN_CSRF_TOKEN_KEY']);
+                    header('Location: /admin/dashboard'); // 관리 페이지로 리다이렉트
+                } else {
+                    header('Location: /dashboard'); // 일반 사용자 대시보드로 리다이렉트
+                }
+                exit();
             } else { // 로그인 실패
-                $viewData = ['error' => 'Invalid email or password'];
+                $viewData = ['error' => 'Invalid email or password', 'email' => $email];
                 return [$viewPath, $viewData];
             }
         }
@@ -70,7 +86,10 @@ class AuthController
     {
         // 세션 파괴
         $this->session->destroy();
-        header('Location: /');
-        exit;
+        // 쿠키 삭제
+        setcookie('jwtToken', '', time() - 3600, '/');
+        setcookie('refreshToken', '', time() - 3600, '/');
+        header('Location: /login'); // 로그아웃 후 로그인 페이지로 리다이렉트
+        exit();
     }
 }

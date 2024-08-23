@@ -8,6 +8,8 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Web\PublicHtml\Helper\DatabaseQuery;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\CryptoHelper;
+use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 
 // 환경 변수 로드
@@ -80,3 +82,15 @@ if (!$config_domain->isHit()) {
 
 // config_domain 배열을 컨테이너에 등록
 $container->set('config_domain', $config_domain_data);
+
+// SessionManager 인스턴스 생성 및 컨테이너에 등록
+$sessionManager = new SessionManager();
+$container->set('session_manager', $sessionManager);
+
+// CsrfTokenHandler 인스턴스 생성 및 컨테이너에 등록
+$csrfTokenHandler = new CsrfTokenHandler($sessionManager);
+$container->set('csrf_token_handler', $csrfTokenHandler);
+
+// 사용자용 CSRF 토큰 생성 및 컨테이너에 등록
+$userCsrfToken = $sessionManager->generateCsrfToken($_ENV['USER_CSRF_TOKEN_KEY']);
+$container->set('user_csrf_token', $userCsrfToken);

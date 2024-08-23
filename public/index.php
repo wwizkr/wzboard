@@ -18,9 +18,21 @@ use Web\Admin\View\AdminViewRenderer;
 use Web\PublicHtml\Helper\RouteHelper;
 use Web\PublicHtml\Middleware\AuthMiddleware;
 
-// ViewRenderer 클래스 인스턴스 생성 (일반 웹사이트와 관리자용)
-$viewRenderer = new ViewRenderer($container);
-$adminViewRenderer = new AdminViewRenderer($container);
+// 의존성 컨테이너 가져오기
+$container = DependencyContainer::getInstance();
+
+// HTTP 메서드와 요청 URI를 가져옴
+$httpMethod = $_SERVER['REQUEST_METHOD'];
+$uri = $_SERVER['REQUEST_URI'];
+
+// 쿼리 스트링을 제거하고 URI 디코딩
+if (false !== $pos = strpos($uri, '?')) {
+    $uri = substr($uri, 0, $pos);
+}
+$uri = rawurldecode($uri);
+
+// AuthMiddleware를 통해 인증 처리
+AuthMiddleware::handle($uri);
 
 // FastRoute 설정을 위한 디스패처 생성
 $dispatcher = simpleDispatcher(function (RouteCollector $r) {
@@ -50,19 +62,6 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'DynamicController');
 });
 
-// HTTP 메서드와 요청 URI를 가져옴
-$httpMethod = $_SERVER['REQUEST_METHOD'];
-$uri = $_SERVER['REQUEST_URI'];
-
-// 쿼리 스트링을 제거하고 URI 디코딩
-if (false !== $pos = strpos($uri, '?')) {
-    $uri = substr($uri, 0, $pos);
-}
-$uri = rawurldecode($uri);
-
-// AuthMiddleware
-AuthMiddleware::handle($uri);
-
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 switch ($routeInfo[0]) {
@@ -79,12 +78,14 @@ switch ($routeInfo[0]) {
         
         if (strpos($uri, '/admin') === 0) {
             // 관리자 페이지 처리
+            $adminViewRenderer = new AdminViewRenderer($container);
             RouteHelper::handleAdminRoute($handler, $vars, $container, $adminViewRenderer);
         } elseif (strpos($uri, $_ENV['API_BASE_URL'] ?? '/api/v1') === 0) {
             // API 처리
             RouteHelper::handleApiRoute($handler, $vars, $container);
         } else {
             // 일반 웹사이트 처리
+            $viewRenderer = new ViewRenderer($container);
             RouteHelper::handleWebRoute($handler, $vars, $container, $viewRenderer);
         }
         break;

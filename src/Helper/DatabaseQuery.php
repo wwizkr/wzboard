@@ -427,9 +427,13 @@ class DatabaseQuery
         $errorMessage = "Database Error: " . $e->getMessage();
         $errorMessage .= "\nSQL: " . $sql;
         $errorMessage .= "\nParameters: " . json_encode($params, JSON_PARTIAL_OUTPUT_ON_ERROR);
-        
+        $errorMessage .= "\nError Code: " . $e->getCode();
+        $errorMessage .= "\nError Info: " . json_encode($errorInfo, JSON_PARTIAL_OUTPUT_ON_ERROR);
+
         error_log($errorMessage);
-        throw new Exception($errorMessage, $e);
+
+        // 올바른 정수형 오류 코드를 전달하도록 수정
+        throw new Exception($errorMessage, (int)$e->getCode());
     }
 
     // 싱글톤 패턴을 위한 매직 메서드

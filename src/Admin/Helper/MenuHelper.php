@@ -56,9 +56,9 @@ class MenuHelper
                         'label' => '기본 환경설정',
                         'url' => '/admin/settings/general',
                     ],
-                    'security' => [
-                        'label' => 'Security',
-                        'url' => '/admin/settings/security',
+                    'menus' => [
+                        'label' => '메뉴 설정',
+                        'url' => '/admin/settings/menus',
                     ],
                 ],
             ],

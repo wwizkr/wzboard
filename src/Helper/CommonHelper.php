@@ -47,30 +47,14 @@ class CommonHelper
     }
 
     /*
-     * 폼 데이터를 처리하여 형식을 맞추는 메서드
-     * 별도로 처리해야 할 입력값이 있을 경우 각 컨트롤러에서 처리해야 함.
+     * JSON 응답을 생성하고 반환
      */
-    public static function processFormData(array $formData, array $numericFields = []): array
+    public static function jsonResponse(array $data, int $statusCode = 200)
     {
-        $data = [];
-        
-        foreach($formData as $key => $val) {
-            // 만약 값이 배열이라면, '-'로 묶어서 하나의 문자열로 변환
-            if (is_array($val)) {
-                $val = implode('-', $val);
-            }
-            
-            $value = $val;
-
-            // $key가 $numericFields 배열에 속해 있으면 ['i', $value] 형식으로, 아니면 ['s', $value] 형식으로 저장
-            if (in_array($key, $numericFields)) {
-                $data[$key] = ['i', $value];
-            } else {
-                $data[$key] = ['s', $value];
-            }
-        }
-
-        return $data;
+        header('Content-Type: application/json', true, $statusCode);
+        echo json_encode($data);
+        exit;
     }
-    // 추가적인 헬퍼 클래스들을 여기에 정의할 수 있음
+
+    // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음
 }

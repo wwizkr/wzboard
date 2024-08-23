@@ -1,5 +1,5 @@
 <?php
-// 파일 위치: /src/Admin/Controller/BoardController.php
+// 파일 위치: /src/Admin/Controller/BoardsController.php
 
 namespace Web\Admin\Controller;
 
@@ -10,29 +10,31 @@ use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
-
-/*
- * BoardsController가 게시판 관련 모든 처리를 담당하므로 메서드명은 게시판 아이디로 사용할 수 없음.
- * group, groupUpdata, 
-*/
+use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class BoardsController
 {
     protected $container;
     protected $boardsModel;
-    protected $boardsService; 
+    protected $boardsService;
     protected $membersModel;
     protected $membersService;
     protected $configDomain;
+    protected $formDataMiddleware;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $boardsModel = new BoardsModel($container);
-        $this->boardsService = new BoardsService($boardsModel);
-        $membersModel = new MembersModel($container);
-        $this->membersService = new MembersService($membersModel);
+        $this->boardsModel = new BoardsModel($container);
+        $this->boardsService = new BoardsService($this->boardsModel);
+        $this->membersModel = new MembersModel($container);
+        $this->membersService = new MembersService($this->membersModel);
         $this->configDomain = $container->get('config_domain');
+
+        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
+        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
+        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
     }
 
     protected function getGroupData()
@@ -64,9 +66,6 @@ class BoardsController
     // 그룹 관리 메서드
     // ---------------------------
 
-    /**
-     * 게시판 그룹 목록을 가져와서 화면에 출력.
-     */
     public function group()
     {
         $viewData = [
@@ -79,51 +78,37 @@ class BoardsController
 
         return ['Boards/group', $viewData];
     }
-    
-    /**
-     * 게시판 그룹 정보를 업데이트.
-     * 업데이트할 그룹 NO와 폼 데이터를 받아 처리함.
-     */
+
     public function groupUpdate()
     {
         $action = $_POST['action'] ?? null;
-        $group_no = CommonHelper::pickNumber($_POST['group_no'],0) ?? 0;
+        $group_no = CommonHelper::pickNumber($_POST['group_no'], 0) ?? 0;
         $formData = $_POST['formData'] ?? null;
-        
-        if(empty($formData)) {
-            $jsonData = [
-                'result' => 'failer',
+
+        if (empty($formData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
                 'message' => '입력정보가 비어 있습니다.'
-            ];
-            header('Content-Type: application/json');
-            die(json_encode($jsonData));
+            ]);
         }
 
-        $i = ['allow_level','order_num']; // $i 배열에는 숫자형으로 처리할 필드
-        $data = CommonHelper::processFormData($formData, $i);
+        $numericFields = ['allow_level', 'order_num'];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        if($action == 'update') {
-            $result = $this->boardsService->updateBoardsGroup($group_no, $data);
+        if ($action === 'update') {
+            $this->boardsService->updateBoardsGroup($group_no, $data);
         } else {
-            $result = $this->boardsService->insertBoardsGroup($data);
+            $this->boardsService->insertBoardsGroup($data);
         }
 
-        $jsonData = [
+        return CommonHelper::jsonResponse([
             'result' => 'success',
             'message' => '처리하였습니다.'
-        ];
-        header('Content-Type: application/json');
-        die(json_encode($jsonData));
+        ]);
     }
 
-    // ---------------------------
     // 카테고리 관리 메서드
-    // ---------------------------
 
-    /**
-     * 게시판 카테고리 목록을 가져와서 화면에 출력.
-     * 카테고리를 개별적으로 관리. 게시판 설정에 매칭. 동일 카테고리를 여러개의 게시판에서 사용할 수 있음.
-     */
     public function category()
     {
         $viewData = [
@@ -137,47 +122,37 @@ class BoardsController
         return ['Boards/category', $viewData];
     }
 
-    /**
-     * 게시판 카테고리 정보를 업데이트.
-     * 업데이트할 카테고리 NO와 폼 데이터를 받아 처리함.
-     */
     public function categoryUpdate()
     {
         $action = $_POST['action'] ?? null;
-        $category_no = CommonHelper::pickNumber($_POST['category_no'],0) ?? 0;
+        $category_no = CommonHelper::pickNumber($_POST['category_no'], 0) ?? 0;
         $formData = $_POST['formData'] ?? null;
-        
-        if(empty($formData)) {
-            $jsonData = [
-                'result' => 'failer',
+
+        if (empty($formData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
                 'message' => '입력정보가 비어 있습니다.'
-            ];
-            header('Content-Type: application/json');
-            die(json_encode($jsonData));
+            ]);
         }
 
-        $i = ['allow_level','order_num']; // $i 배열에는 숫자형으로 처리할 필드
-        $data = CommonHelper::processFormData($formData, $i);
+        $numericFields = ['allow_level', 'order_num'];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        if($action == 'update') {
-            // 업데이트의 경우 기존카테고리 데이터를 가져와서 서비스레이어에 넘겨줍니다.
+        if ($action === 'update') {
             $categoryData = $this->boardsService->getBoardsCategory($category_no);
-            $result = $this->boardsService->updateBoardsCategory($category_no, $data, $categoryData);
+            $this->boardsService->updateBoardsCategory($category_no, $data, $categoryData);
         } else {
-            $result = $this->boardsService->insertBoardsCategory($data);
+            $this->boardsService->insertBoardsCategory($data);
         }
 
-        $jsonData = [
+        return CommonHelper::jsonResponse([
             'result' => 'success',
             'message' => '처리하였습니다.'
-        ];
-        header('Content-Type: application/json');
-        die(json_encode($jsonData));
+        ]);
     }
 
-    // ------------------------------------------------------
     // 게시판 관리 메서드 목록, 생성, 수정, 삭제
-    // ------------------------------------------------------
+
     public function configs()
     {
         $viewData = [
@@ -191,10 +166,6 @@ class BoardsController
         return ['Boards/configs', $viewData];
     }
 
-    /*
-     * 게시판 생성 / 수정폼
-     * array $this->levelData, array categoryData, array skinDir
-    */
     public function boardform($vars)
     {
         $action = $vars['param'] ?? 'create';
@@ -214,38 +185,34 @@ class BoardsController
         return ['Boards/boardForm', $viewData];
     }
 
-    /**
-     * 게시판 설정 정보를 업데이트.
-     * 업데이트할 그룹 NO와 폼 데이터를 받아 처리함.
-     */
     public function boardUpdate()
     {
         $action = $_POST['action'] ?? null;
-        $board_no = CommonHelper::pickNumber($_POST['board_no'],0) ?? 0;
+        $board_no = CommonHelper::pickNumber($_POST['board_no'], 0) ?? 0;
         $formData = $_POST['formData'] ?? null;
-        
-        if(empty($formData)) {
-            $jsonData = [
-                'result' => 'failer',
+
+        if (empty($formData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
                 'message' => '입력정보가 비어 있습니다.'
-            ];
-            header('Content-Type: application/json');
-            die(json_encode($jsonData));
+            ]);
         }
 
-        $i = ['group_no','read_level','write_level','download_level','is_use_file','file_size_limit','use_separate_table']; // $i 배열에는 숫자형으로 처리할 필드
-        $data = CommonHelper::processFormData($formData, $i);
-        if($action == 'update') {
-            $result = $this->boardsService->updateBoardsConfig($board_no, $data);
+        $numericFields = [
+            'group_no', 'read_level', 'write_level', 'download_level',
+            'is_use_file', 'file_size_limit', 'use_separate_table'
+        ];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
+
+        if ($action === 'update') {
+            $this->boardsService->updateBoardsConfig($board_no, $data);
         } else {
-            $result = $this->boardsService->insertBoardsConfig($data);
+            $this->boardsService->insertBoardsConfig($data);
         }
 
-        $jsonData = [
+        return CommonHelper::jsonResponse([
             'result' => 'success',
             'message' => '처리하였습니다.'
-        ];
-        header('Content-Type: application/json');
-        die(json_encode($jsonData));
+        ]);
     }
 }

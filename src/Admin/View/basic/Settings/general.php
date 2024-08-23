@@ -8,13 +8,13 @@
 </ul>
 
 <!-- 폼 컨테이너들 -->
-<form name="frm" id="frm" action="/admin/settings/update" method="post" onsubmit="return frm_submit(this);" enctype="multipart/form-data">
+<form name="frm" id="frm">
 <input type="hidden" name="cf_id" value="<?php echo $config_domain['cf_id'];?>">
 <div class="content-fixed-top">
     <div class="fixed-top-inner">
         <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
         <div class="fixed-top-btn">
-            <input type="submit" value="확인" class="btn btn_submit" accesskey="s">
+            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/settings/update">확인</button>
         </div>
     </div>
 </div>

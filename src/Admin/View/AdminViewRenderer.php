@@ -3,19 +3,49 @@
 namespace Web\Admin\View;
 
 use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Helper\SessionManager;
 
 class AdminViewRenderer
 {
     private $skinDirectory;
+    private $sessionManager;
 
     public function __construct(DependencyContainer $container)
     {
-        // 컨테이너에서 config_domain 배열을 가져옴
         $configDomain = $container->get('config_domain');
-        // 관리 페이지용 스킨 이름을 컨테이너에서 가져옴, 기본값은 'basic'
         $adminSkin = $configDomain['cf_skin_admin'] ?? 'basic';
-        // 스킨 디렉토리 설정
         $this->skinDirectory = __DIR__ . "/{$adminSkin}/";
+        $this->sessionManager = new SessionManager();
+
+        // CSRF 토큰 세션 검증
+        $this->checkCsrfToken();
+    }
+
+    /**
+     * CSRF 토큰이 세션에 없으면 로그아웃 후 로그인 페이지로 리다이렉트
+     */
+    private function checkCsrfToken()
+    {
+        $csrfToken = $this->sessionManager->get('admin_secure_key');
+        if (empty($csrfToken)) {
+            $this->logoutAndRedirect();
+        }
+    }
+
+    /**
+     * 로그아웃 처리 및 로그인 페이지로 리다이렉트
+     */
+    private function logoutAndRedirect()
+    {
+        // 세션 파기
+        $this->sessionManager->destroy();
+
+        // 쿠키 삭제
+        setcookie('jwtToken', '', time() - 3600, '/');
+        setcookie('refreshToken', '', time() - 3600, '/');
+        // 로그아웃 후 로그인 페이지로 리다이렉트
+        header('Location: /auth/login');
+        exit();
     }
 
     // 공통 헤더를 렌더링하는 메서드
@@ -45,6 +75,9 @@ class AdminViewRenderer
     // 특정 뷰 파일을 렌더링하는 메서드
     public function render($viewFilePath, array $data = [])
     {
+        // SessionManager를 데이터에 추가
+        $data['sessionManager'] = $this->sessionManager;
+
         extract($data);
 
         $fullViewFilePath = $this->skinDirectory . $viewFilePath . '.php';

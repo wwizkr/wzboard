@@ -8,12 +8,15 @@ use Web\Admin\Helper\SettingsHelper;
 use Web\PublicHtml\Model\SettingsModel;
 use Web\PublicHtml\Service\SettingsService;
 use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class SettingsController
 {
     protected $container;
     protected $settingsModel;
     protected $settingsService;
+    protected $formDataMiddleware;
 
     // 생성자에서 DependencyContainer와 SettingsService를 받아옴
     public function __construct(DependencyContainer $container)
@@ -21,18 +24,14 @@ class SettingsController
         $this->container = $container;
         $settingsModel = new SettingsModel($container); // SettingsModel 인스턴스 생성
         $this->settingsService = new SettingsService($settingsModel); // SettingsService에 SettingsModel 주입
+        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
+        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
+        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
     }
 
-    public function index() //비어있음
-    {
-        $viewData = [
-            'title' => 'Index',
-            'content' => 'This is the user list.'
-        ];
-
-        return ['Settings/index', $viewData];
-    }
-
+    /*
+     * 환경설정
+     */
     public function general()
     {
         // 컨테이너에서 config_domain 배열을 가져옴
@@ -66,7 +65,10 @@ class SettingsController
 
         return ['Settings/general', $viewData];
     }
-
+    
+    /*
+     * 환경설정 업데이트
+     */
     public function update()
     {
         $cf_id = CommonHelper::pickNumber($_POST['cf_id'],1) ?? 1;
@@ -80,18 +82,33 @@ class SettingsController
             CommonHelper::alertAndBack("입력정보가 비어 있습니다. 잘못된 접속입니다.");
         }
         
-        $i = ['cf_max_width']; // $i 배열에는 숫자형으로 처리할 필드
-        $data = CommonHelper::processFormData($formData, $i);
+        $numericFields = ['cf_max_width'];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
         
         // 데이터베이스 업데이트
         $updated = $this->settingsService->updateGeneralSettings($cf_id, $data);
         if ($updated) {
-            CommonHelper::alertAndRedirect("환경설정을 업데이트 하였습니다.","http://web.wizcash.kr/admin/settings/general");
+            //CommonHelper::alertAndRedirect("환경설정을 업데이트 하였습니다.","http://web.wizcash.kr/admin/settings/general");
+            return CommonHelper::jsonResponse([
+                'result' => 'success',
+                'message' => '환경설정을 업데이트 하였습니다'
+            ]);
         } else {
             // 업데이트 실패한 경우
-            CommonHelper::alertAndBack("업데이트에 실패하였습니다. 다시 시도해 주세요!.");
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '환경설정 업데이트에 실패 하였습니다'
+            ]);
         }
-
-        return ['Settings/update', $viewData];
     }
+
+    /*
+     * 메뉴설정
+     */
+    public function menus()
+    {
+        
+    }
+
+
 }
