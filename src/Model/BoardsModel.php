@@ -213,4 +213,48 @@ class BoardsModel
 
         return $result;
     }
+
+    /*
+     * 게시판 카테고리 매핑 정보 업데이트
+     * @param int board_no
+     * @param string board_id
+     * @param array $category
+     */
+    public function updateBoardsCategoryMapping($board_no, $board_id, $category)
+    {
+        $param = [];
+        $where['board_no'] = ['i', $board_no];
+        $where['board_id'] = ['s', $board_id];
+        $result = $this->db->sqlBindQuery('select', $this->getTableName('board_category_mapping'), $param, $where);
+        
+        // 반복문으로 결과 처리
+        foreach ($result as $row) {
+            $categoryNo = $row['category_no'];
+            // $category 배열에 현재 DB의 category_no가 포함되어 있는지 확인
+            if (($key = array_search($categoryNo, $category)) !== false) {
+                // 포함되어 있으면, $category 배열에서 제거하고 다음 반복으로 넘어감
+                unset($category[$key]);
+                continue;
+            } else {
+                // 포함되어 있지 않으면, DB에서 해당 row를 삭제
+                $deleteWhere['no'] = ['s',$row['no']];
+                $this->db->sqlBindQuery('delete', $this->getTableName('board_category_mapping'), [], $deleteWhere);
+            }
+        }
+
+        // 이제 남은 $category 배열을 DB에 삽입
+        foreach ($category as $category_no) {
+            $insertData = [
+                'board_no' => ['i',(int)$board_no],
+                'category_no' => ['i',(int)$category_no],
+                'board_id' => ['s',$board_id],
+            ];
+            $insertData['board_no'] = ['i',(int)$board_no];
+            $insertData['category_no'] = ['i',(int)$category_no];
+            $insertData['board_id'] = ['s',$board_id];
+
+            // DB에 삽입
+            $this->db->sqlBindQuery('insert', $this->getTableName('board_category_mapping'), $insertData);
+        }
+    }
 }

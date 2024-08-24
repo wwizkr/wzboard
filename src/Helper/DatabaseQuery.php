@@ -244,7 +244,7 @@ class DatabaseQuery
                     'result' => 'success',
                     'message' => '',
                     'affectedRows' => $stmt->rowCount(),
-                    'insertId' => $mode === 'insert' ? $this->pdo->lastInsertId() : null
+                    'ins_id' => $mode === 'insert' ? $this->pdo->lastInsertId() : null
                 ];
             }
         } catch (PDOException $e) {

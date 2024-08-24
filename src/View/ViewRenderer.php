@@ -9,10 +9,13 @@ class ViewRenderer
     private $headerSkinDirectory;
     private $footerSkinDirectory;
     private $layoutSkinDirectory;
+    private $menuView;
+    private $container;
 
     // 생성자에서 스킨 디렉토리 설정
     public function __construct(DependencyContainer $container)
     {
+        $this->container = $container;
         // 컨테이너에서 config_domain 배열을 가져옴
         $configDomain = $container->get('config_domain');
 
@@ -25,12 +28,20 @@ class ViewRenderer
         $this->headerSkinDirectory = __DIR__ . "/Header/{$headerSkin}/";
         $this->footerSkinDirectory = __DIR__ . "/Footer/{$footerSkin}/";
         $this->layoutSkinDirectory = __DIR__ . "/Layout/{$layoutSkin}/";
+
+        $this->menuView = new MenuView();
     }
     
 
     // 헤더 스킨을 렌더링하는 메서드
     public function renderHeader(array $data = [])
     {
+        // 컨테이너에서 트리화된 메뉴 데이터를 가져옴
+        $menuData = $this->container->get('menu_datas');
+        
+        // MenuView를 사용해 메뉴를 렌더링
+        $data['menu'] = $this->menuView->renderMenu($menuData);
+
         $this->render($this->headerSkinDirectory . 'Header', $data);
     }
 

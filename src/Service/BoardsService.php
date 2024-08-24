@@ -69,11 +69,31 @@ class BoardsService
 
     public function insertBoardsConfig($data)
     {
-        return $this->boardsModel->insertBoardsConfig($data);
+        $category = explode("-",$data['categories'][1]) ?? null;
+        unset($data['categories']); //$data에서 categories 제거
+
+        $insert = $this->boardsModel->insertBoardsConfig($data);
+        if($insert['ins_id']) {
+            if(!empty($category)) {
+                $this->boardsModel->updateBoardsCategoryMapping($insert['ins_id'], $data['board_id'][1], $category);
+            }
+            return $insert['ins_id'];
+        } else {
+            return false;
+        }
     }
 
     public function updateBoardsConfig($board_no, $data)
     {
-        return $this->boardsModel->updateBoardsConfig($board_no, $data);
+        $category = explode("-",$data['categories'][1]) ?? null;
+        unset($data['categories']); //$data에서 categories 제거
+
+        $update = $this->boardsModel->updateBoardsConfig($board_no, $data);
+
+        if(!empty($category)) {
+            $this->boardsModel->updateBoardsCategoryMapping($board_no, $data['board_id'][1], $category);
+        }
+
+        return $update;
     }
 }

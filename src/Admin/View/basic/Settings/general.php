@@ -1,8 +1,8 @@
 <!-- 탭 네비게이션 -->
 <ul class="nav nav-tabs sticky-tabs" id="form-tab" role="tablist">
-    <?php foreach ($anchor as $id => $title): ?>
+    <?php foreach ($anchor as $id => $tabs): ?>
         <li class="nav-item" role="presentation">
-            <a class="nav-link <?php echo $id === 'anc_cf_basic' ? 'active' : ''; ?>" href="#<?php echo $id; ?>"><?php echo $title; ?></a>
+            <a class="nav-link <?php echo $id === 'anc_cf_basic' ? 'active' : ''; ?>" href="#<?php echo $id; ?>"><?php echo $tabs; ?></a>
         </li>
     <?php endforeach; ?>
 </ul>

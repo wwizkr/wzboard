@@ -1,5 +1,12 @@
 <?php
 // 파일 위치: /src/Admin/Controller/BoardsController.php
+/*
+ * Json 응답값
+ * @param result = "success" : "failure"
+ * @param message = "text"
+ * @param gotoUrl = "url" 있을 경우 해당 URL로 이동
+ * @param refresh = true 이면 새로 고침
+ */
 
 namespace Web\Admin\Controller;
 

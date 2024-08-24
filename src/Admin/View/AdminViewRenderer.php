@@ -26,7 +26,7 @@ class AdminViewRenderer
      */
     private function checkCsrfToken()
     {
-        $csrfToken = $this->sessionManager->get('admin_secure_key');
+        $csrfToken = $this->sessionManager->get($_ENV['ADMIN_CSRF_TOKEN_KEY']);
         if (empty($csrfToken)) {
             $this->logoutAndRedirect();
         }

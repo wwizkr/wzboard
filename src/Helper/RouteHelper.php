@@ -8,7 +8,7 @@ class RouteHelper
 {
     public static function handleAdminRoute($handler, $vars, $container, $adminViewRenderer)
     {
-        echo "Admin Route Handler: " . htmlspecialchars($handler) . "<br>";
+        //echo "Admin Route Handler: " . htmlspecialchars($handler) . "<br>";
 
         if (!isset($_COOKIE['jwtToken']) || !CryptoHelper::verifyJwtToken($_COOKIE['jwtToken'])) {
             header('Location: /auth/login');

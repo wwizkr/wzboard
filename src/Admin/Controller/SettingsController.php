@@ -34,12 +34,8 @@ class SettingsController
      */
     public function general()
     {
-        // 컨테이너에서 config_domain 배열을 가져옴
+        // 컨테이너에서 환경설정을 가져옴
         $configDomain = $this->container->get('config_domain');
-        $cf_id = $configDomain['cf_id'] ?? 1;
-
-        // 환경설정을 가져옴
-        $config_domain = $this->settingsService->getGeneralSettings($cf_id);
 
         // 탭배열
         $anchor = [
@@ -56,8 +52,8 @@ class SettingsController
 
         $viewData = [
             'title' => '기본환경 설정',
-            'content' => 'This is the general settings.',
-            'config_domain' => $config_domain, // 환경설정 데이터를 viewData에 포함
+            'content' => '',
+            'config_domain' => $configDomain, // 환경설정 데이터를 viewData에 포함
             'anchor' => $anchor,
             'skin' => $skin,
             'sns_seo' => $sns_seo,
@@ -107,8 +103,66 @@ class SettingsController
      */
     public function menus()
     {
-        
+        // 컨테이너에서 메뉴설정을 가져옴
+        $menuDatas = $this->container->get('menu_datas') ?? null;
+
+        $viewData = [
+            'title' => '메뉴 설정',
+            'content' => '',
+            'menuDatas' => $menuDatas,
+        ];
+
+        return ['Settings/menus', $viewData];
     }
 
+    /*
+     * 메뉴로딩
+     */
+    public function menuOrder() 
+    {
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '환경설정을 업데이트 하였습니다'
+        ]);
+    }
 
+    public function menuLoader() 
+    {
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '환경설정을 업데이트 하였습니다'
+        ]);
+    }
+
+    public function menuInsert() {
+        $configDomain = $this->container->get('config_domain');
+        $cf_id = $configDomain['cf_id'];
+        
+        /*
+        type: treeNode.type,
+        me_name: newNodeName,
+        me_code: treeNode.code,
+        me_parent: treeNode.parent,
+        me_depth: treeNode.depth
+        */
+        
+        $type = $_POST['type'] ?? 'root';
+        //formData 생성
+        $formData = [];
+        $formData['cf_id'] = $cf_id;
+        $formData['me_name'] = $_POST['me_name'] ?? '';
+        $formData['me_code'] = $_POST['me_code'] ?? '';
+        $formData['me_parent'] = $_POST['me_parent'] ?? 0;
+        $formData['me_depth']  = $_POST['me_depth'] ?? 0;
+
+        $numericFields = ['me_parent','me_depth'];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
+
+        $result = $this->settingService->insertMenuData($type, $data);
+        
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '메뉴를 등록하였습니다.'
+        ]);
+    }
 }

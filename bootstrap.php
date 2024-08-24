@@ -4,13 +4,15 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+//use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Web\PublicHtml\Helper\DatabaseQuery;
 use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Helper\CacheHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
+use Web\PublicHtml\Controller\MenuController;
 
 // 환경 변수 로드
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -24,39 +26,17 @@ $container->set('db', DatabaseQuery::getInstance());
 
 // 현재 접속 중인 도메인 가져오기 (www 제외)
 $host = preg_replace('/^www\./', '', $_SERVER["SERVER_NAME"]);
-$tmp_host = explode(".", $host);
-$tmp_owner = array();
+$owner_domain = implode(".", array_filter(explode(".", $host)));
 
-foreach($tmp_host as $key => $val) {
-    $tmp_owner[] = $val;
-}
+// 도메인 기반으로 캐시 디렉토리 설정
+$cacheDirectory = $owner_domain;
+CacheHelper::initialize($cacheDirectory);
 
-$owner_domain = implode(".", $tmp_owner);
+// 환경설정 캐시 키 생성
+$configCacheKey = 'config_domain_' . $owner_domain;
+$config_domain_data = CacheHelper::getCache($configCacheKey);
 
-// 캐시 디렉토리 설정 (고정된 DOMAIN 경로)
-$cacheDirectory = __DIR__ . '/storage/cache/DOMAIN';
-
-// 캐시 디렉토리가 없으면 생성
-if (!is_dir($cacheDirectory)) {
-    if (!mkdir($cacheDirectory, 0777, true)) {
-        die('Failed to create directories...');
-    }
-}
-
-// 캐시 어댑터 생성
-$cache = new FilesystemAdapter(
-    '', // 네임스페이스 (옵션)
-    3600, // 기본 캐시 만료 시간 (초 단위)
-    $cacheDirectory // 캐시 파일을 저장할 디렉토리
-);
-
-// 캐시 키 생성 (도메인 이름을 '-'로 대체)
-$cacheKey = 'config_domain_' . str_replace(".", "-", $owner_domain);
-
-// 캐시에서 데이터 가져오기
-$config_domain = $cache->getItem($cacheKey);
-
-if (!$config_domain->isHit()) {
+if ($config_domain_data === null) {
     // 캐시에 데이터가 없는 경우, 데이터베이스에서 정보 조회
     $db = $container->get('db');
     $query = "SELECT * FROM " . (new class {
@@ -68,20 +48,60 @@ if (!$config_domain->isHit()) {
     if ($config_domain_data) {
         // JSON으로 변환 후 암호화하여 캐시에 저장
         $encryptedData = CryptoHelper::encryptJson($config_domain_data);
-        $config_domain->set($encryptedData);
-        // 캐시 저장 (3600초 동안 유지)
-        $cache->save($config_domain);
+        CacheHelper::setCache($configCacheKey, $encryptedData);
     } else {
         $config_domain_data = [];
     }
 } else {
-    // 캐시된 데이터를 가져와 복호화
-    $encryptedData = $config_domain->get();
-    $config_domain_data = CryptoHelper::decryptJson($encryptedData);
+    // 캐시된 데이터를 복호화
+    $config_domain_data = CryptoHelper::decryptJson($config_domain_data);
 }
 
 // config_domain 배열을 컨테이너에 등록
 $container->set('config_domain', $config_domain_data);
+
+// MenuController를 통해 트리화된 메뉴 데이터를 가져옴
+$menuController = new MenuController();
+$menuTree = $menuController->getMenuData();
+
+// 트리화된 메뉴 데이터를 컨테이너에 등록
+$container->set('menu_datas', $menuTree);
+
+
+/*
+$menuController = new MenuController();
+$menuData = $menuController->getMenuData();
+*/
+
+// menu_datas 배열을 컨테이너에 등록
+//$container->set('menu_datas', $menu_datas);
+
+/*
+// 메뉴 캐시 키 생성
+$menuCacheKey = 'menu_' . $owner_domain;
+$menu_datas = CacheHelper::getCache($menuCacheKey);
+
+if ($menu_datas === null) {
+    // 캐시에 데이터가 없는 경우, 데이터베이스에서 정보 조회
+    $db = $container->get('db');
+    $query = "SELECT * FROM " . (new class {
+        use DatabaseHelperTrait;
+    })->getTableName('menus') . " WHERE cf_id = :cf_id";
+    $stmt = $db->query($query, ['cf_id' => $config_domain_data['cf_id']]);
+    $menu_datas = $db->fetch($stmt);
+
+    if ($menu_datas) {
+        // JSON으로 변환 후 암호화하여 캐시에 저장
+        $encryptedData = CryptoHelper::encryptJson($menu_datas);
+        CacheHelper::setCache($menuCacheKey, $encryptedData);
+    } else {
+        $menu_datas = [];
+    }
+} else {
+    // 캐시된 데이터를 복호화
+    $menu_datas = CryptoHelper::decryptJson($menu_datas);
+}
+*/
 
 // SessionManager 인스턴스 생성 및 컨테이너에 등록
 $sessionManager = new SessionManager();

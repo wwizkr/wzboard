@@ -10,7 +10,7 @@ class SessionManager
             // 세션 옵션 설정 (예: secure, httpOnly 속성)
             session_start([
                 'cookie_lifetime' => 0, // 브라우저가 닫힐 때까지 유지
-                'cookie_secure' => true, // HTTPS에서만 전송
+                'cookie_secure' => false, // HTTPS에서만 전송
                 'cookie_httponly' => true, // JS에서 쿠키 접근 금지
                 'use_strict_mode' => true, // 세션 탈취를 방지
             ]);
