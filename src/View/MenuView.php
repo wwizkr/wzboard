@@ -10,7 +10,7 @@ class MenuView
         if (isset($menuData) && !empty($menuData)) {
             echo '<ul>';
             foreach ($menuData as $menuItem) {
-                echo '<li>' . htmlspecialchars($menuItem['name']) . '</li>';
+                echo '<li>' . htmlspecialchars($menuItem['me_name']) . '</li>';
             }
             echo '</ul>';
         } else {

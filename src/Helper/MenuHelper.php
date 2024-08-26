@@ -10,20 +10,22 @@ class MenuHelper
         $menuTree = [];
         $indexedMenu = [];
 
-        // 1. 각 메뉴 항목을 인덱스로 정리 (me_code를 기준으로)
-        foreach ($menuData as $menuItem) {
+        // 1. 각 메뉴 항목을 인덱스로 정리 (no 또는 me_code를 기준으로)
+        foreach ($menuData as &$menuItem) {
             $menuItem['children'] = []; // 자식 메뉴를 담을 배열 추가
-            $indexedMenu[$menuItem['me_code']] = $menuItem;
+            $indexedMenu[$menuItem['no']] = &$menuItem;
         }
 
         // 2. 부모-자식 관계를 설정하여 트리 구조 생성
-        foreach ($indexedMenu as $menuItem) {
-            if ($menuItem['me_parent']) {
+        foreach ($indexedMenu as &$menuItem) {
+            if ($menuItem['me_parent'] != 0) {
                 // 부모가 있는 경우, 해당 부모의 'children' 배열에 추가
-                $indexedMenu[$menuItem['me_parent']]['children'][] = &$indexedMenu[$menuItem['me_code']];
+                if (isset($indexedMenu[$menuItem['me_parent']])) {
+                    $indexedMenu[$menuItem['me_parent']]['children'][] = &$menuItem;
+                }
             } else {
                 // 최상위 메뉴(부모가 없는 경우)는 트리의 루트에 추가
-                $menuTree[] = &$indexedMenu[$menuItem['me_code']];
+                $menuTree[] = &$menuItem;
             }
         }
 

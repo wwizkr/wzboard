@@ -39,4 +39,16 @@ class CacheHelper
         $cacheItem->expiresAfter($ttl);
         self::$cache->save($cacheItem);
     }
+
+    public static function clearCache($key)
+    {
+        // 특정 캐시 항목 삭제
+        self::$cache->deleteItem($key);
+    }
+
+    public static function clearAllCache()
+    {
+        // 모든 캐시 항목 삭제
+        self::$cache->clear();
+    }
 }

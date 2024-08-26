@@ -17,16 +17,21 @@ class SettingsController
     protected $settingsModel;
     protected $settingsService;
     protected $formDataMiddleware;
+    protected $configDomain;
+    protected $cf_id;
 
     // 생성자에서 DependencyContainer와 SettingsService를 받아옴
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $settingsModel = new SettingsModel($container); // SettingsModel 인스턴스 생성
-        $this->settingsService = new SettingsService($settingsModel); // SettingsService에 SettingsModel 주입
-        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
+        $this->settingsModel = new SettingsModel($container);
+        $this->settingsService = new SettingsService($this->settingsModel);
+        
         $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
+
+        $this->configDomain = $this->container->get('config_domain');
+        $this->cf_id = $this->configDomain['cf_id'];
     }
 
     /*
@@ -35,7 +40,7 @@ class SettingsController
     public function general()
     {
         // 컨테이너에서 환경설정을 가져옴
-        $configDomain = $this->container->get('config_domain');
+        $configDomain = $this->configDomain;
 
         // 탭배열
         $anchor = [
@@ -118,33 +123,34 @@ class SettingsController
     /*
      * 메뉴로딩
      */
+    public function menuLoader()
+    {
+        $cf_id = $this->cf_id;
+        $configDomain = $this->configDomain;
+
+        //error_log("menuLoader - \$_POST: " . print_r($_POST, true));
+
+        $me_code = $_POST['me_code'] ?? null;
+        $result = $this->settingsModel->getMenuByCode($cf_id, $me_code);
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '메뉴정보를 받아옵니다.-menuLoader',
+            'data' => $result,
+        ]);
+    }
+
     public function menuOrder() 
     {
         return CommonHelper::jsonResponse([
             'result' => 'success',
-            'message' => '환경설정을 업데이트 하였습니다'
+            'message' => '환경설정을 업데이트 하였습니다-menuOrder'
         ]);
     }
 
-    public function menuLoader() 
+    public function menuInsert()
     {
-        return CommonHelper::jsonResponse([
-            'result' => 'success',
-            'message' => '환경설정을 업데이트 하였습니다'
-        ]);
-    }
-
-    public function menuInsert() {
-        $configDomain = $this->container->get('config_domain');
-        $cf_id = $configDomain['cf_id'];
-        
-        /*
-        type: treeNode.type,
-        me_name: newNodeName,
-        me_code: treeNode.code,
-        me_parent: treeNode.parent,
-        me_depth: treeNode.depth
-        */
+        $cf_id = $this->cf_id;
+        $configDomain = $this->configDomain;
         
         $type = $_POST['type'] ?? 'root';
         //formData 생성
@@ -153,16 +159,83 @@ class SettingsController
         $formData['me_name'] = $_POST['me_name'] ?? '';
         $formData['me_code'] = $_POST['me_code'] ?? '';
         $formData['me_parent'] = $_POST['me_parent'] ?? 0;
-        $formData['me_depth']  = $_POST['me_depth'] ?? 0;
+        $formData['me_depth']  = $_POST['me_depth'] ?? 1;
+        if($formData['me_depth'] == 0) {
+            $formData['me_depth'] = 1;
+        }
 
         $numericFields = ['me_parent','me_depth'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        $result = $this->settingService->insertMenuData($type, $data);
+        $result = $this->settingsService->insertMenuData($type, $data);
+
+        if($result) {
+            // MenuController를 이용하여 캐시 및 컨테이너 갱신
+            $ownerDomain = $configDomain['cf_domain'];
+            $menuController = new \Web\PublicHtml\Controller\MenuController($ownerDomain);
+
+            // 캐시 갱신
+            $menuController->clearMenuCache();
+
+            // 새로운 메뉴 데이터를 컨테이너에 설정
+            $menuTree = $menuController->getMenuData();
+            $this->container->set('menu_datas', $menuTree);
+
+            return CommonHelper::jsonResponse([
+                'result' => 'success',
+                'message' => '메뉴를 등록하였습니다.',
+                'data' => $result,
+            ]);
+        } else {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '메뉴 등록에 실패하였습니다.',
+            ]);
+        }
+    }
+
+    public function menuUpdate()
+    {
+        $cf_id = $this->cf_id;
+        $configDomain = $this->configDomain;
+
+        $no = CommonHelper::pickNumber($_POST['no']) ?? 0;
+        $me_code = $_POST['me_code'] ?? '';
+
+        $formData = $_POST['formData'] ?? null;
+        if(empty($formData) || !$no || !$me_code) {
+            CommonHelper::alertAndBack("입력정보가 비어 있습니다. 잘못된 접속입니다.");
+        }
         
-        return CommonHelper::jsonResponse([
-            'result' => 'success',
-            'message' => '메뉴를 등록하였습니다.'
-        ]);
+        $numericFields = ['me_parent', 'me_depth', 'me_fsize', 'me_fweight', 'me_order', 'me_pc_use', 'me_mo_use', 'me_pa_use'];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
+
+        // 데이터베이스 업데이트
+        $updateData = $this->settingsService->updateMenuData($cf_id, $no, $me_code, $data);
+
+        if ($updateData) {
+            // MenuController를 이용하여 캐시 및 컨테이너 갱신
+            $ownerDomain = $configDomain['cf_domain'];
+            $menuController = new \Web\PublicHtml\Controller\MenuController($ownerDomain);
+
+            // 캐시 갱신
+            $menuController->clearMenuCache();
+
+            // 새로운 메뉴 데이터를 컨테이너에 설정
+            $menuTree = $menuController->getMenuData();
+            $this->container->set('menu_datas', $menuTree);
+
+            return CommonHelper::jsonResponse([
+                'result' => 'success',
+                'message' => '메뉴정보를 업데이트 하였습니다.',
+                'data'=> $updateData,
+            ]);
+        } else {
+            // 업데이트 실패한 경우
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '환경설정 업데이트에 실패 하였습니다'
+            ]);
+        }
     }
 }

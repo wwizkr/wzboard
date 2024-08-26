@@ -52,23 +52,28 @@ class SettingsService
         $cf_id = $data['cf_id'][1];
         $me_code = $data['me_code'][1];
         $me_depth = $data['me_depth'][1];
+        $me_name = $data['me_name'][1];
 
         // 메뉴 코드 생성
-        $me_code = $this->generateMenuCode($cf_id, $me_code, $me_depth);
-
+        $result = $this->generateMenuCode($cf_id, $me_code, $me_depth);
         // 메뉴 순서 생성
         $me_order = $this->settingsModel->setMenuOrder($cf_id);
 
         // 삽입할 메뉴 데이터 배열 생성
         $menuData = [
             'cf_id' => ['i', $cf_id],
-            'me_code' => ['s', $me_code],
+            'me_code' => ['s', $result['me_code']],
+            'me_parent' => ['i', $result['me_parent']],
+            'me_depth' => ['i', $result['me_depth']],
+            'me_code' => ['s', $result['me_code']],
             'me_order' => ['i', $me_order],
-            // 추가 데이터 필드가 필요하면 여기에 추가
+            'me_name' => ['s', $me_name],
         ];
 
         // 실제로 메뉴 데이터를 데이터베이스에 삽입하는 로직
-        return $this->settingsModel->insertMenu($menuData);
+        $insert = $this->settingsModel->insertMenu($menuData);
+
+        return $this->settingsModel->getMenuByCode($cf_id, $result['me_code']);
     }
 
     /**
@@ -84,20 +89,44 @@ class SettingsService
         if ($me_depth == 1) {
             // 1단계 메뉴 코드 생성
             $code = $this->settingsModel->getMaxMenuCode($cf_id, 1);
-            $me_code = $code ? (int)substr($code, 0, WZ_CATE_LENGTH) : 0;
+            $me_code = $code ? (int)substr($code, 0, 3) : 0;
             $me_code = sprintf("%03d", $me_code + 1);
+            $depth = $me_depth;
+            $parent = 0;
         } else {
             // 하위 메뉴 코드 생성
             $tmp = $this->settingsModel->getMenuByCode($cf_id, $me_code);
             $depth = (int)$tmp['me_depth'] + 1;
-            $cut = (int)($tmp['me_depth'] * WZ_CATE_LENGTH);
+            $cut = (int)($tmp['me_depth'] * 3);
+            $parent = (int)$tmp['no'];
 
             $code = $this->settingsModel->getMaxSubMenuCode($cf_id, $tmp['me_code'], $depth);
-            $me_code = $code ? (int)substr($code, $cut, WZ_CATE_LENGTH) : 0;
+            $me_code = $code ? (int)substr($code, $cut, 3) : 0;
             $me_code = sprintf("%03d", $me_code + 1);
             $me_code = $tmp['me_code'] . $me_code;
         }
 
-        return $me_code;
+        $responsData = [
+            'me_code' => $me_code,
+            'me_depth' => $depth,
+            'me_parent' => $parent,
+        ];
+
+        return $responsData;
+    }
+
+    /**
+     * 메뉴 정보를 업데이트 합니다.
+     *
+     * @param int $cf_id
+     * @param int $no
+     * @param string $me_code
+     * @return boolean
+     */
+    public function updateMenuData($cf_id, $no, $me_code, $data)
+    {
+        $result = $this->settingsModel->updateMenuData($cf_id, $no, $me_code, $data);
+
+        return $this->settingsModel->getMenuByCode($cf_id, $me_code);
     }
 }

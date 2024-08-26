@@ -136,7 +136,7 @@ class SettingsModel
         ];
         $result = $this->db->sqlBindQuery('select', $this->getTableName('menus'), $param, $where, $options);
 
-        return $result[0];
+        return $result[0] ?? null;
     }
 
     /**
@@ -174,5 +174,25 @@ class SettingsModel
     public function insertMenu(array $menuData)
     {
         return $this->db->sqlBindQuery('insert', $this->getTableName('menus'), $menuData);
+    }
+
+    /**
+     * 메뉴 정보를 업데이트 합니다.
+     *
+     * @param int $cf_id
+     * @param int $no
+     * @param string $me_code
+     * @return boolean
+     */
+    public function updateMenuData($cf_id, $no, $me_code, $data)
+    {
+        $param = $data;
+        $where = [];
+        $where['cf_id'] = ['i', $cf_id];
+        $where['no'] = ['i', $no];
+        $where['me_code'] = ['s', $me_code];
+        $options = [];
+
+        return $this->db->sqlBindQuery('update', $this->getTableName('menus'), $param, $where, $options);
     }
 }

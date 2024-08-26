@@ -29,26 +29,49 @@
         <div class="col-12 col-md-4 order-1 order-md-2 mb-3 mb-md-0 table-container">
             <h2>입력폼</h2>
             <form name="frm" id="frm">
-                <input type="hidden" name="action" value="" id="action">
-                <input type="hidden" name="group_no" value="" id="group_no">
+                <input type="hidden" name="no" value="" id="no">
+                <input type="hidden" name="me_code" value="" id="me_code">
                 <div class="p-3 table-form table-form-md">
                     <div class="table-row row mb-3">
                         <div class="table-th col-md-4">
-                            <label for="group_id" class="form-label">그룹아이디</label>
+                            <label for="me_cate1" class="form-label">그룹아이디</label>
                         </div>
                         <div class="table-td col-md-8">
-                            <input type="text" name="formData[group_id]" value="" class="form-control" id="group_id">
+                            <select name="formData[me_cate1]" id="me_cate1" class="form-select">
+                                <option value="">메뉴 분류 선택</option>
+                                <option value="boards">게시판</option>
+                                <option value="section">페이지</option>
+                                <option value="direct">직접입력</option>
+                            </select>
                         </div>
                     </div>
                     <div class="table-row row mb-3">
                         <div class="table-th col-md-4">
-                            <label for="group_name" class="form-label">그룹명</label>
+                            <label for="me_cate2" class="form-label">메뉴 선택</label>
                         </div>
                         <div class="table-td col-md-8">
-                            <input type="text" name="formData[group_name]" value="" class="form-control" id="group_name">
+                            <select name="formData[me_cate2]" id="me_cate2" class="form-select">
+                                <option value="">메뉴 선택</option>
+                            </select>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/settings/menuUpdate">Submit</button>
+                    <div class="table-row row mb-3">
+                        <div class="table-th col-md-4">
+                            <label for="me_name" class="form-label">메뉴명</label>
+                        </div>
+                        <div class="table-td col-md-8">
+                            <input type="text" name="formData[me_name]" id="me_name" class="form-control require" value="" data-type="text" data-message="메뉴명은 필수입니다.">
+                        </div>
+                    </div>
+                    <div class="table-row row mb-3">
+                        <div class="table-th col-md-4">
+                            <label for="me_link" class="form-label">메뉴 연결주소</label>
+                        </div>
+                        <div class="table-td col-md-8">
+                            <input type="text" name="formData[me_link]" id="me_link" class="form-control require" value="" data-type="text" data-message="연결주소는 필수입니다.">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/settings/menuUpdate" data-callback="updateMenuTree">Submit</button>
                 </div>
             </form>
         </div>
@@ -59,30 +82,51 @@
 <script src="/assets/js/jquery-migrate-3.5.0.min.js"></script>
 <script src="/assets/js/lib/ztree/js/jquery.ztree.all.min.js"></script>
 <script>
+function addDisplayNameToNodes(nodes) {
+    return nodes.map(function(node) {
+        let prefix = '';
+
+        // 하위 메뉴일 경우, depth에 따라 접두사를 추가
+        if (node.me_depth > 1) {
+            prefix = '- '.repeat(node.me_depth - 1); // depth에 따라 "-"를 반복
+        }
+
+        // 현재 노드에 displayName 추가
+        node.displayName = prefix + node.me_name + " (" + node.me_code + ")";
+
+        // 자식 노드가 있다면 재귀적으로 처리
+        if (node.children && node.children.length > 0) {
+            node.children = addDisplayNameToNodes(node.children);
+        }
+
+        return node;
+    });
+}
 var treeId = "menuTree";
 
 // 기본 root 노드 설정
+var rootNode = {
+    me_name: "Root",
+    me_code: 0,
+    no: 0,
+    me_parent: 0,
+    me_depth: 0,
+    open: true,
+    type: "root",
+    isParent: true,
+};
 var zNodes = <?php echo json_encode($menuDatas); ?>;
-if (zNodes.length === 0) {
-    zNodes = [{
-        name: "Root",
-        code: 0,
-        meid: 0,
-        parent: 0,
-        depth: 0,
-        open: true,
-        type: "root",
-        isParent: true
-    }];
-}
+zNodes.unshift(rootNode);
+zNodes = addDisplayNameToNodes(zNodes);
 
 $(document).ready(function(){
     $.fn.zTree.init($("#" + treeId), getTreeSetting(), zNodes);
 
     $('#add_depth1').on('click', function() {
         var zTree = $.fn.zTree.getZTreeObj(treeId);
-        var rootNode = zTree.getNodeByParam('code', 0);
+        var rootNode = zTree.getNodeByParam('me_code', 0);
         zTree.selectNode(rootNode);
+
         $('#addBtn_' + rootNode.tId).trigger('click');
     });
 
@@ -102,7 +146,13 @@ function getTreeSetting() {
     return {
         data: {
             simpleData: {
-                enable: false
+                enable: true, // 단순 데이터 형식을 사용할 경우 true로 설정
+                idKey: "me_code", // 각 노드의 고유 ID에 매핑될 속성
+                pIdKey: "me_parent", // 부모 노드를 지정할 속성
+                rootPId: 0 // 최상위 루트 노드의 pId 값 (보통 0)
+            },
+            key: {
+                name: "displayName" // 'me_name'을 'name'으로 사용하도록 지정
             }
         },
         edit: {
@@ -137,7 +187,6 @@ function getTreeSetting() {
 
 function addHoverDom(treeId, treeNode) {
     if (treeNode.level > 5) return false;
-
     var sObj = $("#" + treeNode.tId + "_span");
     if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0) return;
 
@@ -148,38 +197,48 @@ function addHoverDom(treeId, treeNode) {
     var btn = $("#addBtn_" + treeNode.tId);
     if (btn) btn.bind("click", function(){
         var zTree = $.fn.zTree.getZTreeObj(treeId);
+        
         var newNodeName = treeNode.level === 0 ? "1단계 카테고리명" : "하위카테고리명";
-        console.log(treeNode.type);
-        $.ajax({
-            type: "POST",
-            url: "/admin/settings/menuInsert",
-            data: {
-                act: "insert",
-                type: treeNode.type,
-                me_name: newNodeName,
-                me_code: treeNode.code,
-                me_parent: treeNode.parent,
-                me_depth: treeNode.depth
-            },
-            success: function(data) {
-                console.log(data);
-                /*
-                if (data.result === "success") {
-                    var newNode = data.data;
-                    var addedNode = zTree.addNodes(treeNode, {
-                        name: newNode.name,
-                        isParent: newNode.isParent,
-                        open: newNode.open,
-                        type: "sub",
-                        meid: newNode.me_id,
-                        code: newNode.me_code,
-                        depth: newNode.me_depth,
-                        parent: newNode.me_parent
-                    });
-                    zTree.selectNode(addedNode[0]);
-                }
-                */
+
+        var requestData = {
+            type: treeNode.type,
+            me_name: newNodeName,
+            me_code: treeNode.me_code,
+            me_parent: treeNode.me_parent,
+        };
+        if (treeNode.level === 0) {
+            requestData.me_depth = 1;
+        } else {
+            requestData.me_depth = treeNode.me_depth + 1;
+        }
+
+        sendCustomAjaxRequest('POST', '/admin/settings/menuInsert', requestData, function(responseText) {
+            var data = JSON.parse(responseText);
+
+            if (data.result === "success") {
+                var newNode = data.data;
+                
+                var addedNode = zTree.addNodes(treeNode, {
+                    me_name: newNode.me_name,
+                    isParent: newNode.isParent,
+                    open: newNode.open,
+                    type: "sub",
+                    no: newNode.no,
+                    me_code: newNode.me_code,
+                    me_depth: newNode.me_depth,
+                    me_parent: newNode.me_parent,
+                    displayName: newNode.me_name + " (" + newNode.me_code + ")"
+                });
+                console.log('노드생성');
+                console.log(addedNode[0]);
+                zTree.selectNode(addedNode[0]);
+                categoryLoader(null, treeId, addedNode[0]);
+            } else {
+                console.error("Failed to add menu node:", data.message);
             }
+            
+        }, function(errorMessage) {
+            console.error("Error:", errorMessage);
         });
     });
 }
@@ -214,7 +273,7 @@ function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
     var menuData = nodes.map(function(node) {
         return {
             type: node.type,
-            me_id: node.meid,
+            no: node.no,
             me_code: node.code,
             me_parent: node.parent,
             me_depth: node.depth,
@@ -235,97 +294,25 @@ function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
 function categoryLoader(event, treeId, treeNode) {
     var zTree = $.fn.zTree.getZTreeObj(treeId);
     var nodes = zTree.getSelectedNodes();
-
+    
     if (nodes.length > 0) {
-        $.ajax({
-            type: "POST",
-            url: "/admin/settings/menuLoader",
-            data: {
-                act: "loader",
-                me_id: treeNode.meid,
-                code: treeNode.code,
-                depth: treeNode.depth,
-                parent: treeNode.parent
-            },
-            success: function(response) {
-                if (response.result === "success") {
-                    loadMenuForm(response.data);
-                }
+        var requestData = {
+            no: treeNode.no,
+            me_code: treeNode.me_code,
+        };
+        sendCustomAjaxRequest('POST', '/admin/settings/menuLoader', requestData, function(responseText) {
+            var data = JSON.parse(responseText);
+            if (data.result === "success" && data.data) {
+                var selectNode = data.data;
+                document.getElementById('no').value = selectNode.no;
+                document.getElementById('me_code').value = selectNode.me_code;
+                document.getElementById('me_name').value = selectNode.me_name;
+                document.getElementById('me_link').value = selectNode.me_link;
             }
+        }, function(errorMessage) {
+            console.error("Error:", errorMessage);
         });
     }
-}
-
-function loadMenuForm(menuData) {
-    $("#me_id").val(menuData.me_id);
-    $("#me_code").val(menuData.me_code);
-    $("#me_type").val(menuData.me_type).prop("selected", true);
-    $("#me_name").val(menuData.me_name);
-    $("#me_link").val(menuData.me_link);
-    $("#me_target").val(menuData.me_target || "self").prop("selected", true);
-    $("#me_fcolor").val(menuData.me_fcolor);
-    $("#me_fsize").val(menuData.me_fsize);
-    $("#me_fweight").prop("checked", menuData.me_fweight == 1);
-    $("#me_class").val(menuData.me_class);
-    $("#me_pc_use").val(menuData.me_pc_use).prop("selected", true);
-    $("#me_mo_use").val(menuData.me_mo_use).prop("selected", true);
-    $("#me_pa_use").val(menuData.me_pa_use).prop("selected", true);
-}
-
-function menuUpdate(form) {
-    var $form = $(form);
-    var zTree = $.fn.zTree.getZTreeObj(treeId);
-    var nodes = zTree.getSelectedNodes();
-
-    if (!$("#me_code").val()) {
-        alert("메뉴 코드를 입력하세요.");
-        return false;
-    }
-    if (!$("#me_name").val()) {
-        alert("메뉴명을 입력하세요.");
-        return false;
-    }
-    if (!$("#me_link").val()) {
-        alert("연결 주소를 입력하세요.");
-        return false;
-    }
-
-    var formData = new FormData($form[0]);
-
-    $.ajax({
-        type: "POST",
-        url: "/admin/settings/menuUpdate",
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(data) {
-            if (data.result === "success") {
-                nodes[0].name = data.data.name;
-                zTree.updateNode(nodes[0]);
-                alert("수정되었습니다.");
-            } else if (data.message) {
-                alert(data.message);
-            }
-        }
-    });
-
-    return false;
-}
-
-function categoryRename(event, treeId, treeNode) {
-    $.ajax({
-        type: "POST",
-        url: "/admin/settings/menuRename",
-        data: {
-            act: "rename",
-            name: treeNode.name,
-            type: treeNode.type,
-            me_id: treeNode.meid
-        },
-        success: function(response) {
-            console.log(response);
-        }
-    });
 }
 
 function categoryRemove(event, treeId, treeNode) {
@@ -335,7 +322,7 @@ function categoryRemove(event, treeId, treeNode) {
         data: {
             act: "delete",
             type: treeNode.type,
-            me_id: treeNode.meid
+            me_id: treeNode.no
         },
         success: function(response) {
             if (response.result === "success") {

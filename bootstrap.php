@@ -61,47 +61,11 @@ if ($config_domain_data === null) {
 $container->set('config_domain', $config_domain_data);
 
 // MenuController를 통해 트리화된 메뉴 데이터를 가져옴
-$menuController = new MenuController();
+$menuController = new MenuController($owner_domain);
 $menuTree = $menuController->getMenuData();
 
 // 트리화된 메뉴 데이터를 컨테이너에 등록
 $container->set('menu_datas', $menuTree);
-
-
-/*
-$menuController = new MenuController();
-$menuData = $menuController->getMenuData();
-*/
-
-// menu_datas 배열을 컨테이너에 등록
-//$container->set('menu_datas', $menu_datas);
-
-/*
-// 메뉴 캐시 키 생성
-$menuCacheKey = 'menu_' . $owner_domain;
-$menu_datas = CacheHelper::getCache($menuCacheKey);
-
-if ($menu_datas === null) {
-    // 캐시에 데이터가 없는 경우, 데이터베이스에서 정보 조회
-    $db = $container->get('db');
-    $query = "SELECT * FROM " . (new class {
-        use DatabaseHelperTrait;
-    })->getTableName('menus') . " WHERE cf_id = :cf_id";
-    $stmt = $db->query($query, ['cf_id' => $config_domain_data['cf_id']]);
-    $menu_datas = $db->fetch($stmt);
-
-    if ($menu_datas) {
-        // JSON으로 변환 후 암호화하여 캐시에 저장
-        $encryptedData = CryptoHelper::encryptJson($menu_datas);
-        CacheHelper::setCache($menuCacheKey, $encryptedData);
-    } else {
-        $menu_datas = [];
-    }
-} else {
-    // 캐시된 데이터를 복호화
-    $menu_datas = CryptoHelper::decryptJson($menu_datas);
-}
-*/
 
 // SessionManager 인스턴스 생성 및 컨테이너에 등록
 $sessionManager = new SessionManager();

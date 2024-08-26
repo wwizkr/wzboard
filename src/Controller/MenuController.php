@@ -17,11 +17,18 @@ class MenuController
 
     public function getMenuData()
     {
-        // 메뉴 데이터를 모델에서 가져옴
+        // MenuModel을 통해 캐시된 메뉴 데이터를 가져옴
         $menuData = $this->menuModel->getMenuData();
+
         // 메뉴 데이터를 트리 구조로 변환
         $menuTree = MenuHelper::generateMenuTree($menuData);
 
         return $menuTree;
+    }
+
+    public function clearMenuCache()
+    {
+        // MenuModel에서 캐시를 관리하고 있으므로, 여기서 직접 모델의 캐시를 지울 수 있음
+        $this->menuModel->clearCache();
     }
 }

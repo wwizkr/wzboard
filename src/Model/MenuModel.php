@@ -22,7 +22,7 @@ class MenuModel
 
     public function getMenuData($useCache = true)
     {
-        $cacheKey = 'menu_' . str_replace(".", "-", $this->configDomain['cf_domain']);
+        $cacheKey = 'menu_cache_' . $this->configDomain['cf_domain'];
         $menuData = $useCache ? CacheHelper::getCache($cacheKey) : null;
 
         if ($menuData === null) {
@@ -46,5 +46,11 @@ class MenuModel
         }
 
         return $menuData;
+    }
+
+    public function clearCache()
+    {
+        $cacheKey = 'menu_cache_' . $this->configDomain['cf_domain'];
+        CacheHelper::clearCache($cacheKey);
     }
 }
