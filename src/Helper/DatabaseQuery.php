@@ -6,9 +6,12 @@ namespace Web\PublicHtml\Helper;
 use PDO;
 use PDOException;
 use Exception;
+use Web\PublicHtml\Traits\DatabaseHelperTrait;
 
 class DatabaseQuery
 {
+    use DatabaseHelperTrait;
+
     private static $instance = null;
     private $pdo;
     private $config;
@@ -69,6 +72,9 @@ class DatabaseQuery
      */
     public function sqlBindQuery(string $mode, string $table, array $param = [], array $where = [], array $options = []): array
     {
+        // 테이블 이름에 접두사 처리
+        $table = $this->getTableName($table);
+
         // 기본 옵션 설정 (PHP 7.1+ 문法 사용)
         $options += [
             'field' => '*',

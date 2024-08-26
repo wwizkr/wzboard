@@ -9,7 +9,7 @@ class ViewRenderer
     private $headerSkinDirectory;
     private $footerSkinDirectory;
     private $layoutSkinDirectory;
-    private $menuView;
+    private $componentsView;
     private $container;
 
     // 생성자에서 스킨 디렉토리 설정
@@ -29,7 +29,7 @@ class ViewRenderer
         $this->footerSkinDirectory = __DIR__ . "/Footer/{$footerSkin}/";
         $this->layoutSkinDirectory = __DIR__ . "/Layout/{$layoutSkin}/";
 
-        $this->menuView = new MenuView();
+        $this->componentsView = new ComponentsView($layoutSkin);
     }
     
 
@@ -39,8 +39,7 @@ class ViewRenderer
         // 컨테이너에서 트리화된 메뉴 데이터를 가져옴
         $menuData = $this->container->get('menu_datas');
         
-        // MenuView를 사용해 메뉴를 렌더링
-        $data['menu'] = $this->menuView->renderMenu($menuData);
+        $data['menu'] = $this->componentsView->renderMenu($menuData);
 
         $this->render($this->headerSkinDirectory . 'Header', $data);
     }
@@ -82,6 +81,13 @@ class ViewRenderer
                 echo "뷰 파일을 찾을 수 없습니다: {$fullViewFilePath}"; //에러페이지로 대체할 것.
             }
         }
+        /*
+        // 페이징 데이터가 있을 경우 페이징 템플릿을 렌더링
+        if (isset($paginationData) && is_array($paginationData)) {
+            $pagination = new ComponentsView($this->container->get('config_domain')['cf_skin_layout'] ?? 'basic');
+            echo $pagination->renderPagination($paginationData);
+        }
+        */
     }
 
     // 전체 페이지를 렌더링하는 메서드

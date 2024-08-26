@@ -178,7 +178,7 @@ function getTreeSetting() {
             onClick: categoryLoader,
             onDrop: menuOrder,
             beforeEditName: beforeEditName,
-            onRename: categoryRename,
+            //onRename: categoryRename,
             beforeRemove: beforeRemove,
             onRemove: categoryRemove
         }

@@ -57,6 +57,21 @@ if ($config_domain_data === null) {
     $config_domain_data = CryptoHelper::decryptJson($config_domain_data);
 }
 
+// 접속 환경 감지
+$userAgent = $_SERVER['HTTP_USER_AGENT'];
+$isMobile = preg_match('/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i', $userAgent);
+
+// 접속 환경에 따라 설정 값 변경
+if ($isMobile) {
+    $config_domain_data['cf_page_rows'] = $config_domain_data['cf_mo_page_rows'];
+    $config_domain_data['cf_page_nums'] = $config_domain_data['cf_mo_page_nums'];
+    $config_domain_data['device_type'] = 'mo';
+} else {
+    $config_domain_data['cf_page_rows'] = $config_domain_data['cf_pc_page_rows'];
+    $config_domain_data['cf_page_nums'] = $config_domain_data['cf_pc_page_nums'];
+    $config_domain_data['device_type'] = 'pc';
+}
+
 // config_domain 배열을 컨테이너에 등록
 $container->set('config_domain', $config_domain_data);
 

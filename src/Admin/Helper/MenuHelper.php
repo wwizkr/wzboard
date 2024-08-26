@@ -20,7 +20,7 @@ class MenuHelper
                 'submenu' => [
                     'all' => [
                         'label' => '전체 회원',
-                        'url' => '/admin/members/all',
+                        'url' => '/admin/members/lists/all',
                     ],
                     'add' => [
                         'label' => '회원등록',

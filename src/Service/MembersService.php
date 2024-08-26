@@ -23,4 +23,14 @@ class MembersService
     {
         return $this->membersModel->getMemberLevelData($level);
     }
+
+    public function getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort)
+    {
+        return $this->membersModel->getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
+    }
+
+    public function getTotalMemberCount($searchQuery, $filters)
+    {
+        return $this->membersModel->getTotalMemberCount($searchQuery, $filters);
+    }
 }

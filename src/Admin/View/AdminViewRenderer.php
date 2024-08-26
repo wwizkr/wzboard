@@ -4,18 +4,23 @@ namespace Web\Admin\View;
 
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\View\ComponentsView;
 
 class AdminViewRenderer
 {
     private $skinDirectory;
     private $sessionManager;
+    private $componentsView;
 
     public function __construct(DependencyContainer $container)
     {
         $configDomain = $container->get('config_domain');
         $adminSkin = $configDomain['cf_skin_admin'] ?? 'basic';
+        $layoutSkin = $configDomain['cf_layout_skin'] ?? 'basic';
+        
         $this->skinDirectory = __DIR__ . "/{$adminSkin}/";
         $this->sessionManager = new SessionManager();
+        $this->componentsView = new ComponentsView($layoutSkin);
 
         // CSRF 토큰 세션 검증
         $this->checkCsrfToken();
@@ -46,6 +51,19 @@ class AdminViewRenderer
         // 로그아웃 후 로그인 페이지로 리다이렉트
         header('Location: /auth/login');
         exit();
+    }
+
+    public function renderPagination($paginationData)
+    {
+        extract($paginationData);
+
+        $data = [];
+        foreach (array_keys($paginationData) as $key) {
+            $data[$key] = $$key;
+        }
+
+        // 추출한 변수들을 renderComponent에 배열로 전달
+        echo $this->componentsView->renderComponent('pagination', $data);
     }
 
     // 공통 헤더를 렌더링하는 메서드
@@ -80,12 +98,18 @@ class AdminViewRenderer
 
         extract($data);
 
-        $fullViewFilePath = $this->skinDirectory . $viewFilePath . '.php';
-        if (file_exists($fullViewFilePath)) {
-            include $fullViewFilePath;
+        // 전달된 경로가 이미 절대 경로일 경우 바로 사용
+        if (file_exists($viewFilePath . '.php')) {
+            include $viewFilePath . '.php';
         } else {
-            // 예외를 던져 오류 처리
-            throw new \Exception("뷰 파일을 찾을 수 없습니다: {$fullViewFilePath}");
+            // 그렇지 않은 경우 상대 경로로 처리하여 파일을 찾음
+            $fullViewFilePath = $this->skinDirectory . $viewFilePath . '.php';
+            if (file_exists($fullViewFilePath)) {
+                include $fullViewFilePath;
+            } else {
+                // 파일을 찾을 수 없는 경우 오류 메시지 출력
+                echo "뷰 파일을 찾을 수 없습니다: {$fullViewFilePath}"; //에러페이지로 대체할 것.
+            }
         }
     }
 
