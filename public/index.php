@@ -49,7 +49,7 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
         $r->addRoute('GET', '', 'Web\\Admin\\Controller\\DashboardController@index');
         
         // 관리자 게시판 라우트
-        $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\Admin\\Controller\\AdminBoardController@handle');
+        $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\Admin\\Controller\\BoardController@handle');
         // 관리자 동적 라우트
         $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'AdminDynamicController');
     });

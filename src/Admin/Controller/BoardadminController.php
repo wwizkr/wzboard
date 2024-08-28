@@ -1,5 +1,5 @@
 <?php
-// 파일 위치: /src/Admin/Controller/BoardsController.php
+// 파일 위치: /src/Admin/Controller/BoardadminController.php
 // 게시판 그룹관리, 카테고리 관리, 게시판 설정 관리 등 관리 컨트롤러
 /*
  * Json 응답값
@@ -22,7 +22,7 @@ use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
-class BoardsController
+class BoardadminController
 {
     protected $container;
     protected $boardsHelper;

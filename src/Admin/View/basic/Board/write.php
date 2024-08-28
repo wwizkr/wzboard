@@ -5,14 +5,14 @@
     <div class="fixed-top-inner">
         <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
         <div class="fixed-top-btn">
-            <a href="/admin/board/<?= $boardId;?>/update" class="btn-form-submit-ajax">확인</a>
+            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/board/<?= $boardId;?>/update" data-callback="">확인</button>
         </div>
     </div>
 </div>
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <div class="p-3 table-form">
-            <textarea name="content" id="content" class="editor-form"></textarea>
+            <textarea name="formData[content]" id="content" class="editor-form"></textarea>
         </div>
     </div>
 </div>

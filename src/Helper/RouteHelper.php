@@ -15,7 +15,7 @@ class RouteHelper
 
         // 컨트롤러와 메서드 추출
         if (isset($vars['boardId'])) {  // boardId가 있는 경우
-            $controller = "Web\\Admin\\Controller\\AdminBoardController";
+            $controller = "Web\\Admin\\Controller\\BoardController";
             $method = $vars['method'] ?? 'index';
             // boardId를 포함한 vars를 전달
             $vars['boardId'] = $vars['boardId'];

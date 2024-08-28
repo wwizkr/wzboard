@@ -30,20 +30,20 @@ class MenuHelper
             ],
             'boards' => [
                 'label' => '게시판관리',
-                'url' => '/admin/boards/configs',
+                'url' => '/admin/boardadmin/configs',
                 'icon' => 'bi-people',
                 'submenu' => [
                     'group' => [
                         'label' => '게시판 그룹관리',
-                        'url' => '/admin/boards/group',
+                        'url' => '/admin/boardadmin/group',
                     ],
                     'categories' => [
                         'label' => '게시판 카테고리',
-                        'url' => '/admin/boards/category',
+                        'url' => '/admin/boardadmin/category',
                     ],
                     'config' => [
                         'label' => '게시판 관리',
-                        'url' => '/admin/boards/configs',
+                        'url' => '/admin/boardadmin/configs',
                     ],
                 ],
             ],

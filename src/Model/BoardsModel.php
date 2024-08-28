@@ -21,4 +21,21 @@ class BoardsModel
         $this->db = $container->get('db');
         $this->configDomain = $container->get('config_domain');
     }
+    
+    /*
+     * 전체 게시글 수
+     */
+
+
+    /*
+     * 게시글 작성, 수정
+     *
+     */
+    public function writeBoardsUpdate($boardId, $data)
+    {
+        $param = $data;
+        $where = [];
+
+        return $result = $this->db->sqlBindQuery('insert','board_articles',$param,$where);
+    }
 }

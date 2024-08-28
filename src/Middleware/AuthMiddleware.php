@@ -16,6 +16,7 @@ class AuthMiddleware
 
             // 토큰 검증 및 디코딩
             $decodedToken = $jwtToken ? CryptoHelper::verifyJwtToken($jwtToken) : null;
+
             // 액세스 토큰이 없거나, 만료되었거나, 유효하지 않은 경우
             if (!$decodedToken || $decodedToken['exp'] < time()) {
                 // 리프레시 토큰이 있는지 확인하고, 유효한지 검사
