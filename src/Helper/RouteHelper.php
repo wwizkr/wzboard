@@ -8,21 +8,25 @@ class RouteHelper
 {
     public static function handleAdminRoute($handler, $vars, $container, $adminViewRenderer)
     {
-        //echo "Admin Route Handler: " . htmlspecialchars($handler) . "<br>";
-
         if (!isset($_COOKIE['jwtToken']) || !CryptoHelper::verifyJwtToken($_COOKIE['jwtToken'])) {
             header('Location: /auth/login');
             exit;
         }
 
-        if (is_string($handler) && strpos($handler, '@') !== false) {
+        // 컨트롤러와 메서드 추출
+        if (isset($vars['boardId'])) {  // boardId가 있는 경우
+            $controller = "Web\\Admin\\Controller\\AdminBoardController";
+            $method = $vars['method'] ?? 'index';
+            // boardId를 포함한 vars를 전달
+            $vars['boardId'] = $vars['boardId'];
+        } elseif (is_string($handler) && strpos($handler, '@') !== false) {
             list($controller, $method) = explode('@', $handler);
         } else {
             $controllerName = ucfirst($vars['controller'] ?? 'Dashboard') . 'Controller';
             $controller = "Web\\Admin\\Controller\\{$controllerName}";
             $method = $vars['method'] ?? 'index';
         }
-        
+
         if (class_exists($controller)) {
             $controllerInstance = new $controller($container);
             if (method_exists($controllerInstance, $method)) {

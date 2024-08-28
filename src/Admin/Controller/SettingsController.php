@@ -80,7 +80,10 @@ class SettingsController
          */
         $formData = $_POST['formData'] ?? null;
         if(empty($formData)) {
-            CommonHelper::alertAndBack("입력정보가 비어 있습니다. 잘못된 접속입니다.");
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력정보가 비어 있습니다. 잘못된 접속입니다.'
+            ]);
         }
         
         $numericFields = ['cf_max_width'];

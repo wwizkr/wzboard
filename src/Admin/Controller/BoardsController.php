@@ -1,5 +1,6 @@
 <?php
 // 파일 위치: /src/Admin/Controller/BoardsController.php
+// 게시판 그룹관리, 카테고리 관리, 게시판 설정 관리 등 관리 컨트롤러
 /*
  * Json 응답값
  * @param result = "success" : "failure"
@@ -10,9 +11,10 @@
 
 namespace Web\Admin\Controller;
 
-use Web\Admin\Helper\BoardsHelper;
-use Web\PublicHtml\Model\BoardsModel;
-use Web\PublicHtml\Service\BoardsService;
+use Web\PublicHtml\Helper\BoardsHelper;
+use Web\PublicHtml\Helper\MembersHelper;
+use Web\Admin\Model\AdminBoardsModel;
+use Web\Admin\Service\AdminBoardsService;
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\DependencyContainer;
@@ -23,6 +25,8 @@ use Web\PublicHtml\Middleware\CsrfTokenHandler;
 class BoardsController
 {
     protected $container;
+    protected $boardsHelper;
+    protected $membersHelper;
     protected $boardsModel;
     protected $boardsService;
     protected $membersModel;
@@ -33,40 +37,17 @@ class BoardsController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->boardsModel = new BoardsModel($container);
-        $this->boardsService = new BoardsService($this->boardsModel);
+        $this->boardsModel = new AdminBoardsModel($container);
+        $this->boardsService = new AdminBoardsService($this->boardsModel);
         $this->membersModel = new MembersModel($container);
         $this->membersService = new MembersService($this->membersModel);
+        $this->boardsHelper = new BoardsHelper($this->boardsService);
+        $this->membersHelper = new MembersHelper($this->membersService);
         $this->configDomain = $container->get('config_domain');
 
         // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
         $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
-    }
-
-    protected function getGroupData()
-    {
-        return $this->boardsService->getBoardsGroup(null);
-    }
-
-    protected function getCategoryData()
-    {
-        return $this->boardsService->getBoardsCategory(null);
-    }
-
-    protected function getBoardData()
-    {
-        return $this->boardsService->getBoardsList(null);
-    }
-
-    protected function getLevelData()
-    {
-        return $this->membersService->getMemberLevelData();
-    }
-
-    protected function getSkinData()
-    {
-        return BoardsHelper::getBoardSkinDir();
     }
 
     // ---------------------------
@@ -79,11 +60,11 @@ class BoardsController
             'title' => '게시판 그룹 관리',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'groupData' => $this->getGroupData(),
-            'levelData' => $this->getLevelData(),
+            'groupData' => $this->boardsHelper->getGroupData(),
+            'levelData' => $this->membersHelper->getLevelData(),
         ];
 
-        return ['Boards/group', $viewData];
+        return ['AdminBoards/group', $viewData];
     }
 
     public function groupUpdate()
@@ -122,11 +103,11 @@ class BoardsController
             'title' => '게시판 카테고리 관리',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'categoryData' => $this->getCategoryData(),
-            'levelData' => $this->getLevelData(),
+            'categoryData' => $this->boardsHelper->getCategoryData(),
+            'levelData' => $this->membersHelper->getLevelData(),
         ];
 
-        return ['Boards/category', $viewData];
+        return ['AdminBoards/category', $viewData];
     }
 
     public function categoryUpdate()
@@ -166,11 +147,11 @@ class BoardsController
             'title' => '게시판 관리',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'boardData' => $this->getBoardData(),
-            'levelData' => $this->getLevelData(),
+            'boardsConfig' => $this->boardsHelper->getBoardsConfig(),
+            'levelData' => $this->membersHelper->getLevelData(),
         ];
 
-        return ['Boards/configs', $viewData];
+        return ['AdminBoards/configs', $viewData];
     }
 
     public function boardform($vars)
@@ -181,15 +162,15 @@ class BoardsController
             'title' => '게시판 생성',
             'content' => '',
             'config_domain' => $this->configDomain,
-            'groupData' => $this->getGroupData(),
-            'categoryData' => $this->getCategoryData(),
-            'levelData' => $this->getLevelData(),
-            'skinData' => $this->getSkinData(),
+            'groupData' => $this->boardsHelper->getGroupData(),
+            'categoryData' => $this->boardsHelper->getCategoryData(),
+            'levelData' => $this->membersHelper->getLevelData(),
+            'skinData' => $this->boardsHelper->getSkinData(),
             'selectBoard' => $selectBoard,
             'action' => $action,
         ];
 
-        return ['Boards/boardForm', $viewData];
+        return ['AdminBoards/boardForm', $viewData];
     }
 
     public function boardUpdate()

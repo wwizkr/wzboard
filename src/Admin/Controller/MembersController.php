@@ -44,15 +44,13 @@ class MembersController
         return $this->membersService->getMemberLevelData();
     }
 
-    public function lists($vars)
+    public function list($vars)
     {
         $page_rows = $this->configDomain['cf_page_rows'];
         $page_nums = $this->configDomain['cf_page_nums'];
 
         // 현재 페이지 받아오기
         $currentPage = isset($_GET['page']) ? CommonHelper::pickNumber($_GET['page'],1) : 1;
-
-        $param = $vars['param']; //all, level....
         // 검색 조건과 정렬 조건 받아오기 (쿼리 스트링에서 배열 형태로 받아옴)
         $searchQuery = isset($_GET['search']) ? $_GET['search'] : '';
         $filters = isset($_GET['filter']) ? $_GET['filter'] : [];
@@ -86,6 +84,6 @@ class MembersController
             'sort' => $sort,
         ];
 
-        return ['Members/lists', $viewData];
+        return ['Members/list', $viewData];
     }
 }

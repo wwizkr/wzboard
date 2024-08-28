@@ -25,6 +25,11 @@ $container = DependencyContainer::getInstance();
 $httpMethod = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 
+// 정적 파일 패턴을 정의 (예: .css, .js, .png, .jpg, .gif, .webp, 등)
+if (preg_match('/\.(?:png|jpg|jpeg|gif|webp|css|js|ico)$/', $uri)) {
+    //return false; // 웹 서버가 정적 파일을 처리하도록 전달 (이 경우 FastRoute가 아니라 Apache/Nginx가 직접 처리)
+}
+
 // 쿼리 스트링을 제거하고 URI 디코딩
 if (false !== $pos = strpos($uri, '?')) {
     $uri = substr($uri, 0, $pos);
@@ -43,7 +48,9 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     $r->addGroup('/admin', function (RouteCollector $r) use ($httpMethods) {
         $r->addRoute('GET', '', 'Web\\Admin\\Controller\\DashboardController@index');
         
-        // 관리자 동적 라우트 (board 라우트를 포함)
+        // 관리자 게시판 라우트
+        $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\Admin\\Controller\\AdminBoardController@handle');
+        // 관리자 동적 라우트
         $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'AdminDynamicController');
     });
     
@@ -53,8 +60,9 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
         $r->addRoute($httpMethods, '/{controller}/{method}[/{param}]', 'ApiController');
     });
     
-    // 웹사이트 게시판 라우트
+    // DB 설치 라우트
     $r->addRoute('GET', '/install', 'Web\\PublicHtml\\Controller\\DatabaseInstallerController@install');
+    // 웹사이트 게시판 라우트
     $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\PublicHtml\\Controller\\BoardController@handle');
     
     // 일반 웹 라우트

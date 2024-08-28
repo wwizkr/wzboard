@@ -55,11 +55,10 @@ class AuthController
                     'is_super' => $level['is_super_admin'],
                 ];
                 $jwtToken = CryptoHelper::generateJwtToken($payload);
-                $refreshTokenPayload = [
-                    'mb_no' => $member['mb_no'],
-                    'mb_id' => $member['mb_id'],
-                    'type' => 'refresh'
-                ];
+                
+                // 리프레시 토큰에도 필요한 정보를 포함
+                $refreshTokenPayload = $payload;
+                $refreshTokenPayload['type'] = 'refresh';
                 $refreshToken = CryptoHelper::generateJwtToken($refreshTokenPayload, 60 * 60 * 24 * 30);
 
                 // JWT 토큰을 쿠키에 저장

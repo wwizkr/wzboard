@@ -1,11 +1,11 @@
 <?php
-//파일위치 src/Service/BoardsService.php
+//파일위치 src/Admin/Service/AdminBoardsService.php
 
-namespace Web\PublicHtml\Service;
+namespace Web\Admin\Service;
 
-use  Web\PublicHtml\Model\BoardsModel;
+use  Web\Admin\Model\AdminBoardsModel;
 
-class BoardsService
+class AdminBoardsService
 {
     protected $boardsModel;
 
