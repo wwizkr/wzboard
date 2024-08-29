@@ -75,6 +75,8 @@ $schema = [
                                 board_no INT NOT NULL DEFAULT 0,
                                 category_no INT NOT NULL DEFAULT 0,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
+                                nickName VARCHAR(50) NOT NULL DEFAULT '',
+                                password VARCHAR(255) NOT NULL DEFAULT '',
                                 title VARCHAR(255) NOT NULL DEFAULT '',
                                 content TEXT NOT NULL,
                                 view_count INT DEFAULT 0,

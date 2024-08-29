@@ -74,17 +74,22 @@ class BoardController
 
     public function list($vars) // 게시글 목록 작업
     {
+        $boardId = $vars['boardId'];
+
         // 페이징 관련 변수 설정
         $page_rows = $this->configDomain['cf_page_rows'];
         $page_nums = $this->configDomain['cf_page_nums'];
         $currentPage = isset($_GET['page']) ? CommonHelper::pickNumber($_GET['page'], 1) : 1;
-        $boardId = $vars['boardId'];
+        $searchQuery = isset($_GET['search']) ? $_GET['search'] : '';
+        $filters = isset($_GET['filter']) ? $_GET['filter'] : [];
+        $sort = isset($_GET['sort']) ? $_GET['sort'] : [];
 
         // 게시판 설정 데이터 가져오기
         $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
 
-        // 총 게시물 수 (예시용, 실제 데이터 가져오는 코드 필요)
-        $totalItems = 0; // 여기에 실제 게시물 수를 할당해야 합니다.
+        // 총 게시물 수
+        $totalItems = $this->boardsService->getTotalArticleCount($searchQuery, $filters); // 여기에 실제 게시물 수를 할당해야 합니다.
+        $articleData = $this->boardsService->getArticleListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
 
         // 페이징 데이터 계산
         $paginationData = [
@@ -99,8 +104,9 @@ class BoardController
         $viewData = [
             'title' => '게시판 목록 관리',
             'boardsConfig' => $boardsConfig,
-            'paginationData' => $paginationData,
             'boardId' => $boardId,
+            'articleData' => $articleData,
+            'paginationData' => $paginationData,
         ];
 
         return ['Board/list', $viewData];

@@ -34,6 +34,16 @@ class BoardsService
         $this->boardsHelper = $boardsHelper;
         $this->membersHelper = $membersHelper;
     }
+
+    public function getArticleListData($currentPage, $page_rows, $searchQuery, $filters, $sort)
+    {
+        return $this->boardsModel->getArticleListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
+    }
+
+    public function getTotalArticleCount($searchQuery, $filters)
+    {
+        return $this->boardsModel->getTotalArticleCount($searchQuery, $filters);
+    }
     
     /**
      * 게시판 글을 업데이트합니다.
