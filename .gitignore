@@ -38,5 +38,5 @@ node_modules/
 /config/database.php
 
 # trial 또는 Trial 문자열이 들어간 디렉토리 또는 파일 무시
+*[Tt]rial*
 **/[Tt]rial*/
-**/[Tt]rial
