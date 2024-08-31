@@ -30,7 +30,7 @@ class MenuHelper
             ],
             'boards' => [
                 'label' => '게시판관리',
-                'url' => '/admin/boardadmin/configs',
+                'url' => '/admin/boardadmin/boards',
                 'icon' => 'bi-people',
                 'submenu' => [
                     'group' => [
@@ -41,9 +41,32 @@ class MenuHelper
                         'label' => '게시판 카테고리',
                         'url' => '/admin/boardadmin/category',
                     ],
-                    'config' => [
+                    'boards' => [
                         'label' => '게시판 관리',
-                        'url' => '/admin/boardadmin/configs',
+                        'url' => '/admin/boardadmin/boards',
+                    ],
+                ],
+            ],
+            'trial' => [
+                'label' => '문제 관리',
+                'url' => '/admin/trialadmin/configs',
+                'icon' => 'bi-people',
+                'submenu' => [
+                    'prompt' => [
+                        'label' => '문제 프롬포트',
+                        'url' => '/admin/trialadmin/prompt',
+                    ],
+                    'subject' => [
+                        'label' => '문제 과목 관리',
+                        'url' => '/admin/trialadmin/subject',
+                    ],
+                    'categories' => [
+                        'label' => '카테고리 관리',
+                        'url' => '/admin/trialadmin/category',
+                    ],
+                    'list' => [
+                        'label' => '문제 관리',
+                        'url' => '/admin/trialadmin/list',
                     ],
                 ],
             ],

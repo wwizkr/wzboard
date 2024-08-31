@@ -31,8 +31,46 @@ class AuthController
         $contentSkin = $configDomain['cf_skin_content'] ?? 'basic';
         $viewPath = 'Content/'.$contentSkin.'/Auth/login_form';
 
+        $jwtToken = $_COOKIE['jwtToken'] ?? null;
+        $refreshToken = $_COOKIE['refreshToken'] ?? null;
+
+        // 인증 토큰 유효성 검사
+        if ($jwtToken && $decodedJwtToken = CryptoHelper::verifyJwtToken($jwtToken)) {
+            // 인증 토큰이 유효한 경우
+            if ($decodedJwtToken['is_admin']) {
+                header('Location: /admin/dashboard'); // 관리 페이지로 리다이렉트
+            } else {
+                header('Location: /dashboard'); // 일반 사용자 대시보드로 리다이렉트
+            }
+            exit();
+        } elseif ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken)) {
+            // 리프레시 토큰이 유효한 경우 새로운 JWT 토큰 생성
+            $member = $this->membersService->getMemberDataById($decodedRefreshToken['mb_id']);
+            $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
+
+            // 새로운 인증 토큰 생성
+            $payload = [
+                'mb_no' => $member['mb_no'],
+                'mb_id' => $member['mb_id'],
+                'mb_level' => $member['member_level'],
+                'nickName' => $member['nickName'],
+                'is_admin' => $level['is_admin'],
+                'is_super' => $level['is_super_admin'],
+            ];
+            $newJwtToken = CryptoHelper::generateJwtToken($payload);
+            setcookie('jwtToken', $newJwtToken, 0, '/'); // 새로운 JWT 토큰을 쿠키에 저장
+
+            // 대시보드로 리다이렉트
+            if ($level['is_admin']) {
+                header('Location: /admin/dashboard');
+            } else {
+                header('Location: /dashboard');
+            }
+            exit();
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            // 로그인 폼을 보여줌
+            // 유효한 토큰이 없으므로 로그인 폼을 보여줌
             $viewData = [];
             return [$viewPath, $viewData];
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -28,7 +28,7 @@
                         echo '<li class="list-group-item list-group-body">';
                             echo '<div class="row list-group-row">';
                                 echo '<div class="col-custom-60 list-group-col text-center">'.$num.'</div>';
-                                echo '<div class="col list-group-col">'.$val['title'].'</div>';
+                                echo '<div class="col list-group-col"><a href="/admin/board/'.$boardsConfig['board_id'].'/view/'.$val['no'].'">'.$val['title'].'</a></div>';
                                 echo '<div class="col-custom-120 list-group-col text-center">'.$val['nickName'].'</div>';
                                 echo '<div class="col-custom-120 list-group-col text-center">'.$val['created_at'].'</div>';
                                 echo '<div class="col-custom-100 list-group-col list-group-button text-center">관리</div>';

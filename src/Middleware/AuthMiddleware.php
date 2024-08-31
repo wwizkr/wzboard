@@ -61,11 +61,11 @@ class AuthMiddleware
             }
 
             // 관리자 권한 확인
+            //echo '<pre>';
+            //    var_dump($decodedToken);
+            //echo '</pre>';
+            //exit;
             if (!$decodedToken || $decodedToken['is_admin'] == 0) {
-                echo '<pre>';
-                    var_dump($decodedToken);
-                echo '</pre>';
-                exit;
                 // 관리자 권한이 없으면 홈페이지로 리다이렉트
                 header('Location: /');
                 exit;

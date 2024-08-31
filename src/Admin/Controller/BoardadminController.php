@@ -141,7 +141,7 @@ class BoardadminController
 
     // 게시판 관리 메서드 목록, 생성, 수정, 삭제
 
-    public function configs()
+    public function boards()
     {
         $viewData = [
             'title' => '게시판 관리',
@@ -151,7 +151,7 @@ class BoardadminController
             'levelData' => $this->membersHelper->getLevelData(),
         ];
 
-        return ['AdminBoards/configs', $viewData];
+        return ['AdminBoards/boards', $viewData];
     }
 
     public function boardform($vars)

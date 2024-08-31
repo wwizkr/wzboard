@@ -112,6 +112,23 @@ class BoardController
         return ['Board/list', $viewData];
     }
 
+    public function view($vars)
+    {
+        $boardId = $vars['boardId'];
+
+        // 게시판 설정 가져오기
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
+
+        // 뷰에 전달할 데이터 구성
+        $viewData = [
+            'title' => '게시판 글쓰기',
+            'boardId' => $boardId,
+            'boardsConfig' => $boardsConfig,
+        ];
+
+        return ['Board/view', $viewData];
+    }
+
     public function write($vars)
     {
         $boardId = $vars['boardId'];

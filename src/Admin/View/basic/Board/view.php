@@ -12,7 +12,7 @@
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <div class="p-3 table-form">
-            <textarea name="formData[content]" id="content" class="editor-form" data-toolbar="basic" data-menubar="true" data-height="500"></textarea>
+            <textarea name="formData[content]" id="content" class="editor-form"></textarea>
         </div>
     </div>
 </div>
