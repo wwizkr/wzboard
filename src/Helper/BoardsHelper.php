@@ -3,7 +3,7 @@
 namespace Web\PublicHtml\Helper;
 
 use Web\Admin\Service\AdminBoardsService;
-use Web\Admin\Helper\BoardsHelper as AdminBoardsHelper;
+use Web\Admin\Helper\AdminBoardsHelper;
 use Web\PublicHtml\Service\BoardsService;
 
 class BoardsHelper

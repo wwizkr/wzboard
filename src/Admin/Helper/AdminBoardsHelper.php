@@ -1,9 +1,9 @@
 <?php
-// src/Admin/Helper/BoardsHelper.php
+// src/Admin/Helper/AdminBoardsHelper.php
 
 namespace Web\Admin\Helper;
 
-class BoardsHelper
+class AdminBoardsHelper
 {
     public static function getBoardSkinDir()
     {

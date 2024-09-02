@@ -15,6 +15,8 @@ use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\Admin\Model\AdminBoardsModel;
 use Web\Admin\Service\AdminBoardsService;
+use Web\PublicHtml\Model\BoardsModel;
+use Web\PublicHtml\Service\BoardsService;
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\DependencyContainer;
@@ -27,6 +29,8 @@ class BoardadminController
     protected $container;
     protected $boardsHelper;
     protected $membersHelper;
+    protected $adminBoardsModel;
+    protected $adminBoardsService;
     protected $boardsModel;
     protected $boardsService;
     protected $membersModel;
@@ -37,11 +41,11 @@ class BoardadminController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->boardsModel = new AdminBoardsModel($container);
-        $this->boardsService = new AdminBoardsService($this->boardsModel);
+        $this->adminBoardsModel = new AdminBoardsModel($container);
+        $this->adminBoardsService = new AdminBoardsService($this->adminBoardsModel);
+        $this->boardsHelper = new BoardsHelper($this->adminBoardsService);
         $this->membersModel = new MembersModel($container);
         $this->membersService = new MembersService($this->membersModel);
-        $this->boardsHelper = new BoardsHelper($this->boardsService);
         $this->membersHelper = new MembersHelper($this->membersService);
         $this->configDomain = $container->get('config_domain');
 
@@ -84,9 +88,9 @@ class BoardadminController
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
-            $this->boardsService->updateBoardsGroup($group_no, $data);
+            $this->adminBoardsService->updateBoardsGroup($group_no, $data);
         } else {
-            $this->boardsService->insertBoardsGroup($data);
+            $this->adminBoardsService->insertBoardsGroup($data);
         }
 
         return CommonHelper::jsonResponse([
@@ -127,10 +131,10 @@ class BoardadminController
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
-            $categoryData = $this->boardsService->getBoardsCategory($category_no);
-            $this->boardsService->updateBoardsCategory($category_no, $data, $categoryData);
+            $categoryData = $this->adminBoardsService->getBoardsCategory($category_no);
+            $this->adminBoardsService->updateBoardsCategory($category_no, $data, $categoryData);
         } else {
-            $this->boardsService->insertBoardsCategory($data);
+            $this->adminBoardsService->insertBoardsCategory($data);
         }
 
         return CommonHelper::jsonResponse([
@@ -193,9 +197,9 @@ class BoardadminController
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
-            $this->boardsService->updateBoardsConfig($board_no, $data);
+            $this->adminBoardsService->updateBoardsConfig($board_no, $data);
         } else {
-            $this->boardsService->insertBoardsConfig($data);
+            $this->adminBoardsService->insertBoardsConfig($data);
         }
 
         return CommonHelper::jsonResponse([

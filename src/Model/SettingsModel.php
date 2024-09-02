@@ -37,7 +37,7 @@ class SettingsModel
             'order' => 'cf_id DESC',
             'limit' => 1,
         ];
-        $result = $this->db->sqlBindQuery('select', $this->getTableName('config_domain'), $param, $where, $options);
+        $result = $this->db->sqlBindQuery('select', 'config_domain', $param, $where, $options);
 
         return $result[0];
     }
@@ -53,7 +53,7 @@ class SettingsModel
         $options = [
             'order' => 'cf_id ASC',
         ];
-        $result = $this->db->sqlBindQuery('select', $this->getTableName('config_domain'), $param, [], $options);
+        $result = $this->db->sqlBindQuery('select', 'config_domain', $param, [], $options);
 
         return $result;
     }
@@ -71,7 +71,7 @@ class SettingsModel
         $where['cf_id'] = ['i', $cf_id];
         $options = [];
 
-        $result = $this->db->sqlBindQuery('update', $this->getTableName('config_domain'), $data, $where, $options);
+        $result = $this->db->sqlBindQuery('update', 'config_domain', $data, $where, $options);
 
         return $result;
     }
@@ -87,7 +87,7 @@ class SettingsModel
         $param = [];
         $where['cf_id'] = ['i', $cf_id];
         $options = ['field' => 'max(me_order) as max'];
-        $result = $this->db->sqlBindQuery('select', $this->getTableName('menus'), $param, $where, $options);
+        $result = $this->db->sqlBindQuery('select', 'menus', $param, $where, $options);
         $maxValue = isset($result[0]['max']) ? $result[0]['max'] + 1 : 1;
 
         return $maxValue;
@@ -112,7 +112,7 @@ class SettingsModel
             'order' => 'me_code DESC',
             'limit' => 1,
         ];
-        $result = $this->db->sqlBindQuery('select', $this->getTableName('menus'), $param, $where, $options);
+        $result = $this->db->sqlBindQuery('select', 'menus', $param, $where, $options);
 
         return $result[0]['code'] ?? null;
     }
@@ -134,7 +134,7 @@ class SettingsModel
         $options = [
             'limit' => 1,
         ];
-        $result = $this->db->sqlBindQuery('select', $this->getTableName('menus'), $param, $where, $options);
+        $result = $this->db->sqlBindQuery('select', 'menus', $param, $where, $options);
 
         return $result[0] ?? null;
     }
@@ -160,7 +160,7 @@ class SettingsModel
             'order' => 'me_code DESC',
             'limit' => 1,
         ];
-        $result = $this->db->sqlBindQuery('select', $this->getTableName('menus'), $param, $where, $options);
+        $result = $this->db->sqlBindQuery('select', 'menus', $param, $where, $options);
 
         return $result[0]['code'] ?? null;
     }
@@ -173,7 +173,7 @@ class SettingsModel
      */
     public function insertMenu(array $menuData)
     {
-        return $this->db->sqlBindQuery('insert', $this->getTableName('menus'), $menuData);
+        return $this->db->sqlBindQuery('insert', 'menus', $menuData);
     }
 
     /**
@@ -193,6 +193,6 @@ class SettingsModel
         $where['me_code'] = ['s', $me_code];
         $options = [];
 
-        return $this->db->sqlBindQuery('update', $this->getTableName('menus'), $param, $where, $options);
+        return $this->db->sqlBindQuery('update', 'menus', $param, $where, $options);
     }
 }

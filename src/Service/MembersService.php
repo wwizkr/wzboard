@@ -14,9 +14,9 @@ class MembersService
         $this->membersModel = $membersModel;
     }
 
-    public function getMemberData($email=null)
+    public function getMemberDataById($email=null)
     {
-        return $this->membersModel->getMemberData($email);
+        return $this->membersModel->getMemberDataById($email);
     }
     
     public function getMemberLevelData($level=null)

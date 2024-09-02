@@ -56,9 +56,9 @@ $schema = [
                                 min_comments INT UNSIGNED NOT NULL DEFAULT 0,
                                 min_days_since_join INT UNSIGNED NOT NULL DEFAULT 0,
                                 min_purchase_amount DECIMAL(10, 2) UNSIGNED NOT NULL DEFAULT 0,
-                                auto_level_up BOOLEAN NOT NULL DEFAULT TRUE,
-                                is_admin BOOLEAN NOT NULL DEFAULT FALSE,
-                                is_super_admin BOOLEAN NOT NULL DEFAULT FALSE,
+                                auto_level_up TINYINT NOT NULL DEFAULT 1,
+                                is_admin TINYINT NOT NULL DEFAULT 0,
+                                is_super TINYINT NOT NULL DEFAULT 0,
                                 description TEXT,
                                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

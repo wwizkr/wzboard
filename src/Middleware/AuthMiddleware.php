@@ -20,7 +20,7 @@ class AuthMiddleware
             // 액세스 토큰이 없거나, 만료되었거나, 유효하지 않은 경우
             if (!$decodedToken || $decodedToken['exp'] < time()) {
                 // 리프레시 토큰이 있는지 확인하고, 유효한지 검사
-                if ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken)) {
+                if ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken, true)) {
                     // 리프레시 토큰이 유효하다면 새로운 액세스 토큰 발급
                     $newAccessTokenPayload = [
                         'mb_no' => $decodedRefreshToken['mb_no'],
@@ -28,7 +28,7 @@ class AuthMiddleware
                         'mb_level' => $decodedRefreshToken['member_level'],
                         'nickName' => $decodedRefreshToken['nickName'] ?? '',
                         'is_admin' => $decodedRefreshToken['is_admin'] ?? 0,
-                        'is_super' => $decodedRefreshToken['is_super_admin'] ?? 0,
+                        'is_super' => $decodedRefreshToken['is_super'] ?? 0,
                     ];
 
                     // 새로운 액세스 토큰 생성
@@ -47,8 +47,17 @@ class AuthMiddleware
                     echo '</pre>';
                 } else {
                     echo '<pre>';
+                    var_dump($refreshToken);
+                    echo '</pre>';
+
+                    echo '<pre>';
+                    var_dump(CryptoHelper::verifyJwtToken($refreshToken));
+                    echo '</pre>';
+
+                    echo '<pre>';
                     var_dump('새 토큰 발급실패');
                     echo '</pre>';
+                    exit;
                     // 리프레시 토큰이 없거나, 유효하지 않다면 JWT 및 리프레시 토큰 삭제
                     setcookie('jwtToken', '', time() - 3600, '/');
                     setcookie('refreshToken', '', time() - 3600, '/');
@@ -59,12 +68,6 @@ class AuthMiddleware
                     exit;
                 }
             }
-
-            // 관리자 권한 확인
-            //echo '<pre>';
-            //    var_dump($decodedToken);
-            //echo '</pre>';
-            //exit;
             if (!$decodedToken || $decodedToken['is_admin'] == 0) {
                 // 관리자 권한이 없으면 홈페이지로 리다이렉트
                 header('Location: /');

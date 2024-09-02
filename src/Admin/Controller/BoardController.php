@@ -11,7 +11,7 @@
 
 namespace Web\Admin\Controller;
 
-use Web\Admin\Helper\BoardsHelper as AdminBoardsHelper; // 관리자 전용 헬퍼
+use Web\Admin\Helper\AdminBoardsHelper;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\Admin\Model\AdminBoardsModel;
@@ -74,7 +74,7 @@ class BoardController
 
     public function list($vars) // 게시글 목록 작업
     {
-        $boardId = $vars['boardId'];
+        $boardId = $vars['boardId'] ?? null;
 
         // 페이징 관련 변수 설정
         $page_rows = $this->configDomain['cf_page_rows'];
@@ -88,8 +88,8 @@ class BoardController
         $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
 
         // 총 게시물 수
-        $totalItems = $this->boardsService->getTotalArticleCount($searchQuery, $filters); // 여기에 실제 게시물 수를 할당해야 합니다.
-        $articleData = $this->boardsService->getArticleListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
+        $totalItems = $this->boardsService->getTotalArticleCount($boardsConfig['no'], $searchQuery, $filters); // 여기에 실제 게시물 수를 할당해야 합니다.
+        $articleData = $this->boardsService->getArticleListData($boardsConfig['no'], $currentPage, $page_rows, $searchQuery, $filters, $sort);
 
         // 페이징 데이터 계산
         $paginationData = [

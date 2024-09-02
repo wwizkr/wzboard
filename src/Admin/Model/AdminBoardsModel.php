@@ -49,7 +49,7 @@ class AdminBoardsModel
     }
     
     /*
-     * 게시판 그룹 목록 또는 특정 그룹을 가져옴
+     * 게시판 그룹 등록
      * @param int $cf_id
      * @return array
      */

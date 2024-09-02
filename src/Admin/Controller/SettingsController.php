@@ -4,7 +4,7 @@
 namespace Web\Admin\Controller;
 
 use Web\PublicHtml\Helper\CommonHelper;
-use Web\Admin\Helper\SettingsHelper;
+use Web\Admin\Helper\AdminSettingsHelper;
 use Web\PublicHtml\Model\SettingsModel;
 use Web\PublicHtml\Service\SettingsService;
 use Web\PublicHtml\Helper\DependencyContainer;

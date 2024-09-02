@@ -28,7 +28,7 @@ class MembersModel
      * 회원의 개별 정보를 가져옴
      * @param email [email 또는 mb_id]
      */
-    public function getMemberData($email)
+    public function getMemberDataById($email)
     {
         $param = [];
         $where = [];

@@ -3,8 +3,8 @@
 
 namespace Web\PublicHtml\Service;
 
-use Web\PublicHtml\Model\BoardsModel;
 use Web\Admin\Service\AdminBoardsService;
+use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 
@@ -35,14 +35,14 @@ class BoardsService
         $this->membersHelper = $membersHelper;
     }
 
-    public function getArticleListData($currentPage, $page_rows, $searchQuery, $filters, $sort)
+    public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters, $sort)
     {
-        return $this->boardsModel->getArticleListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
+        return $this->boardsModel->getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters, $sort);
     }
 
-    public function getTotalArticleCount($searchQuery, $filters)
+    public function getTotalArticleCount($board_no, $searchQuery, $filters)
     {
-        return $this->boardsModel->getTotalArticleCount($searchQuery, $filters);
+        return $this->boardsModel->getTotalArticleCount($board_no, $searchQuery, $filters);
     }
     
     /**

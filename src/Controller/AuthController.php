@@ -40,7 +40,7 @@ class AuthController
             if ($decodedJwtToken['is_admin']) {
                 header('Location: /admin/dashboard'); // 관리 페이지로 리다이렉트
             } else {
-                header('Location: /dashboard'); // 일반 사용자 대시보드로 리다이렉트
+                header('Location: /'); // 일반 사용자 대시보드로 리다이렉트
             }
             exit();
         } elseif ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken)) {
@@ -55,7 +55,7 @@ class AuthController
                 'mb_level' => $member['member_level'],
                 'nickName' => $member['nickName'],
                 'is_admin' => $level['is_admin'],
-                'is_super' => $level['is_super_admin'],
+                'is_super' => $level['is_super'],
             ];
             $newJwtToken = CryptoHelper::generateJwtToken($payload);
             setcookie('jwtToken', $newJwtToken, 0, '/'); // 새로운 JWT 토큰을 쿠키에 저장
@@ -64,7 +64,7 @@ class AuthController
             if ($level['is_admin']) {
                 header('Location: /admin/dashboard');
             } else {
-                header('Location: /dashboard');
+                header('Location: /');
             }
             exit();
         }
@@ -78,7 +78,7 @@ class AuthController
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            $member = $this->membersService->getMemberData($email);
+            $member = $this->membersService->getMemberDataById($email);
             $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
 
             // 비밀번호 검증
@@ -90,7 +90,7 @@ class AuthController
                     'mb_level' => $member['member_level'],
                     'nickName' => $member['nickName'],
                     'is_admin' => $level['is_admin'],
-                    'is_super' => $level['is_super_admin'],
+                    'is_super' => $level['is_super'],
                 ];
                 $jwtToken = CryptoHelper::generateJwtToken($payload);
                 
@@ -108,7 +108,7 @@ class AuthController
                     $this->session->generateCsrfToken($_ENV['ADMIN_CSRF_TOKEN_KEY']);
                     header('Location: /admin/dashboard'); // 관리 페이지로 리다이렉트
                 } else {
-                    header('Location: /dashboard'); // 일반 사용자 대시보드로 리다이렉트
+                    header('Location: /'); // 일반 사용자 대시보드로 리다이렉트
                 }
                 exit();
             } else { // 로그인 실패

@@ -23,15 +23,18 @@ class BoardsModel
     }
     
     /*
-     * 전체 게시글 수
+     * 게시글 목록
      */
-    public function getArticleListData($currentPage, $page_rows, $searchQuery, $filters = [], $sort = [])
+    public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters = [], $sort = [])
     {
         $offset = ($currentPage - 1) * $page_rows;
 
         // WHERE 조건 생성
         $where = [];
         $where['cf_id'] = ['i', $this->configDomain['cf_id']];
+        if($board_no) {
+            $where['board_no'] = ['i', $board_no];
+        }
 
         if (!empty($searchQuery)) {
             //$where 추가
@@ -54,7 +57,7 @@ class BoardsModel
         // LIMIT 조건 생성
         $limit = "$offset, $page_rows";
 
-        // SQL 실행
+        // SQL 실행 옵션
         $options = [
             'order' => $order,
             'limit' => $limit
@@ -66,20 +69,22 @@ class BoardsModel
     /*
      * 전체 게시글 카운트
      */
-    public function getTotalArticleCount($searchQuery, $filters = [])
+    public function getTotalArticleCount($board_no, $searchQuery, $filters = [])
     {
         // WHERE 조건 생성
         $where = [];
         $where['cf_id'] = ['i', $this->configDomain['cf_id']];
+        $where['board_no'] = ['i', $board_no];
 
         if (!empty($searchQuery)) {
         }
 
         foreach ($filters as $key => $value) {
-            $where[$key] = ['=', $value, 'AND'];
+            [$type, $formattedValue] = CommonHelper::getSqlBindType($value);
+            $where[$key] = [$type, $formattedValue, 'AND'];
         }
 
-        // SQL 실행
+        // SQL 실행 옵션
         $options = [
             'field' => 'COUNT(*) AS totalCount'
         ];

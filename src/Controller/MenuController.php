@@ -20,7 +20,7 @@ class MenuController
         // MenuModel을 통해 캐시된 메뉴 데이터를 가져옴
         $menuData = $this->menuModel->getMenuData();
 
-        // 메뉴 데이터를 트리 구조로 변환
+        // 메뉴 데이터를 트리 구조로 변환 -> CategoryHelper 로 변경 예정. tree 화 공통사용
         $menuTree = MenuHelper::generateMenuTree($menuData);
 
         return $menuTree;

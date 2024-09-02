@@ -47,7 +47,7 @@
                 </div>
                 <div class="table-row row mb-3">
                     <div class="table-th col-md-4">
-                        <label for="group_id" class="form-label">그룹명</label>
+                        <label for="group_name" class="form-label">그룹명</label>
                     </div>
                     <div class="table-td col-md-8">
                         <input type="text" name="formData[group_name]" value="" class="form-control" id="group_name">

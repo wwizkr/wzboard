@@ -1,9 +1,9 @@
 <?php
-// src/Admin/Helper/Settings.php
+// src/Admin/Helper/AdminSettings.php
 
 namespace Web\Admin\Helper;
 
-class SettingsHelper
+class AdminSettingsHelper
 {
     public static function getSkin()
     {

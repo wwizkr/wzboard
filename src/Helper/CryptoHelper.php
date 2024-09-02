@@ -133,10 +133,11 @@ class CryptoHelper
      * @param array $payload JWT 페이로드
      * @return string 생성된 JWT 토큰
      */
-    public static function generateJwtToken(array $payload): string
+    public static function generateJwtToken(array $payload, $ttl = null): string
     {
         $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
-        $payload['exp'] = time() + ($_ENV['JWT_TTL'] * 60); // JWT_TTL은 분 단위
+        $ttl = $ttl ?? ($_ENV['JWT_TTL'] * 60); // JWT_TTL은 분 단위, 기본값 사용
+        $payload['exp'] = time() + $ttl;
         $payload = json_encode($payload);
         
         $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
@@ -154,32 +155,30 @@ class CryptoHelper
      * @param string $token 검증할 JWT 토큰
      * @return array|false 검증 성공 시 페이로드, 실패 시 false
      */
-    public static function verifyJwtToken(string $token)
+    public static function verifyJwtToken(string $token, bool $isRefreshToken = false)
     {
         $tokenParts = explode('.', $token);
         if (count($tokenParts) != 3) {
             return false;
         }
-
         $header = base64_decode($tokenParts[0]);
         $payload = base64_decode($tokenParts[1]);
         $signatureProvided = $tokenParts[2];
-
         $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
         $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
         
         $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $_ENV['JWT_SECRET'], true);
         $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-
         if ($base64UrlSignature !== $signatureProvided) {
             return false;
         }
-
         $payloadObj = json_decode($payload, true);
         if (isset($payloadObj['exp']) && $payloadObj['exp'] < time()) {
             return false;
         }
-
+        if ($isRefreshToken && (!isset($payloadObj['type']) || $payloadObj['type'] !== 'refresh')) {
+            return false;
+        }
         return $payloadObj;
     }
 }
