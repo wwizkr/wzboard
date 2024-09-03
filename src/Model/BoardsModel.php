@@ -41,7 +41,8 @@ class BoardsModel
         }
 
         foreach ($filters as $key => $value) {
-            $where[$key] = ['=', $value, 'AND'];
+            [$type, $formattedValue] = CommonHelper::getSqlBindType($value);
+            $where[$key] = [$type, $formattedValue, 'AND'];
         }
 
         // ORDER BY 조건 생성

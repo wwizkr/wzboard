@@ -46,6 +46,40 @@ class CommonHelper
         return $number;
     }
 
+    /**
+     * decode JSON input data
+     *
+     * @return array The decoded JSON data
+     */
+    public static function getJsonInput(): array
+    {
+        $input = file_get_contents('php://input');
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        
+        if (stripos($contentType, 'application/json') !== false) {
+            $data = json_decode($input, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $data;
+            }
+        }
+        
+        // JSON 파싱에 실패하거나 Content-Type이 application/json이 아닌 경우
+        parse_str($input, $data);
+        return $data ?: [];
+    }
+
+    public static function extractFormData(array $data): array
+    {
+        $formData = [];
+        foreach ($data as $key => $value) {
+            if (strpos($key, 'formData[') === 0) {
+                $formKey = str_replace(['formData[', ']'], '', $key);
+                $formData[$formKey] = $value;
+            }
+        }
+        return $formData;
+    }
+
     /*
      * JSON 응답을 생성하고 반환
      */
@@ -65,13 +99,20 @@ class CommonHelper
      * @param string $param_name 검사할 파라미터 이름
      * @param string $expected_type 예상되는 파라미터 유형 (예: 'int', 'string', 'email')
      * @param mixed $default 기본값 (파라미터가 없거나 유효하지 않을 경우 반환할 값)
-     * @param string $input_type 입력 유형 (예: INPUT_GET, INPUT_POST)
+     * @param mixed $input_value 직접 전달된 값 (GET/POST 외의 값 검증용)
+     * @param string $input_type 입력 유형 (예: INPUT_GET, INPUT_POST) 기본값은 null
      * @return mixed 정리된 파라미터 값 또는 기본값
      */
-    public static function validateParam($param_name, $expected_type, $default = null, $input_type = INPUT_GET)
+    public static function validateParam($param_name, $expected_type, $default = null, $input_value = null, $input_type = null)
     {
         // 입력 파라미터 가져오기 (예: GET 또는 POST 요청에서)
-        $param_value = filter_input($input_type, $param_name);
+        if ($input_type !== null) {
+            // GET/POST 요청에서 값 가져오기
+            $param_value = filter_input($input_type, $param_name);
+        } else {
+            // 직접 전달된 값 사용
+            $param_value = $input_value;
+        }
 
         // 파라미터가 없으면 기본값 반환
         if ($param_value === null) {
@@ -81,23 +122,17 @@ class CommonHelper
         // 예상되는 유형에 따라 파라미터 값을 유효성 검사 및 정리
         switch ($expected_type) {
             case 'int':
-                // 정수형인지 확인하고, 유효하지 않으면 기본값 반환
                 return filter_var($param_value, FILTER_VALIDATE_INT) !== false ? (int)$param_value : $default;
             case 'float':
-                // 실수형인지 확인하고, 유효하지 않으면 기본값 반환
                 return filter_var($param_value, FILTER_VALIDATE_FLOAT) !== false ? (float)$param_value : $default;
             case 'email':
-                // 유효한 이메일 형식인지 확인하고, 유효하지 않으면 기본값 반환
                 return filter_var($param_value, FILTER_VALIDATE_EMAIL) !== false ? $param_value : $default;
             case 'url':
-                // 유효한 URL 형식인지 확인하고, 유효하지 않으면 기본값 반환
                 return filter_var($param_value, FILTER_VALIDATE_URL) !== false ? $param_value : $default;
             case 'boolean':
-                // 불리언 값으로 유효한지 확인하고, 유효하지 않으면 기본값 반환
                 return filter_var($param_value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null ? (bool)$param_value : $default;
             case 'string':
             default:
-                // 기본적으로 문자열로 변환하고, HTML 특수 문자를 이스케이프하여 반환
                 return htmlspecialchars($param_value, ENT_QUOTES, 'UTF-8');
         }
     }
@@ -112,7 +147,7 @@ class CommonHelper
      * @param string $input_type 입력 유형 (예: INPUT_GET, INPUT_POST)
      * @return array 정리된 파라미터 값 배열
      */
-    public static function validateParams(array $expected_params, array $defaults = [], $input_type = INPUT_GET)
+    public static function validateParams(array $expected_params, array $defaults = [], $input_type = null)
     {
         $cleaned_params = []; // 정리된 파라미터 값을 저장할 배열
 
@@ -122,6 +157,7 @@ class CommonHelper
                 $param_name,
                 $expected_type,
                 isset($defaults[$param_name]) ? $defaults[$param_name] : null,
+                $input_type !== null ? null : (isset($defaults[$param_name]) ? $defaults[$param_name] : null),
                 $input_type
             );
         }
@@ -132,30 +168,31 @@ class CommonHelper
     /*
      * 배열 형태의 파라미터를 검사하고 정리하는 메서드
      *
-     * 사용자가 입력한 배열 형태의 파라미터 값을 유효성 검사하고,
-     * 허용된 값 목록에 따라 필터링하여 안전하게 반환합니다.
+     * 이 메서드는 사용자가 입력한 배열 형태의 파라미터 값을 유효성 검사하고,
+     * 사전에 정의된 허용된 값 목록에 따라 필터링하여 안전한 값을 반환합니다.
+     * 파라미터 값이 없거나 유효하지 않으면 기본값을 반환합니다.
+     * 배열에 예상되는 입력값이 확실히 있는 경우에만 사용합니다.
      *
-     * @param string $param_name 검사할 배열 형태의 파라미터 이름
+     * @param array|null $param_values 입력 값으로 전달된 배열 (기본값은 null)
      * @param array $allowed_values 허용된 값 목록
-     * @param mixed $default 기본값 (파라미터가 없거나 유효하지 않을 경우 반환할 값)
-     * @param string $input_type 입력 유형 (예: INPUT_GET, INPUT_POST)
+     * @param array $default 기본값 (파라미터가 없거나 유효하지 않을 경우 반환할 값)
      * @return array 정리된 파라미터 값 배열 또는 기본값
      */
-    public static function validateArrayParam($param_name, array $allowed_values, $default = [], $input_type = INPUT_GET)
+    public static function validateArrayParam(array $allowed_values, $param_values = null, array $default = [])
     {
-        // 배열로 된 입력 파라미터 가져오기
-        $param_values = filter_input($input_type, $param_name, FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
-        
-        // 파라미터가 없거나 유효하지 않으면 기본값 반환
+        // 입력 파라미터가 null인 경우 기본값 반환
         if ($param_values === null) {
+            return $default;
+        }
+
+        // 파라미터가 배열인지 확인하고, 그렇지 않으면 기본값 반환
+        if (!is_array($param_values)) {
             return $default;
         }
 
         // 허용된 값만 남기기
         $cleaned_values = array_filter($param_values, function ($value) use ($allowed_values) {
-            // 문자열로 변환 후 HTML 특수 문자를 이스케이프 처리
             $clean_value = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
-            // 허용된 값 목록에 있는지 확인
             return in_array($clean_value, $allowed_values, true);
         });
 
@@ -179,6 +216,60 @@ class CommonHelper
         } else {
             return ['s', (string)$value]; // 다른 모든 경우 문자열로 처리
         }
+    }
+
+    /**
+     * 리스트 페이지의 파라미터들을 가져옵니다.
+     * 
+     * @param array $config 설정 배열 (페이지당 행 수, 페이지 번호 수 등)
+     * @param array $allowedFilters 허용된 필터 목록
+     * @param array $allowedSortOptions 허용된 정렬 옵션 목록
+     * @param array $additionalParams 추가 파라미터 설정 (키: 파라미터 이름, 값: [타입, 기본값])
+     * @return array 리스트 파라미터
+     */
+    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortOptions, array $additionalParams = []): array
+    {
+        $params = [
+            'currentPage' => self::validateParam('page', 'int', 1, null, INPUT_GET),
+            'searchQuery' => self::validateParam('search', 'string', '', null, INPUT_GET),
+            'filters' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? []),
+            'sort' => self::validateArrayParam($allowedSortOptions, $_GET['sort'] ?? []),
+            'page_rows' => $config['cf_page_rows'] ?? 20,
+            'page_nums' => $config['cf_page_nums'] ?? 10,
+        ];
+
+        // 추가 파라미터 처리
+        foreach ($additionalParams as $paramName => $paramConfig) {
+            $params[$paramName] = self::validateParam(
+                $paramName, 
+                $paramConfig[0] ?? 'string', 
+                $paramConfig[1] ?? '', 
+                null, 
+                INPUT_GET
+            );
+        }
+
+        return $params;
+    }
+
+    /**
+     * 페이지네이션 데이터를 계산합니다.
+     * 
+     * @param int $totalItems 총 아이템 수
+     * @param int $currentPage 현재 페이지
+     * @param int $itemsPerPage 페이지당 아이템 수
+     * @param int $pageNums 표시할 페이지 번호 수
+     * @return array 페이지네이션 데이터
+     */
+    public static function getPaginationData(int $totalItems, int $currentPage, int $itemsPerPage, int $pageNums): array
+    {
+        return [
+            'totalItems' => $totalItems,
+            'currentPage' => $currentPage,
+            'totalPages' => ceil($totalItems / $itemsPerPage),
+            'itemsPerPage' => $itemsPerPage,
+            'pageNums' => $pageNums,
+        ];
     }
 
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음
