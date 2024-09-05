@@ -88,6 +88,7 @@ class BoardadminController
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
+            unset($data['group_id']); // update 시 아이디는 변경 불가
             $this->adminBoardsService->updateBoardsGroup($group_no, $data);
         } else {
             $this->adminBoardsService->insertBoardsGroup($data);
@@ -131,8 +132,8 @@ class BoardadminController
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
-            $categoryData = $this->adminBoardsService->getBoardsCategory($category_no);
-            $this->adminBoardsService->updateBoardsCategory($category_no, $data, $categoryData);
+            //$categoryData = $this->adminBoardsService->getBoardsCategory($category_no);
+            $this->adminBoardsService->updateBoardsCategory($category_no, $data);
         } else {
             $this->adminBoardsService->insertBoardsCategory($data);
         }

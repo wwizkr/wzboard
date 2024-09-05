@@ -21,7 +21,9 @@
                                     echo '<div class="col-1 list-group-col text-center">'.$num.'</div>';
                                     echo '<div class="col-3 list-group-col text-center">'.$val['group_id'].'</div>';
                                     echo '<div class="col list-group-col text-center">'.$val['group_name'].'</div>';
-                                    echo '<div class="col-3 list-group-col list-group-button text-center">관리</div>';
+                                    echo '<div class="col-3 list-group-col list-group-button text-center">';
+                                        echo '<button type="button" class="btn btn-sm btn-success" data-data=\''.json_encode($val).'\' onclick="loaderData(this);">수정</button>';
+                                    echo '</div>';
                                 echo '</div>';
                             echo '</li>';
                             $num--;
@@ -55,10 +57,18 @@
                 </div>
                 <div class="table-row row mb-3">
                     <div class="table-th col-md-4">
+                        <label for="order_num" class="form-label">정렬순서</label>
+                    </div>
+                    <div class="table-td col-md-8">
+                        <input type="text" name="formData[order_num]" value="" class="form-control" id="order_num">
+                    </div>
+                </div>
+                <div class="table-row row mb-3">
+                    <div class="table-th col-md-4">
                         <label for="allow_level" class="form-label">접근가능레벨</label>
                     </div>
                     <div class="table-td col-md-8">
-                        <select name="formData[allow_level]" class="form-control" id="allow_level">
+                        <select name="formData[allow_level]" class="form-select" id="allow_level">
                             <option value="0">비회원 접근가능</option>
                             <?php
                             foreach($levelData as $key=>$val) {
@@ -68,9 +78,20 @@
                         </select>
                     </div>
                 </div>
-                <button type="button" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/boards/groupUpdate">Submit</button>
+                <button type="button" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/boardadmin/groupUpdate" data-callback="updateProcess">Submit</button>
             </div>
             </form>
         </div>
     </div>
 </div>
+<script>
+function loaderData(button) {
+    var data = JSON.parse(button.getAttribute('data-data'));
+    document.getElementById('action').value = 'update';
+    document.getElementById('group_no').value = data.no;
+    fillFormData(data, 'formData');
+}
+function updateProcess() {
+    location.reload();
+}
+</script>

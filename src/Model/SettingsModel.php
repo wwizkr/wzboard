@@ -136,6 +136,8 @@ class SettingsModel
         ];
         $result = $this->db->sqlBindQuery('select', 'menus', $param, $where, $options);
 
+        //error_log("Result: ". print_r($result));
+
         return $result[0] ?? null;
     }
 

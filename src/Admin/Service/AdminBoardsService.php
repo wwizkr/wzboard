@@ -7,11 +7,11 @@ use  Web\Admin\Model\AdminBoardsModel;
 
 class AdminBoardsService
 {
-    protected $boardsModel;
+    protected $adminBoardsModel;
 
-    public function __construct(AdminBoardsModel $boardsModel)
+    public function __construct(AdminBoardsModel $adminBoardsModel)
     {
-        $this->boardsModel = $boardsModel;
+        $this->adminBoardsModel = $adminBoardsModel;
     }
     
     // ---------------------------
@@ -19,17 +19,17 @@ class AdminBoardsService
     // ---------------------------
     public function getBoardsGroup($group_id='')
     {
-        return $this->boardsModel->getBoardsGroup($group_id);
+        return $this->adminBoardsModel->getBoardsGroup($group_id);
     }
 
     public function insertBoardsGroup($data)
     {
-        return $this->boardsModel->insertBoardsGroup($data);
+        return $this->adminBoardsModel->insertBoardsGroup($data);
     }
 
     public function updateBoardsGroup($group_no, $data)
     {
-        return $this->boardsModel->updateBoardsGroup($group_no, $data);
+        return $this->adminBoardsModel->updateBoardsGroup($group_no, $data);
     }
     
     // ---------------------------
@@ -37,12 +37,12 @@ class AdminBoardsService
     // ---------------------------
     public function getBoardsCategory($category_no)
     {
-        return $this->boardsModel->getBoardsCategory($category_no);
+        return $this->adminBoardsModel->getBoardsCategory($category_no);
     }
 
     public function insertBoardsCategory($data)
     {
-        $result = $this->boardsModel->checkBoardsCategoryName($data['category_name']);
+        $result = $this->adminBoardsModel->checkBoardsCategoryName($data['category_name']);
         if($result === false) {
             $jsonData = [
                 'result' => 'failer',
@@ -51,12 +51,12 @@ class AdminBoardsService
             return $jsonData;
         }
 
-        return $this->boardsModel->insertBoardsCategory($data);
+        return $this->adminBoardsModel->insertBoardsCategory($data);
     }
 
-    public function updateBoardsCategory($category_no, $data, $categoryData)
+    public function updateBoardsCategory($category_no, $data)
     {
-        return $this->boardsModel->updateBoardsGroup($board_no, $data);
+        return $this->adminBoardsModel->updateBoardsCategory($category_no, $data);
     }
 
     // ---------------------------
@@ -66,7 +66,7 @@ class AdminBoardsService
     // 생성된 게시판 목록
     public function getBoardsConfig($board_id='')
     {
-        return $this->boardsModel->getBoardsConfig($board_id);
+        return $this->adminBoardsModel->getBoardsConfig($board_id);
     }
 
     public function insertBoardsConfig($data)
@@ -74,10 +74,10 @@ class AdminBoardsService
         $category = explode("-",$data['categories'][1]) ?? null;
         unset($data['categories']); //$data에서 categories 제거
 
-        $insert = $this->boardsModel->insertBoardsConfig($data);
+        $insert = $this->adminBoardsModel->insertBoardsConfig($data);
         if($insert['ins_id']) {
             if(!empty($category)) {
-                $this->boardsModel->updateBoardsCategoryMapping($insert['ins_id'], $data['board_id'][1], $category);
+                $this->adminBoardsModel->updateBoardsCategoryMapping($insert['ins_id'], $data['board_id'][1], $category);
             }
             return $insert['ins_id'];
         } else {
@@ -90,10 +90,10 @@ class AdminBoardsService
         $category = explode("-",$data['categories'][1]) ?? null;
         unset($data['categories']); //$data에서 categories 제거
 
-        $update = $this->boardsModel->updateBoardsConfig($board_no, $data);
+        $update = $this->adminBoardsModel->updateBoardsConfig($board_no, $data);
 
         if(!empty($category)) {
-            $this->boardsModel->updateBoardsCategoryMapping($board_no, $data['board_id'][1], $category);
+            $this->adminBoardsModel->updateBoardsCategoryMapping($board_no, $data['board_id'][1], $category);
         }
 
         return $update;
@@ -101,6 +101,6 @@ class AdminBoardsService
 
     public function getBoardsCategoryMapping($board_no)
     {
-        return $this->boardsModel->getBoardsCategoryMapping($board_no);
+        return $this->adminBoardsModel->getBoardsCategoryMapping($board_no);
     }
 }

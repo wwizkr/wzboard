@@ -74,7 +74,6 @@ class AdminBoardsModel
         $where['no'] = ['i',$group_no];
         $options = [];
         $result = $this->db->sqlBindQuery('update', 'board_groups', $param, $where, $options);
-
         return $result;
     }
 

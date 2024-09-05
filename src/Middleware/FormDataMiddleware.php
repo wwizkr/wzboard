@@ -45,10 +45,11 @@ class FormDataMiddleware
             if (is_array($val)) {
                 $val = implode('-', $val);
             }
-            $value = $val;
             if (in_array($key, $numericFields)) {
+                $value = $val ? $val : 0;
                 $data[$key] = ['i', $value];
             } else {
+                $value = $val ? $val : '';
                 $data[$key] = ['s', $value];
             }
         }

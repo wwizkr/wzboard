@@ -26,13 +26,13 @@
                 <label for="cf_title" class="form-label">홈페이지 제목</label>
             </div>
             <div class="table-td col-md-4">
-                <input type="text" name="formData[cf_title]" value="<?php echo $config_domain['cf_title'];?>" id="cf_title" class="form-control" placeholder="홈페이지 제목">
+                <input type="text" name="formData[cf_title]" value="" id="cf_title" class="form-control" placeholder="홈페이지 제목">
             </div>
             <div class="table-th col-md-2">
                 <label for="cf_domain" class="form-label">홈페이지 URL</label>
             </div>
             <div class="table-td col-md-4">
-                <input type="text" name="formData[cf_domain]" value="<?php echo $config_domain['cf_domain'];?>" id="cf_domain" class="form-control" placeholder="홈페이지 주소">
+                <input type="text" name="formData[cf_domain]" value="" id="cf_domain" class="form-control" placeholder="홈페이지 주소">
             </div>
         </div>
         <div class="table-row row mb-3">
@@ -40,13 +40,13 @@
                 <label for="cf_company_name" class="form-label">회사명</label>
             </div>
             <div class="table-td col-md-4">
-                <input type="text" name="formData[cf_company_name]" value="<?php echo $config_domain['cf_company_name'];?>" id="cf_company_name" class="form-control" placeholder="회사명">
+                <input type="text" name="formData[cf_company_name]" value="" id="cf_company_name" class="form-control" placeholder="회사명">
             </div>
             <div class="table-th col-md-2">
                 <label for="cf_company_owner" class="form-label">대표자명</label>
             </div>
             <div class="table-td col-md-4">
-                <input type="text" name="formData[cf_company_owner]" value="<?php echo $config_domain['cf_company_owner'];?>" id="cf_company_owner" class="form-control" placeholder="대표자명">
+                <input type="text" name="formData[cf_company_owner]" value="" id="cf_company_owner" class="form-control" placeholder="대표자명">
             </div>
         </div>
         <div class="table-row row mb-3">
@@ -66,7 +66,7 @@
                 <label for="cf_tongsin_number" class="form-label">통신판매업번호</label>
             </div>
             <div class="table-td col-md-4">
-                <input type="text" name="cf_tongsin_number]" value="<?php echo $config_domain['cf_tongsin_number'];?>" id="cf_tongsin_number" class="form-control" placeholder="통신판매업번호">
+                <input type="text" name="cf_tongsin_number]" value="" id="cf_tongsin_number" class="form-control" placeholder="통신판매업번호">
             </div>
         </div>
         <div class="table-row row mb-3">
@@ -119,7 +119,7 @@
             </div>
             <div class="table-td col-md-10">
                 <div class="d-flex align-items-center">
-                    <input type="text" name="formData[cf_max_width]" value="<?php echo $config_domain['cf_max_width'];?>" id="cf_max_width" class="form-control me-2" placeholder="1200" style="max-width: 100px;">
+                    <input type="text" name="formData[cf_max_width]" value="" id="cf_max_width" class="form-control me-2" placeholder="1200" style="max-width: 100px;">
                     <span class="form-control bg-info text-white border-0">홈페이지 최대 넓이입니다. PC에만 적용됩니다.(권장 1,200px)</span>
                 </div>
             </div>
@@ -167,6 +167,11 @@
 </div>
 </form>
 <script>
+var settingData = <?php echo json_encode($config_domain); ?>;
+document.addEventListener('DOMContentLoaded', function() {
+    fillFormData(settingData, 'formData');
+});
+
 function frm_submit(f) {
     
 }

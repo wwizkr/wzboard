@@ -94,6 +94,9 @@ function addDisplayNameToNodes(nodes) {
         // 현재 노드에 displayName 추가
         node.displayName = prefix + node.me_name + " (" + node.me_code + ")";
 
+        // 2단계까지 메뉴를 기본으로 펼치기
+        node.open = node.me_depth <= 2;  // me_depth가 2 이하이면 펼침
+
         // 자식 노드가 있다면 재귀적으로 처리
         if (node.children && node.children.length > 0) {
             node.children = addDisplayNameToNodes(node.children);
@@ -198,7 +201,7 @@ function addHoverDom(treeId, treeNode) {
     if (btn) btn.bind("click", function(){
         var zTree = $.fn.zTree.getZTreeObj(treeId);
         
-        var newNodeName = treeNode.level === 0 ? "1단계 카테고리명" : "하위카테고리명";
+        var newNodeName = treeNode.level === 0 ? "1단계 메뉴명" : "하위메뉴명";
 
         var requestData = {
             type: treeNode.type,
@@ -302,6 +305,7 @@ function categoryLoader(event, treeId, treeNode) {
         };
         sendCustomAjaxRequest('POST', '/admin/settings/menuLoader', requestData, function(responseText) {
             var data = JSON.parse(responseText);
+            console.log(data);
             if (data.result === "success" && data.data) {
                 var selectNode = data.data;
                 document.getElementById('no').value = selectNode.no;
@@ -355,5 +359,15 @@ function beforeEditName(treeId, nodes, targetNode) {
 
 function beforeRemove(treeId, nodes, targetNode) {
     return true; 
+}
+
+// 메뉴 업데이트 AJAX CallBack
+function updateMenuTree(updatedNodeData) {
+    var zTree = $.fn.zTree.getZTreeObj("menuTree");
+    var selectedNode = zTree.getSelectedNodes()[0];
+    if (selectedNode) {
+        selectedNode.displayName = updatedNodeData.me_name + " (" + updatedNodeData.me_code + ")";
+        zTree.updateNode(selectedNode);
+    }
 }
 </script>
