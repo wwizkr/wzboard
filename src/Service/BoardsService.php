@@ -14,6 +14,7 @@ class BoardsService
     protected $adminBoardsService;
     protected $boardsHelper;
     protected $membersHelper;
+    protected $categoryMapping;
 
     /**
      * 생성자: BoardsService 인스턴스를 생성합니다.
@@ -33,16 +34,66 @@ class BoardsService
         $this->adminBoardsService = $adminBoardsService;
         $this->boardsHelper = $boardsHelper;
         $this->membersHelper = $membersHelper;
+        $this->categoryMapping = $this->getCategoryMapping();
     }
 
-    public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters, $sort)
+    private function getCategoryMapping() //임시
     {
-        return $this->boardsModel->getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters, $sort);
+        // 이 메서드에서 카테고리 매핑을 가져옵니다.
+        // 데이터베이스, 설정 파일, 또는 다른 소스에서 로드할 수 있습니다.
+        return [
+            '야구' => 1,
+            '축구' => 2,
+            '농구' => 3,
+            // ... 기타 카테고리
+        ];
     }
 
-    public function getTotalArticleCount($board_no, $searchQuery, $filters)
+    private function processAdditionalQueries($additionalQueries)
     {
-        return $this->boardsModel->getTotalArticleCount($board_no, $searchQuery, $filters);
+        $processed = [];
+        foreach ($additionalQueries as $query) {
+            $field = $query[0];
+            $value = $query[1];
+            
+            if (is_array($value)) {
+                if ($field === 'category') {
+                    $categoryNumbers = array_filter(array_map(function($name) {
+                        return $this->categoryMapping[$name] ?? null;
+                    }, $value));
+                    if (!empty($categoryNumbers)) {
+                        $processed[] = ['category_no', array_values($categoryNumbers)];
+                    }
+                } else {
+                    // 배열이지만 category가 아닌 경우
+                    $processed[] = [$field, $value];
+                }
+            } else {
+                // 배열이 아닌 경우
+                $processed[] = [$field, $value];
+            }
+        }
+        return $processed;
+    }
+
+    public function getTotalArticleCount($board_no, $searchQuery, $filters, $additionalQueries)
+    {   
+        $processedQueries = $this->processAdditionalQueries($additionalQueries);
+        return $this->boardsModel->getTotalArticleCount($board_no, $searchQuery, $filters, $processedQueries);
+    }
+
+    public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters, $sort, $additionalQueries)
+    {
+        $processedQueries = $this->processAdditionalQueries($additionalQueries);
+        return $this->boardsModel->getArticleListData(
+            $board_no, 
+            $currentPage, 
+            $page_rows, 
+            $searchQuery, 
+            $filters, 
+            $sort, 
+            $processedQueries
+        );
     }
     
     /**

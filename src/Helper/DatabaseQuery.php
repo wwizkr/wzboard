@@ -194,6 +194,7 @@ class DatabaseQuery
         // 추가 WHERE 조건 처리
         if ($options['addWhere']) {
             $sqlWhere .= $sqlWhere ? " AND {$options['addWhere']}" : " WHERE {$options['addWhere']}";
+            $values = array_merge($values, $options['values']); //addWhere Bind 추가
         }
 
         // JOIN 절 처리

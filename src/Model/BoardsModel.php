@@ -23,75 +23,142 @@ class BoardsModel
     }
     
     /*
-     * 게시글 목록
+    private function processAdditionalQueries($additionalQueries, &$addWhere, &$bindValues)
+    {
+        foreach ($additionalQueries as $index => $query) {
+            $field = $query[0];
+            $value = $query[1];
+            
+            if (is_array($value)) {
+                $placeholders = [];
+                foreach ($value as $i => $v) {
+                    $paramName = "additional_{$index}_{$i}";
+                    $placeholders[] = ":{$paramName}";
+                    $bindValues[$paramName] = $v;
+                }
+                $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
+            } else {
+                $paramName = "additional_{$index}";
+                $addWhere[] = "$field = :{$paramName}";
+                $bindValues[$paramName] = $value;
+            }
+        }
+    }
+    */
+
+    private function processAdditionalQueries($additionalQueries, &$addWhere, &$bindValues)
+    {
+        foreach ($additionalQueries as $index => $query) {
+            $field = $query[0];
+            $value = $query[1];
+            
+            if (is_array($value)) {
+                $placeholders = [];
+                foreach ($value as $i => $v) {
+                    $placeholders[] = "?";
+                    $bindValues[] = $v;
+                }
+                $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
+            } else {
+                $addWhere[] = "$field = ?";
+                $bindValues[] = $value;
+            }
+        }
+    }
+    
+    /**
+     * 게시글 목록을 조회하는 메소드
+     * 
+     * @param int $board_no 게시판 번호
+     * @param int $currentPage 현재 페이지 번호
+     * @param int $page_rows 페이지당 표시할 게시글 수
+     * @param string $searchQuery 검색어
+     * @param array $filters 검색할 필드 목록
+     * @param array $sort 정렬 기준 (필드명과 정렬 방향)
+     * @param array $additionalQueries 추가 검색 조건
+     * @return array 조회된 게시글 목록
      */
-    public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters = [], $sort = [])
+    public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters = [], $sort = [], $additionalQueries = [])
     {
         $offset = ($currentPage - 1) * $page_rows;
-
-        // WHERE 조건 생성
-        $where = [];
-        $where['cf_id'] = ['i', $this->configDomain['cf_id']];
-        if($board_no) {
+        
+        $where = [
+            'cf_id' => ['i', $this->configDomain['cf_id']],
+        ];
+        if ($board_no) {
             $where['board_no'] = ['i', $board_no];
         }
 
-        if (!empty($searchQuery)) {
-            //$where 추가
+        $addWhere = [];
+        $bindValues = [];
+
+        // 검색 쿼리와 필터 처리
+        if (!empty($searchQuery) && !empty($filters)) {
+            $searchConditions = [];
+            foreach ($filters as $index => $field) {
+                $paramName = "search_$index";
+                $searchConditions[] = "$field LIKE :$paramName";
+                $bindValues[$paramName] = "%$searchQuery%";
+            }
+            $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
         }
 
-        foreach ($filters as $key => $value) {
-            [$type, $formattedValue] = CommonHelper::getSqlBindType($value);
-            $where[$key] = [$type, $formattedValue, 'AND'];
-        }
+        // additionalQueries 처리
+        $this->processAdditionalQueries($additionalQueries, $addWhere, $bindValues);
 
-        // ORDER BY 조건 생성
-        $order = '';
-        if (!empty($sort)) {
-            $order = implode(', ', array_map(function ($key, $value) {
-                return "{$key} {$value}";
-            }, array_keys($sort), $sort));
-        } else {
-            $order = 'no DESC'; // 기본 정렬
-        }
-
-        // LIMIT 조건 생성
-        $limit = "$offset, $page_rows";
-
-        // SQL 실행 옵션
         $options = [
-            'order' => $order,
-            'limit' => $limit
+            'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'no DESC',
+            'limit' => "$offset, $page_rows",
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
         ];
 
         return $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
     }
     
-    /*
-     * 전체 게시글 카운트
+    /**
+     * 전체 게시글 수를 조회하는 메소드
+     * 
+     * @param int $board_no 게시판 번호
+     * @param string $searchQuery 검색어
+     * @param array $filters 검색할 필드 목록
+     * @param array $additionalQueries 추가 검색 조건
+     * @return int 전체 게시글 수
      */
-    public function getTotalArticleCount($board_no, $searchQuery, $filters = [])
+    public function getTotalArticleCount($board_no, $searchQuery, $filters = [], $additionalQueries = [])
     {
-        // WHERE 조건 생성
-        $where = [];
-        $where['cf_id'] = ['i', $this->configDomain['cf_id']];
-        $where['board_no'] = ['i', $board_no];
+        $where = [
+            'cf_id' => ['i', $this->configDomain['cf_id']],
+            'board_no' => ['i', $board_no]
+        ];
 
-        if (!empty($searchQuery)) {
+        $addWhere = [];
+        $bindValues = [];
+
+        // 검색 쿼리와 필터 처리
+        if (!empty($searchQuery) && !empty($filters)) {
+            $searchConditions = [];
+            foreach ($filters as $index => $field) {
+                $paramName = "search_$index";
+                $searchConditions[] = "$field LIKE :$paramName";
+                $bindValues[$paramName] = "%$searchQuery%";
+            }
+            $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
         }
 
-        foreach ($filters as $key => $value) {
-            [$type, $formattedValue] = CommonHelper::getSqlBindType($value);
-            $where[$key] = [$type, $formattedValue, 'AND'];
-        }
+        // additionalQueries 처리
+        $this->processAdditionalQueries($additionalQueries, $addWhere, $bindValues);
 
-        // SQL 실행 옵션
+        error_log("Bind Values:".print_r($bindValues,true));
+
         $options = [
-            'field' => 'COUNT(*) AS totalCount'
+            'field' => 'COUNT(*) AS totalCount',
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
         ];
 
         $result = $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
-
+        error_log("Result:".print_r($result,true));
         return $result[0]['totalCount'] ?? 0;
     }
 

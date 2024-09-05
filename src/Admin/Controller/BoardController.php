@@ -75,36 +75,56 @@ class BoardController
     public function list($vars) // 게시글 목록 작업
     {
         $boardId = $vars['boardId'] ?? null;
+    
+        $config = [
+            'cf_page_rows' => $this->configDomain['cf_page_rows'],
+            'cf_page_nums' => $this->configDomain['cf_page_nums']
+        ];
 
-        // 페이징 관련 변수 설정
-        $page_rows = $this->configDomain['cf_page_rows'];
-        $page_nums = $this->configDomain['cf_page_nums'];
-        $currentPage = isset($_GET['page']) ? CommonHelper::pickNumber($_GET['page'], 1) : 1;
-        $searchQuery = isset($_GET['search']) ? $_GET['search'] : '';
-        $filters = isset($_GET['filter']) ? $_GET['filter'] : [];
-        $sort = isset($_GET['sort']) ? $_GET['sort'] : [];
+        $allowedFilters = ['nickName']; // 검색어와 매칭시킬 필드
+        $allowedSortFields = ['no', 'create_at']; // 정렬에 사용할 필드
+        
+        // 추가 검색에 사용할 필드 및 값
+        // array 사용의 경우 OR 검색으로 여러개의 검색 결과
+        // string 사용의 경우 단일 검색
+        $additionalParams = [
+            'category[]' => ['array', [], isset($_GET['category']) ? $_GET['category'] : []],
+            //'status' => ['string', 'all', ['all', 'active', 'inactive']] // 단일 검색 추가 예시
+        ];
+        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
+
+        /*
+         * $params // 결과 사용
+         * $currentPage = $params['currentPage'];
+         * $searchQuery = $params['searchQuery'];
+         * $filters = $params['filters'];
+         * $sort = $params['sort'];
+         * $additionalQueries = $params['additionalQueries'];
+         */
+        // $category 가 있을 경우 카테고리는 카테고리명으로 받게 되므로, category_no를 가져와야 함. 차후 추가
 
         // 게시판 설정 데이터 가져오기
         $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
 
+        // 게시판의 카테고리 데이터
+        $categoryData = [];
+
         // 총 게시물 수
-        $totalItems = $this->boardsService->getTotalArticleCount($boardsConfig['no'], $searchQuery, $filters); // 여기에 실제 게시물 수를 할당해야 합니다.
-        $articleData = $this->boardsService->getArticleListData($boardsConfig['no'], $currentPage, $page_rows, $searchQuery, $filters, $sort);
+        /*
+         * $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
+        */
+        $totalItems = $this->boardsService->getTotalArticleCount($boardsConfig['no'], $params['searchQuery'], $params['filters'], $params['additionalQueries']);
+        $articleData = $this->boardsService->getArticleListData($boardsConfig['no'], $params['currentPage'], $params['page_rows'], $params['searchQuery'], $params['filters'], $params['sort'], $params['additionalQueries']);
 
         // 페이징 데이터 계산
-        $paginationData = [
-            'totalItems' => $totalItems,
-            'currentPage' => $currentPage,
-            'totalPages' => ceil($totalItems / $page_rows),
-            'itemsPerPage' => $page_rows,
-            'pageNums' => $page_nums,
-        ];
+        $paginationData = CommonHelper::getPaginationData($totalItems, $params['currentPage'], $params['page_rows'], $params['page_nums']);
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
             'title' => '게시판 목록 관리',
             'boardsConfig' => $boardsConfig,
             'boardId' => $boardId,
+            'categoryData' => $categoryData,
             'articleData' => $articleData,
             'paginationData' => $paginationData,
         ];

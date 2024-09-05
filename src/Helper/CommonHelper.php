@@ -178,25 +178,18 @@ class CommonHelper
      * @param array $default 기본값 (파라미터가 없거나 유효하지 않을 경우 반환할 값)
      * @return array 정리된 파라미터 값 배열 또는 기본값
      */
-    public static function validateArrayParam(array $allowed_values, $param_values = null, array $default = [])
+    public static function validateArrayParam(array $allowed_values, $param_values = null, array $default = []): array
     {
-        // 입력 파라미터가 null인 경우 기본값 반환
         if ($param_values === null) {
             return $default;
         }
-
-        // 파라미터가 배열인지 확인하고, 그렇지 않으면 기본값 반환
         if (!is_array($param_values)) {
             return $default;
         }
-
-        // 허용된 값만 남기기
-        $cleaned_values = array_filter($param_values, function ($value) use ($allowed_values) {
-            $clean_value = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
-            return in_array($clean_value, $allowed_values, true);
-        });
-
-        return $cleaned_values; // 정리된 배열 반환
+        $cleaned_values = array_intersect_key($param_values, array_flip($allowed_values));
+        return array_map(function($value) {
+            return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+        }, $cleaned_values);
     }
 
     /**
@@ -223,33 +216,67 @@ class CommonHelper
      * 
      * @param array $config 설정 배열 (페이지당 행 수, 페이지 번호 수 등)
      * @param array $allowedFilters 허용된 필터 목록
-     * @param array $allowedSortOptions 허용된 정렬 옵션 목록
+     * @param array $allowedSortFields 허용된 정렬 필드 목록
      * @param array $additionalParams 추가 파라미터 설정 (키: 파라미터 이름, 값: [타입, 기본값])
      * @return array 리스트 파라미터
      */
-    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortOptions, array $additionalParams = []): array
+    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = []): array
     {
         $params = [
             'currentPage' => self::validateParam('page', 'int', 1, null, INPUT_GET),
             'searchQuery' => self::validateParam('search', 'string', '', null, INPUT_GET),
             'filters' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? []),
-            'sort' => self::validateArrayParam($allowedSortOptions, $_GET['sort'] ?? []),
+            'sort' => self::validateSort($allowedSortFields, $_GET['sort'] ?? []),
             'page_rows' => $config['cf_page_rows'] ?? 20,
             'page_nums' => $config['cf_page_nums'] ?? 10,
+            'additionalQueries' => [],
         ];
 
         // 추가 파라미터 처리
         foreach ($additionalParams as $paramName => $paramConfig) {
-            $params[$paramName] = self::validateParam(
-                $paramName, 
-                $paramConfig[0] ?? 'string', 
-                $paramConfig[1] ?? '', 
-                null, 
-                INPUT_GET
-            );
+            $type = $paramConfig[0] ?? 'string';
+            $default = $paramConfig[1] ?? '';
+            $allowedValues = $paramConfig[2] ?? null;
+
+            $paramNameWithoutBrackets = rtrim($paramName, '[]');
+            $value = $_GET[$paramNameWithoutBrackets] ?? $default;
+
+            if ($type === 'array') {
+                if (is_array($value) && ($allowedValues === null || array_diff($value, $allowedValues) === [])) {
+                    $params['additionalQueries'][] = [$paramNameWithoutBrackets, $value];
+                }
+            } else {
+                $value = self::validateParam($paramNameWithoutBrackets, $type, $default, null, INPUT_GET);
+                if ($allowedValues === null || in_array($value, $allowedValues)) {
+                    $params['additionalQueries'][] = [$paramNameWithoutBrackets, $value];
+                }
+            }
         }
 
         return $params;
+    }
+    
+    /**
+     * 리스트 페이지의 sort 를 검증하는 메소드.
+     * 
+     * @param array $allowedSortFields 허용된 정렬 필드 목록
+     * @param array $allowedOrders asc, desc로 고정
+     * @return array 리스트 파라미터
+     */
+    private static function validateSort(array $allowedSortFields, array $inputSort): array
+    {
+        $validSort = [];
+        $allowedOrders = ['asc', 'desc'];
+
+        if (isset($inputSort['field']) && in_array($inputSort['field'], $allowedSortFields)) {
+            $validSort['field'] = $inputSort['field'];
+        }
+
+        if (isset($inputSort['order']) && in_array(strtolower($inputSort['order']), $allowedOrders)) {
+            $validSort['order'] = strtolower($inputSort['order']);
+        }
+
+        return $validSort;
     }
 
     /**
