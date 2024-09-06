@@ -68,6 +68,16 @@ class AuthMiddleware
                     exit;
                 }
             }
+
+            // 유효한 토큰이 있는 경우 최소한의 인증 정보만 세션에 저장
+            if ($decodedToken) {
+                $_SESSION['auth'] = [
+                    'mb_no' => $decodedToken['mb_no'],
+                    'is_admin' => $decodedToken['is_admin'] ?? 0,
+                    'is_super' => $decodedToken['is_super'] ?? 0,
+                ];
+            }
+
             if (!$decodedToken || $decodedToken['is_admin'] == 0) {
                 // 관리자 권한이 없으면 홈페이지로 리다이렉트
                 header('Location: /');

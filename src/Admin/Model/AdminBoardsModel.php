@@ -78,10 +78,10 @@ class AdminBoardsModel
     }
 
     /*
-     * 게시판 카테고리 목록을 가져옴
+     * 게시판 카테고리 전체 목록을 가져옴
      * @return array
      */
-    public function getBoardsCategory($category_no=null)
+    public function getCategoryData($category_no=null)
     {
         $param = [];
         $where = [];
@@ -264,10 +264,24 @@ class AdminBoardsModel
      */
     public function getBoardsCategoryMapping($board_no)
     {
-        $param = $data;
-        $where['board_no'] = ['i',$board_no];
-        $options = [];
-        $result = $this->db->sqlBindQuery('select', 'board_configs', $param, $where, $options);
+        $param = [];
+        $where = [
+            $this->getTableName('board_category_mapping') .'.board_no' => ['i', $board_no],
+        ];
+
+        $options = [
+            'joins' => [
+                [
+                    'type' => 'INNER', // INNER JOIN 사용
+                    'table' => $this->getTableName('board_categories'), // 조인할 테이블 이름
+                    'on' => $this->getTableName('board_category_mapping') . '.category_no = '. $this->getTableName('board_categories') . '.no' // JOIN 조건
+                ]
+            ],
+            'field' => $this->getTableName('board_categories') . '.*, '. $this->getTableName('board_category_mapping') .'.board_no',
+            'order' => $this->getTableName('board_categories') . '.order_num ASC' // 정렬 옵션
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'board_category_mapping', $param, $where, $options);
 
         return $result;
     }

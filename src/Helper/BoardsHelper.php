@@ -26,9 +26,9 @@ class BoardsHelper
         return $this->adminBoardsService->getBoardsGroup(null);
     }
 
-    public function getCategoryData()
+    public function getCategoryData($category_no = null)
     {
-        return $this->adminBoardsService->getBoardsCategory(null);
+        return $this->adminBoardsService->getCategoryData($category_no);
     }
 
     public function getBoardsConfig($boardId = null)
@@ -39,5 +39,10 @@ class BoardsHelper
     public function getSkinData()
     {
         return AdminBoardsHelper::getBoardSkinDir();
+    }
+
+    public function getBoardsCategoryMapping($board_no)
+    {
+        return $this->adminBoardsService->getBoardsCategoryMapping($board_no);
     }
 }

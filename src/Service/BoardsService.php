@@ -7,6 +7,7 @@ use Web\Admin\Service\AdminBoardsService;
 use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class BoardsService
 {
@@ -23,6 +24,7 @@ class BoardsService
      * @param AdminBoardsService $adminBoardsService 관리자 게시판 서비스 인스턴스
      * @param BoardsHelper $boardsHelper 게시판 관련 헬퍼 인스턴스
      * @param MembersHelper $membersHelper 회원 관련 헬퍼 인스턴스
+     * @param int|null $board_no 게시판 번호 (선택적)
      */
     public function __construct(
         BoardsModel $boardsModel, 
@@ -34,57 +36,32 @@ class BoardsService
         $this->adminBoardsService = $adminBoardsService;
         $this->boardsHelper = $boardsHelper;
         $this->membersHelper = $membersHelper;
-        $this->categoryMapping = $this->getCategoryMapping();
+        $this->categoryMapping = [];
     }
 
-    private function getCategoryMapping() //임시
+    private function getCategoryMapping($board_no)
     {
-        // 이 메서드에서 카테고리 매핑을 가져옵니다.
-        // 데이터베이스, 설정 파일, 또는 다른 소스에서 로드할 수 있습니다.
-        return [
-            '야구' => 1,
-            '축구' => 2,
-            '농구' => 3,
-            // ... 기타 카테고리
-        ];
-    }
-
-    private function processAdditionalQueries($additionalQueries)
-    {
-        $processed = [];
-        foreach ($additionalQueries as $query) {
-            $field = $query[0];
-            $value = $query[1];
-            
-            if (is_array($value)) {
-                if ($field === 'category') {
-                    $categoryNumbers = array_filter(array_map(function($name) {
-                        return $this->categoryMapping[$name] ?? null;
-                    }, $value));
-                    if (!empty($categoryNumbers)) {
-                        $processed[] = ['category_no', array_values($categoryNumbers)];
-                    }
-                } else {
-                    // 배열이지만 category가 아닌 경우
-                    $processed[] = [$field, $value];
-                }
-            } else {
-                // 배열이 아닌 경우
-                $processed[] = [$field, $value];
-            }
+        // 게시판 개별 카테고리 가져오기
+        $boardCategory = $this->boardsHelper->getBoardsCategoryMapping($board_no);
+        $mapCategory = [];
+        foreach($boardCategory as $key=>$val) {
+            $mapCategory[$val['category_name']] = $val['no'];
         }
-        return $processed;
+
+        return $mapCategory;
     }
 
     public function getTotalArticleCount($board_no, $searchQuery, $filters, $additionalQueries)
     {   
-        $processedQueries = $this->processAdditionalQueries($additionalQueries);
+        $this->categoryMapping = $this->getCategoryMapping($board_no);
+        $processedQueries = CommonHelper::additionalServiceQueries($additionalQueries, 'category', 'category_no', $this->categoryMapping);
         return $this->boardsModel->getTotalArticleCount($board_no, $searchQuery, $filters, $processedQueries);
     }
 
     public function getArticleListData($board_no, $currentPage, $page_rows, $searchQuery, $filters, $sort, $additionalQueries)
     {
-        $processedQueries = $this->processAdditionalQueries($additionalQueries);
+        $this->categoryMapping = $this->getCategoryMapping($board_no);
+        $processedQueries = CommonHelper::additionalServiceQueries($additionalQueries, 'category', 'category_no', $this->categoryMapping);
         return $this->boardsModel->getArticleListData(
             $board_no, 
             $currentPage, 
@@ -103,7 +80,7 @@ class BoardsService
      * @param array $data 게시글 데이터
      * @return mixed 업데이트 결과
      */
-    public function writeBoardsUpdate($boardId, $data)
+    public function writeBoardsUpdate($article_no, $boardId, $data)
     {
         // BoardsHelper 및 MembersHelper 메서드 사용 예시
         $groupData = $this->boardsHelper->getGroupData();
@@ -132,9 +109,9 @@ class BoardsService
                 $destinationPath = $_SERVER['DOCUMENT_ROOT'] . $storagePath . '/' . $fileName;
 
                 // 로그: 파일 경로 정보 출력
-                error_log("Processing file: $filePath");
-                error_log("Source path: $sourcePath");
-                error_log("Destination path: $destinationPath");
+                //error_log("Processing file: $filePath");
+                //error_log("Source path: $sourcePath");
+                //error_log("Destination path: $destinationPath");
 
                 // 파일이 존재하면 복사 후 경로 변경
                 if (file_exists($sourcePath)) {
@@ -170,7 +147,7 @@ class BoardsService
         $data['content'][1] = $content;
 
         // 실제 게시판 업데이트
-        $updateResult = $this->boardsModel->writeBoardsUpdate($boardId, $data);
+        $updateResult = $this->boardsModel->writeBoardsUpdate($article_no, $boardId, $data);
 
         if ($updateResult) {
             return [
@@ -183,5 +160,36 @@ class BoardsService
                 'message' => '게시글 업데이트 중 오류가 발생했습니다.'
             ];
         }
+    }
+
+    /*
+     * 게시글 읽기
+     *
+     * @param int $board_no
+     * @param int $article_no
+     */
+    public function getArticleDataByNo($board_no, $article_no)
+    {
+        $result = $this->boardsModel->getArticleDataByNo($board_no, $article_no);
+        
+        $result['content'] = htmlspecialchars_decode($result['content']);
+
+        $articleData = $result;
+
+        return $articleData;
+    }
+
+    /*
+     * 게시판 카테고리
+     *
+     * @param int $board_no
+     */
+    public function getBoardsCategoryData($board_no)
+    {
+        $result = $this->boardsModel->getBoardsCategoryData($board_no);
+
+        $categoryData = $result;
+
+        return $categoryData;
     }
 }

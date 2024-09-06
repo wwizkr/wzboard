@@ -3,7 +3,7 @@
     <div class="fixed-top-inner">
         <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
         <div class="fixed-top-btn">
-            <a href="/admin/boards/boardform/create">게시판 생성</a>
+            <a href="/admin/boardadmin/boardform">게시판 생성</a>
         </div>
     </div>
 </div>
@@ -32,7 +32,7 @@
                                 echo '<div class="col-3 list-group-col text-center">'.$val['board_id'].'</div>';
                                 echo '<div class="col list-group-col text-center">'.$val['board_name'].'</div>';
                                 echo '<div class="col-custom-220 list-group-col list-group-button text-center">';
-                                    echo '<a href="" class="btn btn-sm btn-info text-white me-2">수정</a>';
+                                    echo '<a href="/admin/boardadmin/boardform/'.$val['board_id'].'" class="btn btn-sm btn-info text-white me-2">수정</a>';
                                     echo '<a href="" class="btn btn-sm btn-danger me-2">삭제</a>';
                                     echo '<a href="/admin/board/'.$val['board_id'].'/list" class="btn btn-sm btn-outline-secondary me-2">목록</a>';
                                     echo '<a href="/admin/board/'.$val['board_id'].'/write" class="btn btn-sm btn-primary me-2">글쓰기</a>';

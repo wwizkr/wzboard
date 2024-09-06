@@ -10,7 +10,7 @@
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <h2>목록</h2>
-        <div class="p-3 table-list table-list table-list-scroll">
+        <div class="p-3 table-list table-list-scroll">
             <ul class="list-group">
                 <li class="list-group-item list-group-head">
                     <div class="row list-group-row">
@@ -28,7 +28,7 @@
                         echo '<li class="list-group-item list-group-body">';
                             echo '<div class="row list-group-row">';
                                 echo '<div class="col-custom-60 list-group-col text-center">'.$num.'</div>';
-                                echo '<div class="col list-group-col"><a href="/admin/board/'.$boardsConfig['board_id'].'/view/'.$val['no'].'">'.$val['title'].'</a></div>';
+                                echo '<div class="col list-group-col"><a href="/admin/board/'.$boardConfig['board_id'].'/view/'.$val['no'].'">'.$val['title'].'</a></div>';
                                 echo '<div class="col-custom-120 list-group-col text-center">'.$val['nickName'].'</div>';
                                 echo '<div class="col-custom-120 list-group-col text-center">'.$val['created_at'].'</div>';
                                 echo '<div class="col-custom-100 list-group-col list-group-button text-center">관리</div>';
@@ -38,6 +38,14 @@
                 }
                 ?>
             </ul>
+        </div>
+        <div class="table-button table-button-between">
+            <div class="table-button-s"></div>
+            <div class="table-button-e">
+                <ul>
+                    <li><a href="/admin/board/<?= $boardConfig['board_id']; ?>/write" class="btn btn-sm btn-primary me-2">글쓰기</a></li>
+                </ul>
+            </div>
         </div>
     </div>
     <?php if (isset($paginationData)) { echo $this->renderPagination($paginationData); } ?>

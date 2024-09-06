@@ -161,18 +161,23 @@ class BoardadminController
 
     public function boardform($vars)
     {
-        $action = $vars['param'] ?? 'create';
-        $selectBoard = []; //update일때.
+        $board_id = $vars['param'] ?? '';
+        $boardConfig = [];
+
+        if ($board_id) {
+            $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        }
+
         $viewData = [
-            'title' => '게시판 생성',
+            'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
             'content' => '',
             'config_domain' => $this->configDomain,
             'groupData' => $this->boardsHelper->getGroupData(),
             'categoryData' => $this->boardsHelper->getCategoryData(),
+            'boardCategory' => !empty($boardConfig) ? $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']) : [],
             'levelData' => $this->membersHelper->getLevelData(),
             'skinData' => $this->boardsHelper->getSkinData(),
-            'selectBoard' => $selectBoard,
-            'action' => $action,
+            'boardConfig' => $boardConfig,
         ];
 
         return ['AdminBoards/boardForm', $viewData];
@@ -180,7 +185,6 @@ class BoardadminController
 
     public function boardUpdate()
     {
-        $action = $_POST['action'] ?? null;
         $board_no = CommonHelper::pickNumber($_POST['board_no'], 0) ?? 0;
         $formData = $_POST['formData'] ?? null;
 
@@ -191,13 +195,25 @@ class BoardadminController
             ]);
         }
 
+        if ($board_no) {
+            $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
+            $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+            if(empty($boardConfig)) {
+                return CommonHelper::jsonResponse([
+                    'result' => 'failure',
+                    'message' => '게시판 정보가 없습니다.'
+                ]);
+            }
+        }
+
         $numericFields = [
             'group_no', 'read_level', 'write_level', 'download_level',
             'is_use_file', 'file_size_limit', 'use_separate_table'
         ];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        if ($action === 'update') {
+        if ($board_no && !empty($boardConfig)) {
             $this->adminBoardsService->updateBoardsConfig($board_no, $data);
         } else {
             $this->adminBoardsService->insertBoardsConfig($data);

@@ -3,7 +3,6 @@
 
 namespace Web\PublicHtml\Helper;
 
-use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Service\MembersService;
 
 class MembersHelper
@@ -23,11 +22,12 @@ class MembersHelper
     /**
      * 회원 정보를 가져옵니다.
      *
+     * @param int $mb_no 회원 번호
      * @return array 회원 정보
      */
-    function getMemberData($mb_no)
+    function getMemberDataByNo($mb_no)
     {
-        return $this->memberService->getMemberData($mb_no);
+        return $this->membersService->getMemberDataByNo($mb_no);
     }
 
     /**

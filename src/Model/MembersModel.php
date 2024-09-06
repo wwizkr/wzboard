@@ -45,6 +45,25 @@ class MembersModel
     }
 
     /*
+     * 회원의 개별 정보를 가져옴
+     * @param mb_no [mb_no]
+     */
+    public function getMemberDataByNo($mb_no)
+    {
+        $param = [];
+        $where = [];
+        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
+        $where['mb_no'] = ['s', $mb_no];
+        $options = [
+            'order' => 'mb_no DESC',
+            'limit' => 1,
+        ];
+        $result = $this->db->sqlBindQuery('select','members',$param,$where,$options);
+
+        return $result[0];
+    }
+
+    /*
      * 회원의 개별 레벨 정보 또는 전체 정보를 가져옴
      * @param level 
      */

@@ -1,12 +1,11 @@
 <!-- 폼 컨테이너들 -->
 <form name="frm" id="frm">
-<input type="hidden" name="action" value="<?php echo $action; ?>">
-<input type="hidden" name="board_no" value="<?php echo $selectBoard['no'] ?? 0 ; ?>">
+<input type="hidden" name="board_no" id="board_no" value="<?php echo $boardConfig['no'] ?? 0 ; ?>">
 <div class="content-fixed-top">
     <div class="fixed-top-inner">
         <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
         <div class="fixed-top-btn">
-            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/boards/boardUpdate">확인</button>
+            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/boardadmin/boardUpdate">확인</button>
         </div>
     </div>
 </div>
@@ -34,8 +33,10 @@
             </div>
             <div class="table-td col-md-10">
                 <div class="d-flex align-items-center">
-                    <input type="text" name="formData[board_id]" id="board_id" class="form-control me-2 require" data-type="text" data-message="게시판아이디는 필수입니다." data-regex="^[a-zA-Z0-9_]+$" placeholder="게시판 ID" style="max-width: 160px;">
+                    <input type="text" name="formData[board_id]" id="board_id" class="form-control me-2 require" data-type="text" data-message="게시판아이디는 필수입니다." data-regex="^[a-zA-Z0-9_]+$" placeholder="게시판 ID" style="max-width: 160px;" <?php echo !empty($boardConfig) ? 'readonly' : ''; ?>>
+                    <?php if(empty($boardConfig)) { ?>
                     <button type="button" class="btn btn-primary">중복검사</button>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -130,3 +131,24 @@
     </div>
 </div>
 </form>
+<script>
+var boardConfig = <?php echo json_encode($boardConfig); ?>;
+var boardCategory = <?php echo json_encode($boardCategory); ?>;
+document.addEventListener('DOMContentLoaded', function() {
+    fillFormData(boardConfig, 'formData', checkCategory);
+});
+
+function checkCategory() {
+    // boardCategory의 모든 'no' 값을 배열로 추출
+    var boardCategoryNos = boardCategory.map(function(item) {
+        return item.no;
+    });
+
+    // 체크박스를 선택하고, 해당 값이 boardConfig의 'no'에 포함되어 있는지 확인하여 체크
+    document.querySelectorAll('[name="formData[categories][]"]').forEach(function(checkbox) {
+        if (boardCategoryNos.includes(parseInt(checkbox.value))) {
+            checkbox.checked = true; // 체크박스 체크
+        }
+    });
+}
+</script>

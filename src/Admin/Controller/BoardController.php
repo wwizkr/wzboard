@@ -95,16 +95,16 @@ class BoardController
 
         /*
          * $params // 결과 사용
-         * $currentPage = $params['currentPage'];
-         * $searchQuery = $params['searchQuery'];
-         * $filters = $params['filters'];
-         * $sort = $params['sort'];
-         * $additionalQueries = $params['additionalQueries'];
+         * $params['currentPage'];
+         * $params['searchQuery'];
+         * $params['filters'];
+         * $params['sort']['order'];
+         * $params['sort']['field'];
+         * $params['additionalQueries'];
          */
-        // $category 가 있을 경우 카테고리는 카테고리명으로 받게 되므로, category_no를 가져와야 함. 차후 추가
 
         // 게시판 설정 데이터 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
 
         // 게시판의 카테고리 데이터
         $categoryData = [];
@@ -113,8 +113,16 @@ class BoardController
         /*
          * $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
         */
-        $totalItems = $this->boardsService->getTotalArticleCount($boardsConfig['no'], $params['searchQuery'], $params['filters'], $params['additionalQueries']);
-        $articleData = $this->boardsService->getArticleListData($boardsConfig['no'], $params['currentPage'], $params['page_rows'], $params['searchQuery'], $params['filters'], $params['sort'], $params['additionalQueries']);
+        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['searchQuery'], $params['filters'], $params['additionalQueries']);
+        $articleData = $this->boardsService->getArticleListData(
+            $boardConfig['no'],
+            $params['currentPage'],
+            $params['page_rows'],
+            $params['searchQuery'],
+            $params['filters'],
+            $params['sort'],
+            $params['additionalQueries']
+        );
 
         // 페이징 데이터 계산
         $paginationData = CommonHelper::getPaginationData($totalItems, $params['currentPage'], $params['page_rows'], $params['page_nums']);
@@ -122,7 +130,7 @@ class BoardController
         // 뷰에 전달할 데이터 구성
         $viewData = [
             'title' => '게시판 목록 관리',
-            'boardsConfig' => $boardsConfig,
+            'boardConfig' => $boardConfig,
             'boardId' => $boardId,
             'categoryData' => $categoryData,
             'articleData' => $articleData,
@@ -151,37 +159,83 @@ class BoardController
 
     public function write($vars)
     {
-        $boardId = $vars['boardId'];
+        $board_id = $vars['boardId'];
+        $article_no = isset($vars['param']) ? $vars['param'] : 0;
 
         // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+        // 현재 인증된 회원 ID 가져오기
+        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
+        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        /*
+         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
+         */
+
+
+        // 에디터 스크립트
+        $editor = $boardsConfig['board_editor'] ? $boardsConfig['board_editor'] : $this->configDomain['cf_editor'];
+        $editor = 'tinymce';
+        $editorScript = CommonHelper::getEditorScript($editor);
+
+        // 게시판 개별 카테고리 가져오기
+        $boardsCategory = $this->boardsHelper->getBoardsCategoryMapping($boardsConfig['no']);
+
+        // 글 정보
+        $articleData = [];
+        if($article_no) {
+            $articleData = $this->boardsService->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+        }
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
             'title' => '게시판 글쓰기',
-            'boardId' => $boardId,
+            'boardId' => $board_id,
             'boardsConfig' => $boardsConfig,
+            'boardsCategory' => $boardsCategory,
+            'editorScript' => $editorScript,
+            'articleData' => $articleData,
+            'memberData' => $memberData,
         ];
 
         return ['Board/write', $viewData];
     }
-
+    
+    /*
+     * 게시판의 글을 등록하거나 수정합니다.
+     * $article_no 의 존재 여부에 따라 등록 또는 수정입니다.
+     *
+     */
     public function update()
     {
-        // 디버깅 로그 (개발 환경에서만)
-        error_log(print_r($_POST, true));
-
-        $boardId = $_POST['boardId'] ?? null;
-        $no = CommonHelper::pickNumber($_POST['no'], 0) ?? 0;
+        $board_id = $_POST['board_id'] ?? null;
+        $article_no = CommonHelper::pickNumber($_POST['article_no'], 0) ?? 0;
 
         // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
 
-        if (!$boardId || empty($boardsConfig)) {
+        if (!$board_id  || empty($boardsConfig)) {
             return CommonHelper::jsonResponse([
                 'result' => 'failure',
                 'message' => '선택된 게시판 설정 정보가 없습니다.'
             ]);
+        }
+
+        // 현재 인증된 회원 ID 가져오기
+        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
+        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        /*
+         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
+         */
+
+        if ($article_no) {
+            $articleData = $this->boardsService->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+            if(empty($articleData)) {
+                return CommonHelper::jsonResponse([
+                    'result' => 'failure',
+                    'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'
+                ]);
+            }
         }
 
         // POST 데이터는 formData 배열로 전송 됨
@@ -196,12 +250,23 @@ class BoardController
         // formData에 추가
         $formData['group_no'] = $boardsConfig['group_no'];
         $formData['board_no'] = $boardsConfig['no'];
+        $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
 
-        $numericFields = ['group_no'];
+        $numericFields = ['group_no', 'board_no'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        $result = $this->boardsService->writeBoardsUpdate($boardId, $data);
+        $result = $this->boardsService->writeBoardsUpdate($article_no, $board_id , $data);
+        
+        $data['result'] = 'success';
+        //$data['data'] <= ajax로 폼을 전송받았을 경우 실제 콜백함수에 전달되는 data
+        if ($article_no) {
+            $data['message'] = '게시글을 수정하였습니다.';
+            $data['data'] = '게시글을 수정하였습니다.';
+        } else {
+            $data['message'] = '게시글을 등록하였습니다.';
+            $data['data'] = '게시글을 등록하였습니다.';
+        }
 
-        return CommonHelper::jsonResponse($result);
+        return CommonHelper::jsonResponse($data);
     }
 }

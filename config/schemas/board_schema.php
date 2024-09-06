@@ -32,6 +32,7 @@ $schema = [
                                 board_name VARCHAR(100) NOT NULL DEFAULT '',
                                 board_id VARCHAR(25) NOT NULL DEFAULT '',
                                 board_skin VARCHAR(25) NOT NULL DEFAULT 'basic',
+                                board_editor VARCHAR(25),
                                 read_level INT DEFAULT 0,
                                 write_level INT DEFAULT 0,
                                 download_level INT DEFAULT 0,

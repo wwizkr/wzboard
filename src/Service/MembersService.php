@@ -18,6 +18,11 @@ class MembersService
     {
         return $this->membersModel->getMemberDataById($email);
     }
+
+    public function getMemberDataByNo($mb_no)
+    {
+        return $this->membersModel->getMemberDataByNo($mb_no);
+    }
     
     public function getMemberLevelData($level=null)
     {

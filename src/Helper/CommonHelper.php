@@ -91,6 +91,40 @@ class CommonHelper
     }
 
     /*
+     * Editor Script
+     */
+    public static function getEditorScript($editor = 'tinymce')
+    {
+        $script = '';
+        
+        if ($editor === 'tinymce') {
+            $script .= '<script src="/assets/js/lib/editor/tinymce/tinymce.min.js" referrerpolicy="origin"></script>'.PHP_EOL;
+            $script .= '<script src="/assets/js/lib/editor/tinymce/tinymce.editor.js"></script>'.PHP_EOL;
+        }
+
+        return $script;
+    }
+
+    /**
+     * 값의 타입을 확인하여 SQL 바인딩 타입을 반환하는 메서드
+     * @param mixed $value 검사할 값
+     * @return array SQL 바인딩을 위한 타입 및 값 정보
+     */
+    public static function getSqlBindType($value): array
+    {
+        // 값의 타입을 확인하여 적절한 형식 지정
+        if (is_int($value)) {
+            return ['i', $value]; // 정수형일 경우 'i'
+        } elseif (is_string($value)) {
+            return ['s', $value]; // 문자열일 경우 's'
+        } elseif (is_numeric($value)) {
+            return ['i', $value]; // 숫자형 문자열일 경우도 정수로 처리
+        } else {
+            return ['s', (string)$value]; // 다른 모든 경우 문자열로 처리
+        }
+    }
+
+    /*
      * 단일 파라미터를 검사하고 정리하는 메서드
      *
      * 사용자가 입력한 특정 파라미터의 값을 유효성 검사하고,
@@ -180,35 +214,43 @@ class CommonHelper
      */
     public static function validateArrayParam(array $allowed_values, $param_values = null, array $default = []): array
     {
+        //error_log("Allowed Valus:".print_r($allowed_values, true));
+        //error_log("Param Valus:".print_r($param_values, true));
+
         if ($param_values === null) {
             return $default;
         }
         if (!is_array($param_values)) {
             return $default;
         }
-        $cleaned_values = array_intersect_key($param_values, array_flip($allowed_values));
+        // Use array_intersect instead of array_intersect_key
+        $cleaned_values = array_intersect($allowed_values, $param_values);
         return array_map(function($value) {
             return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
         }, $cleaned_values);
     }
 
     /**
-     * 값의 타입을 확인하여 SQL 바인딩 타입을 반환하는 메서드
-     * @param mixed $value 검사할 값
-     * @return array SQL 바인딩을 위한 타입 및 값 정보
+     * 리스트 페이지의 sort 를 검증하는 메소드.
+     * 
+     * @param array $allowedSortFields 허용된 정렬 필드 목록
+     * @param array $allowedOrders asc, desc로 고정
+     * @return array 리스트 파라미터
      */
-    public static function getSqlBindType($value): array
+    private static function validateSort(array $allowedSortFields, array $inputSort): array
     {
-        // 값의 타입을 확인하여 적절한 형식 지정
-        if (is_int($value)) {
-            return ['i', $value]; // 정수형일 경우 'i'
-        } elseif (is_string($value)) {
-            return ['s', $value]; // 문자열일 경우 's'
-        } elseif (is_numeric($value)) {
-            return ['i', $value]; // 숫자형 문자열일 경우도 정수로 처리
-        } else {
-            return ['s', (string)$value]; // 다른 모든 경우 문자열로 처리
+        $validSort = [];
+        $allowedOrders = ['asc', 'desc'];
+
+        if (isset($inputSort['field']) && in_array($inputSort['field'], $allowedSortFields)) {
+            $validSort['field'] = $inputSort['field'];
         }
+
+        if (isset($inputSort['order']) && in_array(strtolower($inputSort['order']), $allowedOrders)) {
+            $validSort['order'] = strtolower($inputSort['order']);
+        }
+
+        return $validSort;
     }
 
     /**
@@ -255,28 +297,79 @@ class CommonHelper
 
         return $params;
     }
+
+    /**
+     * 리스트 페이지의 추가 파라미터 매핑 및 정리 Service
+     * 
+     * @param array $additionalQueries 허용된 필터 목록
+     * @param string $mappingBeforeField 매핑 전 필드명
+     * @param string $mappingAfterField 매핑 후 필드명
+     * @param array $mappingData 추가 파라미터 설정 (키: 파라미터 이름, 값: [타입, 기본값])
+     * @return array 추가 파라미터
+     * URL에 파라미터가 있더라도 정상적인 파라미터가 아니면 검색어로 사용하지 않음.
+     */
+    public static function additionalServiceQueries($additionalQueries, $mappingBeforeField = '', $mappingAfterField = '', array $mappingData = [])
+    {
+        //error_log("Common additionalQueries:" . print_r($additionalQueries, true));
+        //error_log("Common mappingBeforeField:" . print_r($mappingBeforeField, true));
+        //error_log("Common mappingAfterField:" . print_r($mappingAfterField, true));
+        //error_log("Common mappingData:" . print_r($mappingData, true));
+        $processed = [];
+        foreach ($additionalQueries as $query) {
+            $field = $query[0];
+            $value = $query[1];
+            
+            if (is_array($value)) {
+                if ($mappingBeforeField && $mappingAfterField && $field === $mappingBeforeField) {
+                    $categoryNumbers = array_filter(array_map(function ($name) use ($mappingData) {
+                        return $mappingData[$name] ?? null;
+                    }, $value));
+                    if (!empty($categoryNumbers)) {
+                        $processed[] = [$mappingAfterField, array_values($categoryNumbers)];
+                    }
+                } else {
+                    // 배열이지만 $mappingBeforeField 가 아님.
+                    $processed[] = [$field, $value];
+                }
+            } else {
+                // 배열이 아닌 경우
+                $processed[] = [$field, $value];
+            }
+        }
+
+        //error_log("Common processedData:" . print_r($processed, true));
+
+        return $processed;
+    }
     
     /**
-     * 리스트 페이지의 sort 를 검증하는 메소드.
+     * 리스트 페이지의 추가 파라미터 매핑 및 정리 Model
      * 
-     * @param array $allowedSortFields 허용된 정렬 필드 목록
-     * @param array $allowedOrders asc, desc로 고정
-     * @return array 리스트 파라미터
+     * @param array $config 설정 배열 (페이지당 행 수, 페이지 번호 수 등)
+     * @param array $additionalQueries 허용된 필터 목록
+     * @param array $addWhere 배열 추가
+     * @param array $bindValues 배열 추가
+     * 쿼리문에 추가할 $addWhere, $bindValues 배열을 추가.
      */
-    private static function validateSort(array $allowedSortFields, array $inputSort): array
+    public static function additionalModelQueries($additionalQueries, &$addWhere, &$bindValues)
     {
-        $validSort = [];
-        $allowedOrders = ['asc', 'desc'];
-
-        if (isset($inputSort['field']) && in_array($inputSort['field'], $allowedSortFields)) {
-            $validSort['field'] = $inputSort['field'];
+        //error_log("AdditionalQueries:".print_r($additionalQueries,true));
+        foreach ($additionalQueries as $index => $query) {
+            $field = $query[0];
+            $value = $query[1];
+            
+            if (is_array($value)) {
+                $placeholders = [];
+                foreach ($value as $i => $v) {
+                    $placeholders[] = "?";
+                    $bindValues[] = $v;
+                }
+                $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
+            } else {
+                $addWhere[] = "$field = ?";
+                $bindValues[] = $value;
+            }
         }
-
-        if (isset($inputSort['order']) && in_array(strtolower($inputSort['order']), $allowedOrders)) {
-            $validSort['order'] = strtolower($inputSort['order']);
-        }
-
-        return $validSort;
     }
 
     /**

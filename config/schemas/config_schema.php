@@ -10,7 +10,7 @@ $schema = [
     'schema_content' => [
                         'config_domain' => "
                             CREATE TABLE IF NOT EXISTS `config_domain` (
-                                `cf_id` INT(11) NOT NULL DEFAULT 1,
+                                `cf_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                 `cf_domain` VARCHAR(55) NOT NULL DEFAULT '',
                                 `cf_status` ENUM('Y','N') NOT NULL DEFAULT 'Y',
                                 `cf_expire` DATETIME NOT NULL DEFAULT '2099-12-31 23:59:59',
@@ -81,7 +81,7 @@ $schema = [
                                 `cf_board_write_point` INT(11) NOT NULL DEFAULT 0,
                                 `cf_board_comment_point` INT(11) NOT NULL DEFAULT 0,
                                 `cf_board_download_point` INT(11) NOT NULL DEFAULT 0,
-                                `cf_editor` VARCHAR(50) NOT NULL DEFAULT 'smarteditor2',
+                                `cf_editor` VARCHAR(25) NOT NULL DEFAULT 'tinymce',
                                 `cf_login_minutes` INT(11) NOT NULL DEFAULT 0,
                                 `cf_visit` VARCHAR(255),
                                 `cf_visit_del` INT(11) NOT NULL DEFAULT 0,

@@ -5,6 +5,7 @@ namespace Web\PublicHtml\Model;
 
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class BoardsModel
 {
@@ -20,50 +21,6 @@ class BoardsModel
     {
         $this->db = $container->get('db');
         $this->configDomain = $container->get('config_domain');
-    }
-    
-    /*
-    private function processAdditionalQueries($additionalQueries, &$addWhere, &$bindValues)
-    {
-        foreach ($additionalQueries as $index => $query) {
-            $field = $query[0];
-            $value = $query[1];
-            
-            if (is_array($value)) {
-                $placeholders = [];
-                foreach ($value as $i => $v) {
-                    $paramName = "additional_{$index}_{$i}";
-                    $placeholders[] = ":{$paramName}";
-                    $bindValues[$paramName] = $v;
-                }
-                $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
-            } else {
-                $paramName = "additional_{$index}";
-                $addWhere[] = "$field = :{$paramName}";
-                $bindValues[$paramName] = $value;
-            }
-        }
-    }
-    */
-
-    private function processAdditionalQueries($additionalQueries, &$addWhere, &$bindValues)
-    {
-        foreach ($additionalQueries as $index => $query) {
-            $field = $query[0];
-            $value = $query[1];
-            
-            if (is_array($value)) {
-                $placeholders = [];
-                foreach ($value as $i => $v) {
-                    $placeholders[] = "?";
-                    $bindValues[] = $v;
-                }
-                $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
-            } else {
-                $addWhere[] = "$field = ?";
-                $bindValues[] = $value;
-            }
-        }
     }
     
     /**
@@ -92,26 +49,27 @@ class BoardsModel
         $addWhere = [];
         $bindValues = [];
 
-        // 검색 쿼리와 필터 처리
+        // 검색 쿼리와 필터 처리 ## 수정필요
         if (!empty($searchQuery) && !empty($filters)) {
             $searchConditions = [];
             foreach ($filters as $index => $field) {
-                $paramName = "search_$index";
-                $searchConditions[] = "$field LIKE :$paramName";
-                $bindValues[$paramName] = "%$searchQuery%";
+                $searchConditions[] = "$field LIKE ?";
+                $bindValues[] = "%$searchQuery%";
             }
             $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
         }
 
         // additionalQueries 처리
-        $this->processAdditionalQueries($additionalQueries, $addWhere, $bindValues);
-
+        //error_log("Model additionalQueries:" . print_r($additionalQueries, true));
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
         $options = [
             'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'no DESC',
             'limit' => "$offset, $page_rows",
             'addWhere' => implode(' AND ', $addWhere),
             'values' => $bindValues
         ];
+        
+        //error_log("Add Where:" . print_r($options, true));
 
         return $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
     }
@@ -139,17 +97,12 @@ class BoardsModel
         if (!empty($searchQuery) && !empty($filters)) {
             $searchConditions = [];
             foreach ($filters as $index => $field) {
-                $paramName = "search_$index";
-                $searchConditions[] = "$field LIKE :$paramName";
-                $bindValues[$paramName] = "%$searchQuery%";
+                $searchConditions[] = "$field LIKE ?";
+                $bindValues[] = "%$searchQuery%";
             }
             $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
         }
-
-        // additionalQueries 처리
-        $this->processAdditionalQueries($additionalQueries, $addWhere, $bindValues);
-
-        error_log("Bind Values:".print_r($bindValues,true));
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
 
         $options = [
             'field' => 'COUNT(*) AS totalCount',
@@ -158,7 +111,7 @@ class BoardsModel
         ];
 
         $result = $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
-        error_log("Result:".print_r($result,true));
+        //error_log("Result:".print_r($result,true));
         return $result[0]['totalCount'] ?? 0;
     }
 
@@ -167,11 +120,36 @@ class BoardsModel
      * 게시글 작성, 수정
      *
      */
-    public function writeBoardsUpdate($boardId, $data)
+    public function writeBoardsUpdate($article_no, $boardId, $data)
     {
         $param = $data;
         $where = [];
+        
+        if ($article_no) {
+            $where['no'] = ['i', $article_no];
+            return $result = $this->db->sqlBindQuery('update','board_articles',$param,$where);
+        } else {
+            return $result = $this->db->sqlBindQuery('insert','board_articles',$param,$where);
+        }
+    }
 
-        return $result = $this->db->sqlBindQuery('insert','board_articles',$param,$where);
+    /*
+     * 게시글 읽기
+     *
+     * @param string $group_no
+     * @param int $article_no
+     */
+    public function getArticleDataByNo($board_no, $article_no)
+    {
+        $param = [];
+        $where = [
+            'board_no' => ['i', $board_no],
+            'no' => ['i', $article_no],
+        ];
+        $options = [];
+
+        $result = $this->db->sqlBindQuery('select', 'board_articles', $param, $where, $options);
+
+        return $result[0];
     }
 }
