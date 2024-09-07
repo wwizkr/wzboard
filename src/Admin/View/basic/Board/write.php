@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateWrite(data) {
-    alert(data);
+    console.log(data);
+    alert(data.message);
 }
 </script>

@@ -47,7 +47,8 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     // 관리자 라우트 그룹
     $r->addGroup('/admin', function (RouteCollector $r) use ($httpMethods) {
         $r->addRoute('GET', '', 'Web\\Admin\\Controller\\DashboardController@index');
-        
+        // **관리자 댓글 라우터 먼저 추가**
+        $r->addRoute($httpMethods, '/board/comment/{boardId}[/{articleNo}]', 'Web\\Admin\\Controller\\BoardController@comment');
         // 관리자 게시판 라우트
         $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\Admin\\Controller\\BoardController@handle');
         // 관리자 동적 라우트
@@ -62,9 +63,15 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     
     // DB 설치 라우트
     $r->addRoute('GET', '/install', 'Web\\PublicHtml\\Controller\\DatabaseInstallerController@install');
+    
+    // **사용자 댓글 라우터 먼저 추가**
+    $r->addRoute($httpMethods, '/board/comment/{boardId}[/{articleNo}]', 'Web\\PublicHtml\\Controller\\BoardController@comment');
     // 웹사이트 게시판 라우트
     $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\PublicHtml\\Controller\\BoardController@handle');
     
+    // 템플릿 관련 라우트 추가
+    $r->addRoute('GET', '/template/{method}', 'Web\\PublicHtml\\Controller\\TemplateController');
+
     // 일반 웹 라우트
     $r->addRoute('GET', '/', 'Web\\PublicHtml\\Controller\\HomeController@index');
     $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'DynamicController');
@@ -88,6 +95,9 @@ switch ($routeInfo[0]) {
             // 관리자 페이지 처리
             $adminViewRenderer = new AdminViewRenderer($container);
             RouteHelper::handleAdminRoute($handler, $vars, $container, $adminViewRenderer);
+        } elseif (strpos($uri, '/template') === 0) {
+            // 템플릿 요청 처리
+            RouteHelper::handleTemplateRoute($handler, $vars, $container);
         } elseif (strpos($uri, $_ENV['API_BASE_URL'] ?? '/api/v1') === 0) {
             // API 처리
             RouteHelper::handleApiRoute($handler, $vars, $container);

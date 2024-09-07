@@ -60,7 +60,6 @@ class BoardsModel
         }
 
         // additionalQueries 처리
-        //error_log("Model additionalQueries:" . print_r($additionalQueries, true));
         $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
         $options = [
             'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'no DESC',
@@ -68,8 +67,6 @@ class BoardsModel
             'addWhere' => implode(' AND ', $addWhere),
             'values' => $bindValues
         ];
-        
-        //error_log("Add Where:" . print_r($options, true));
 
         return $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
     }
@@ -111,7 +108,6 @@ class BoardsModel
         ];
 
         $result = $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
-        //error_log("Result:".print_r($result,true));
         return $result[0]['totalCount'] ?? 0;
     }
 
@@ -120,16 +116,30 @@ class BoardsModel
      * 게시글 작성, 수정
      *
      */
-    public function writeBoardsUpdate($article_no, $boardId, $data)
+    public function writeBoardsUpdate($article_no, $board_id, $data)
     {
         $param = $data;
         $where = [];
         
         if ($article_no) {
+            unset($param);
+            $param['category_no'] = $data['category_no'];
+            $param['title'] = $data['title'];
+            $param['content'] = $data['content'];
             $where['no'] = ['i', $article_no];
-            return $result = $this->db->sqlBindQuery('update','board_articles',$param,$where);
+            $result = $this->db->sqlBindQuery('update','board_articles',$param,$where);
+            if($result['result'] === 'success') {
+                return ['result' => 'success', 'message' => '게시글을 수정하였습니다.'];
+            } else {
+                return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+            }
         } else {
-            return $result = $this->db->sqlBindQuery('insert','board_articles',$param,$where);
+            $result = $this->db->sqlBindQuery('insert','board_articles',$param,$where);
+            if($result['ins_id']) {
+                return ['result' => 'success', 'message' => '게시글을 등록하였습니다.'];
+            } else {
+                return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+            }
         }
     }
 
@@ -151,5 +161,95 @@ class BoardsModel
         $result = $this->db->sqlBindQuery('select', 'board_articles', $param, $where, $options);
 
         return $result[0];
+    }
+
+    /*
+     * 댓글 작성, 수정
+     *
+     */
+    public function commentWriteUpdate($comment_no, $board_id, $data)
+    {
+        $param = $data;
+        $where = [];
+        
+        if ($comment_no) {
+            unset($param);
+            $param['content'] = $data['content'];
+            $where['no'] = ['i', $comment_no];
+            $result = $this->db->sqlBindQuery('update', 'board_comments',$param,$where);
+            if($result['result'] === 'success') {
+                return ['result' => 'success', 'message' => '댓글을 수정하였습니다.', 'action' => 'modify'];
+            } else {
+                return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+            }
+        } else {
+            $result = $this->db->sqlBindQuery('insert', 'board_comments',$param,$where);
+            if($result['ins_id']) {
+                $insert_path = $param['path'][1];
+                $new_path = !$insert_path ? (string)$result['ins_id'] : $insert_path.'/'.$result['ins_id'];
+                $action = !$insert_path ? 'insert' : 'reply';
+                
+                //path update
+                $update_param['path'] = ['s', $new_path];
+                $update_where['no'] = ['i', $result['ins_id']];
+                $update = $this->db->sqlBindQuery('update', 'board_comments', $update_param, $update_where);
+                
+                return ['result' => 'success', 'message' => '댓글을 등록하였습니다.', 'action' => $action];
+            } else {
+                return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+            }
+        }
+    }
+
+    /**
+     * 댓글 데이터를 가져오는 메서드
+     * @param int $board_no 게시판 번호
+     * @param int|null $article_no 게시글 번호 (없을 경우 전체 댓글 가져오기)
+     * @param int|null $comment_no 특정 댓글 번호 (특정 댓글만 가져오기)
+     * @param int $offset 페이징을 위한 시작 위치
+     * @param int $perPage 페이지당 댓글 수
+     * @return array 댓글 목록 또는 개별 댓글 데이터
+     */
+    public function getComments(?int $board_no = null, ?int $article_no = null, ?int $comment_no = null, int $offset = 0, int $perPage = 10): array
+    {
+        // WHERE 조건 설정
+        $where = [];
+
+        if ($board_no !== null) {
+            $where['board_no'] = ['i', $board_no, 'AND'];
+        }
+
+        if ($article_no !== null) {
+            $where['article_no'] = ['i', $article_no, 'AND'];
+        }
+
+        if ($comment_no !== null) {
+            $where['no'] = ['i', $comment_no, 'AND'];
+            $limit = '1';
+        } else {
+            $limit = "$offset, $perPage";
+        }
+
+        // SQL 쿼리 실행
+        $result = $this->db->sqlBindQuery(
+            'select',                 // 쿼리 모드
+            'board_comments',         // 테이블 이름
+            [],                       // 파라미터 없음
+            $where,                   // WHERE 조건
+            [                         // 옵션
+                'field' => '*',
+                'order' => 'path ASC, created_at DESC',
+                'limit' => $limit
+            ]
+        );
+
+        // 쿼리 결과 처리
+        if (is_array($result)) {
+            // 쿼리가 성공적으로 실행된 경우
+            return ['result' => 'success', 'data' => $result];
+        } else {
+            // 쿼리가 실패한 경우
+            return ['result' => 'failure', 'message' => '댓글 데이터를 가져오는 데 실패하였습니다.'];
+        }
     }
 }

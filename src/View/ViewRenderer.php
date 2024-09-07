@@ -81,24 +81,17 @@ class ViewRenderer
                 echo "뷰 파일을 찾을 수 없습니다: {$fullViewFilePath}"; //에러페이지로 대체할 것.
             }
         }
-        /*
-        // 페이징 데이터가 있을 경우 페이징 템플릿을 렌더링
-        if (isset($paginationData) && is_array($paginationData)) {
-            $pagination = new ComponentsView($this->container->get('config_domain')['cf_skin_layout'] ?? 'basic');
-            echo $pagination->renderPagination($paginationData);
-        }
-        */
     }
 
     // 전체 페이지를 렌더링하는 메서드
-    public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null)
+    public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null, ?bool $fullPage = false)
     {
         $this->render('/partials/basic/head', $headData ?? []);
-        $this->renderHeader($headerData ?? []);
+        if($fullPage === false) { $this->renderHeader($headerData ?? []); }
         $this->renderLayoutOpen($layoutData ?? []);
         $this->render($view, $viewData ?? []);
         $this->renderLayoutClose($layoutData ?? []);
-        $this->renderFooter($footerData ?? []);
+        if($fullPage === false) { $this->renderFooter($footerData ?? []); }
         $this->render('/partials/basic/foot', $footData ?? []);
     }
 }

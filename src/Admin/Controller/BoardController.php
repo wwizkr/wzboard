@@ -53,23 +53,23 @@ class BoardController
 
         // MembersHelper 인스턴스를 생성할 때 MembersService를 전달합니다.
         $this->membersHelper = new MembersHelper($this->membersService);
+        
+        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
+        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
+        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
 
         // boardsService를 초기화할 때 BoardsHelper 인스턴스를 전달합니다.
         $this->boardsService = new BoardsService(
             $this->boardsModel,
             $this->AdminboardsService,
             $this->boardsHelper,
-            $this->membersHelper
+            $this->membersHelper,
+            $this->formDataMiddleware
         );
 
         // BoardsHelper에 boardsService를 설정합니다.
         $this->boardsHelper->setBoardsService($this->boardsService);
-        
         $this->configDomain = $container->get('config_domain');
-
-        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
-        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
     }
 
     public function list($vars) // 게시글 목록 작업
@@ -142,16 +142,51 @@ class BoardController
 
     public function view($vars)
     {
-        $boardId = $vars['boardId'];
+        $board_id = $vars['boardId'];
+        $article_no = isset($vars['param']) ? $vars['param'] : 0;
 
         // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+        if (!$board_id  || empty($boardsConfig)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '선택된 게시판 설정 정보가 없습니다.'
+            ]);
+        }
+
+        // 현재 인증된 회원 ID 가져오기
+        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
+        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        /*
+         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
+         * 관리자는 필요없음.
+         */
+
+        // 에디터 스크립트
+        $editor = $boardsConfig['board_editor'] ? $boardsConfig['board_editor'] : $this->configDomain['cf_editor'];
+        $editor = 'tinymce';
+        $editorScript = CommonHelper::getEditorScript($editor);
+
+        // 글 정보
+        $articleData = [];
+        if($article_no) {
+            $articleData = $this->boardsService->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+        }
+        if(empty($articleData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '게시글 정보가 없습니다.'
+            ]);
+        }
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
-            'title' => '게시판 글쓰기',
-            'boardId' => $boardId,
+            'title' => '게시판  글읽기',
+            'board_id' => $board_id,
             'boardsConfig' => $boardsConfig,
+            'editorScript' => $editorScript,
+            'articleData' => $articleData,
         ];
 
         return ['Board/view', $viewData];
@@ -164,6 +199,13 @@ class BoardController
 
         // 게시판 설정 가져오기
         $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+        if (!$board_id  || empty($boardsConfig)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '선택된 게시판 설정 정보가 없습니다.'
+            ]);
+        }
 
         // 현재 인증된 회원 ID 가져오기
         $mb_no = $_SESSION['auth']['mb_no'] ?? null;
@@ -208,65 +250,89 @@ class BoardController
      */
     public function update()
     {
-        $board_id = $_POST['board_id'] ?? null;
-        $article_no = CommonHelper::pickNumber($_POST['article_no'], 0) ?? 0;
+        // 토큰 검증
+        $this->formDataMiddleware->validateToken('admin');
 
-        // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
+        $article_no = CommonHelper::validateParam('article_no', 'int', 0, null, INPUT_POST);
 
-        if (!$board_id  || empty($boardsConfig)) {
+        if (!$board_id) {
             return CommonHelper::jsonResponse([
                 'result' => 'failure',
                 'message' => '선택된 게시판 설정 정보가 없습니다.'
             ]);
         }
 
-        // 현재 인증된 회원 ID 가져오기
-        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
-        /*
-         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
-         */
+        $result = $this->boardsService->writeBoardsUpdate($article_no, $board_id);
 
-        if ($article_no) {
-            $articleData = $this->boardsService->getArticleDataByNo($boardsConfig['group_no'], $article_no);
-            if(empty($articleData)) {
+        // 결과를 JSON 응답으로 반환
+        return CommonHelper::jsonResponse($result);
+    }
+
+    // -------------------------------------
+    // 게시판 댓글
+    // -------------------------------------
+    
+    /*
+     * @param $vars boardId,
+     * 댓글만 보기..
+     */
+    // 댓글을 처리하는 메서드
+    public function comment($vars)
+    {
+        $board_id = $vars['boardId'] ?? null;
+        $article_no = $vars['articleNo'] ?? null;  // 게시글 번호가 있을 경우
+        
+        $data = CommonHelper::getJsonInput();
+        $page = CommonHelper::validateParam('page', 'int', 1, $data['page']);
+        $perPage = CommonHelper::validateParam('perPage', 'int', 10, $data['perPage']);
+
+        $board_no = 0;
+
+        if ($board_id) {
+            // 게시판 설정 가져오기
+            $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+            if (empty($boardsConfig)) {
                 return CommonHelper::jsonResponse([
                     'result' => 'failure',
-                    'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'
+                    'message' => '선택된 게시판 설정 정보가 없습니다.'
                 ]);
             }
+            $board_no = $boardsConfig['no'];
         }
 
-        // POST 데이터는 formData 배열로 전송 됨
-        $formData = $_POST['formData'] ?? null;
-        if (empty($formData)) {
+        $result = $this->boardsService->getComments((int)$board_no, (int)$article_no, null, (int)$page, (int)$perPage);
+        return CommonHelper::jsonResponse($result);
+    }
+
+    /*
+     * 게시판 댓글 등록 / 수정
+     * @param string $board_id
+     * @param int $article_no
+     * @param int $comment_no
+     * @param int $parent_no
+     */
+    public function commentWriteUpdate()
+    {
+        //토큰 검증
+        $this->formDataMiddleware->validateToken('admin');
+
+        $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
+        $article_no = CommonHelper::validateParam('article_no', 'int', 0, null, INPUT_POST);
+        $comment_no = CommonHelper::validateParam('comment_no', 'int', 0, null, INPUT_POST); //수정 시
+        $parent_no = CommonHelper::validateParam('parent_no', 'int', 0, null, INPUT_POST); //parent_no 가 됨.
+
+        if(!$board_id && !$article_no) {
             return CommonHelper::jsonResponse([
                 'result' => 'failure',
-                'message' => '입력 정보가 비어 있습니다. 잘못된 접속입니다.'
+                'message' => '잘못된 접속입니다.'
             ]);
         }
 
-        // formData에 추가
-        $formData['group_no'] = $boardsConfig['group_no'];
-        $formData['board_no'] = $boardsConfig['no'];
-        $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
-
-        $numericFields = ['group_no', 'board_no'];
-        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
-
-        $result = $this->boardsService->writeBoardsUpdate($article_no, $board_id , $data);
+        $result = $this->boardsService->commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no);
         
-        $data['result'] = 'success';
-        //$data['data'] <= ajax로 폼을 전송받았을 경우 실제 콜백함수에 전달되는 data
-        if ($article_no) {
-            $data['message'] = '게시글을 수정하였습니다.';
-            $data['data'] = '게시글을 수정하였습니다.';
-        } else {
-            $data['message'] = '게시글을 등록하였습니다.';
-            $data['data'] = '게시글을 등록하였습니다.';
-        }
-
-        return CommonHelper::jsonResponse($data);
+        // 결과를 JSON 응답으로 반환
+        return CommonHelper::jsonResponse($result);
     }
 }

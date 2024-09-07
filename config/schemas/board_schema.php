@@ -33,9 +33,11 @@ $schema = [
                                 board_id VARCHAR(25) NOT NULL DEFAULT '',
                                 board_skin VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 board_editor VARCHAR(25),
-                                read_level INT DEFAULT 0,
-                                write_level INT DEFAULT 0,
-                                download_level INT DEFAULT 0,
+                                read_level TINYINT UNSIGNED DEFAULT 0,
+                                write_level TINYINT UNSIGNED DEFAULT 0,
+                                comment_level TINYINT UNSIGNED DEFAULT 0,
+                                download_level TINYINT UNSIGNED DEFAULT 0,
+                                is_use_comment BOOLEAN DEFAULT TRUE,
                                 is_use_file BOOLEAN DEFAULT TRUE,
                                 file_size_limit INT DEFAULT 2097152,
                                 use_separate_table BOOLEAN DEFAULT FALSE,
@@ -102,16 +104,19 @@ $schema = [
                         'board_comments' => "
                             CREATE TABLE IF NOT EXISTS board_comments (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
+                                board_no INT NOT NULL DEFAULT 0,
                                 article_no INT NOT NULL DEFAULT 0,
-                                comment_no INT NOT NULL DEFAULT 0,
                                 parent_no INT NOT NULL DEFAULT 0,
-                                depth TINYINT NOT NULL DEFAULT 0,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
+                                nickName VARCHAR(50) NOT NULL DEFAULT '',
+                                password VARCHAR(255) NOT NULL DEFAULT '',
                                 content TEXT NOT NULL,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                INDEX idx_article_no (article_no),
-                                INDEX idx_mb_id (mb_id)
+                                path VARCHAR(255) NOT NULL,
+                                INDEX idx_article_no (board_no, article_no),
+                                INDEX idx_mb_id (mb_id),
+                                INDEX idx_path (path)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
                         

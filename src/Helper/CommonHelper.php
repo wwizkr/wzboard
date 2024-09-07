@@ -265,10 +265,10 @@ class CommonHelper
     public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = []): array
     {
         $params = [
-            'currentPage' => self::validateParam('page', 'int', 1, null, INPUT_GET),
-            'searchQuery' => self::validateParam('search', 'string', '', null, INPUT_GET),
-            'filters' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? []),
-            'sort' => self::validateSort($allowedSortFields, $_GET['sort'] ?? []),
+            'currentPage' => self::validateParam('page', 'int', 1, null, INPUT_GET) ?: self::validateParam('page', 'int', 1, null, INPUT_POST),
+            'searchQuery' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: self::validateParam('search', 'string', '', null, INPUT_POST),
+            'filters' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? $_POST['filter'] ?? []),
+            'sort' => self::validateSort($allowedSortFields, $_GET['sort'] ?? $_POST['sort'] ?? []),
             'page_rows' => $config['cf_page_rows'] ?? 20,
             'page_nums' => $config['cf_page_nums'] ?? 10,
             'additionalQueries' => [],
@@ -281,14 +281,15 @@ class CommonHelper
             $allowedValues = $paramConfig[2] ?? null;
 
             $paramNameWithoutBrackets = rtrim($paramName, '[]');
-            $value = $_GET[$paramNameWithoutBrackets] ?? $default;
+            $value = $_GET[$paramNameWithoutBrackets] ?? $_POST[$paramNameWithoutBrackets] ?? $default;
 
             if ($type === 'array') {
                 if (is_array($value) && ($allowedValues === null || array_diff($value, $allowedValues) === [])) {
                     $params['additionalQueries'][] = [$paramNameWithoutBrackets, $value];
                 }
             } else {
-                $value = self::validateParam($paramNameWithoutBrackets, $type, $default, null, INPUT_GET);
+                $value = self::validateParam($paramNameWithoutBrackets, $type, $default, null, INPUT_GET) ?: 
+                         self::validateParam($paramNameWithoutBrackets, $type, $default, null, INPUT_POST);
                 if ($allowedValues === null || in_array($value, $allowedValues)) {
                     $params['additionalQueries'][] = [$paramNameWithoutBrackets, $value];
                 }
@@ -373,7 +374,7 @@ class CommonHelper
     }
 
     /**
-     * 페이지네이션 데이터를 계산합니다.
+     * 페이지네이션 데이터를 계산합니다.[수정 예정]
      * 
      * @param int $totalItems 총 아이템 수
      * @param int $currentPage 현재 페이지
@@ -390,6 +391,66 @@ class CommonHelper
             'itemsPerPage' => $itemsPerPage,
             'pageNums' => $pageNums,
         ];
+    }
+
+    /**
+     * $content 의 임시저장된 이미지 파일을 복사한 후 $content 내용 변경 및 임시 이미지 삭제
+     * @param $content
+     * @param $storagePath : 복사할 디렉토리
+     * @return string $congent;
+     */
+    public static function updateStorageImages($content, $storagePath)
+    {
+        // 오늘 날짜 형식 설정
+        $dateFolder = date('Ymd'); // 예: 20240828
+        $storagePath = $storagePath.$dateFolder;
+
+        // 폴더가 존재하지 않으면 생성
+        if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $storagePath)) {
+            mkdir($_SERVER['DOCUMENT_ROOT'] . $storagePath, 0777, true);
+        }
+
+        // 정규식을 사용하여 $conetnt 내의 모든 /tmp/ 경로의 파일들을 찾기
+        preg_match_all('/\/storage\/tmp\/[^\s"\']+/', $content, $matches);
+
+        // 찾은 파일들을 새로운 경로로 복사하고 경로를 업데이트
+        if (isset($matches[0]) && count($matches[0]) > 0) {
+            foreach ($matches[0] as $filePath) {
+                $fileName = basename($filePath);
+                $sourcePath = $_SERVER['DOCUMENT_ROOT'] . $filePath;
+                $destinationPath = $_SERVER['DOCUMENT_ROOT'] . $storagePath . '/' . $fileName;
+
+                // 파일이 존재하면 복사 후 경로 변경
+                if (file_exists($sourcePath)) {
+                    if (copy($sourcePath, $destinationPath)) {
+                        error_log("File copied successfully from $sourcePath to $destinationPath");
+                        
+                        // 복사 성공 시 콘텐츠 내 경로 변경
+                        $newFilePath = $storagePath . '/' . $fileName;
+                        $contentBeforeReplace = $content; // 변경 전 콘텐츠 백업
+                        $content = str_replace($filePath, $newFilePath, $content);
+
+                        // 로그: 콘텐츠 경로 변경 후 로그
+                        if ($content !== $contentBeforeReplace) {
+                            error_log("Content path replaced: $filePath -> $newFilePath");
+                        } else {
+                            error_log("Content path replacement failed for: $filePath");
+                        }
+
+                        // 원본 파일 삭제
+                        if (!unlink($sourcePath)) {
+                            error_log("Failed to delete source file: $sourcePath");
+                        }
+                    } else {
+                        error_log("Failed to copy file from $sourcePath to $destinationPath");
+                    }
+                } else {
+                    error_log("Source file does not exist: $sourcePath");
+                }
+            }
+        }
+
+        return $content;
     }
 
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음

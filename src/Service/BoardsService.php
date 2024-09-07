@@ -8,6 +8,8 @@ use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\CommonHelper;
+use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class BoardsService
 {
@@ -16,6 +18,7 @@ class BoardsService
     protected $boardsHelper;
     protected $membersHelper;
     protected $categoryMapping;
+    protected $formDataMiddleware;
 
     /**
      * 생성자: BoardsService 인스턴스를 생성합니다.
@@ -30,13 +33,15 @@ class BoardsService
         BoardsModel $boardsModel, 
         AdminBoardsService $adminBoardsService, 
         BoardsHelper $boardsHelper, 
-        MembersHelper $membersHelper
+        MembersHelper $membersHelper,
+        FormDataMiddleware $formDataMiddleware
     ) {
         $this->boardsModel = $boardsModel;
         $this->adminBoardsService = $adminBoardsService;
         $this->boardsHelper = $boardsHelper;
         $this->membersHelper = $membersHelper;
         $this->categoryMapping = [];
+        $this->formDataMiddleware = $formDataMiddleware;
     }
 
     private function getCategoryMapping($board_no)
@@ -80,86 +85,53 @@ class BoardsService
      * @param array $data 게시글 데이터
      * @return mixed 업데이트 결과
      */
-    public function writeBoardsUpdate($article_no, $boardId, $data)
+    public function writeBoardsUpdate($article_no, $board_id)
     {
-        // BoardsHelper 및 MembersHelper 메서드 사용 예시
-        $groupData = $this->boardsHelper->getGroupData();
-        $memberLevels = $this->membersHelper->getLevelData();
+        // 게시판 설정 가져오기
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
 
-        // 오늘 날짜 형식 설정
-        $dateFolder = date('Ymd'); // 예: 20240828
-        $storagePath = "/storage/board/$boardId/$dateFolder";
-
-        // 폴더가 존재하지 않으면 생성
-        if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $storagePath)) {
-            mkdir($_SERVER['DOCUMENT_ROOT'] . $storagePath, 0777, true);
+        if (!$board_id  || empty($boardsConfig)) {
+            return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
         }
-
-        // 콘텐츠 처리 로직
-        $content = $data['content'][1];
-
-        // 정규식을 사용하여 모든 /tmp/ 경로의 파일들을 찾기
-        preg_match_all('/\/storage\/tmp\/[^\s"\']+/', $content, $matches);
-
-        // 찾은 파일들을 새로운 경로로 복사하고 경로를 업데이트
-        if (isset($matches[0]) && count($matches[0]) > 0) {
-            foreach ($matches[0] as $filePath) {
-                $fileName = basename($filePath);
-                $sourcePath = $_SERVER['DOCUMENT_ROOT'] . $filePath;
-                $destinationPath = $_SERVER['DOCUMENT_ROOT'] . $storagePath . '/' . $fileName;
-
-                // 로그: 파일 경로 정보 출력
-                //error_log("Processing file: $filePath");
-                //error_log("Source path: $sourcePath");
-                //error_log("Destination path: $destinationPath");
-
-                // 파일이 존재하면 복사 후 경로 변경
-                if (file_exists($sourcePath)) {
-                    if (copy($sourcePath, $destinationPath)) {
-                        error_log("File copied successfully from $sourcePath to $destinationPath");
-                        
-                        // 복사 성공 시 콘텐츠 내 경로 변경
-                        $newFilePath = $storagePath . '/' . $fileName;
-                        $contentBeforeReplace = $content; // 변경 전 콘텐츠 백업
-                        $content = str_replace($filePath, $newFilePath, $content);
-
-                        // 로그: 콘텐츠 경로 변경 후 로그
-                        if ($content !== $contentBeforeReplace) {
-                            error_log("Content path replaced: $filePath -> $newFilePath");
-                        } else {
-                            error_log("Content path replacement failed for: $filePath");
-                        }
-
-                        // 원본 파일 삭제
-                        if (!unlink($sourcePath)) {
-                            error_log("Failed to delete source file: $sourcePath");
-                        }
-                    } else {
-                        error_log("Failed to copy file from $sourcePath to $destinationPath");
-                    }
-                } else {
-                    error_log("Source file does not exist: $sourcePath");
-                }
+        
+        // $article_no 가 있다면 실제 게시글이 있는 지 확인
+        if ($article_no) {
+            $articleData = $this->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+            if(empty($articleData)) {
+                return ['result' => 'failure', 'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'];
             }
         }
 
-        // 변경된 콘텐츠로 데이터 업데이트
-        $data['content'][1] = $content;
+        // 현재 인증된 회원 ID 가져오기 :: HELPER 로 사용예정
+        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
+        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+
+        // POST 데이터는 formData 배열로 전송 됨
+        $formData = $_POST['formData'] ?? null;
+        if (empty($formData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력 정보가 비어 있습니다. 잘못된 접속입니다.'
+            ]);
+        }
+
+        // 이미지 저장 디렉토리
+        $storagePath = "/storage/board/$board_id/";
+        
+        $content = $formData['content'];
+        $content = CommonHelper::updateStorageImages($content, $storagePath);
+        
+        // formData에 추가
+        $formData['group_no'] = $boardsConfig['group_no'];
+        $formData['board_no'] = $boardsConfig['no'];
+        $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
+        $fromData['content'] = $content;
+
+        $numericFields = ['group_no', 'board_no'];
+        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         // 실제 게시판 업데이트
-        $updateResult = $this->boardsModel->writeBoardsUpdate($article_no, $boardId, $data);
-
-        if ($updateResult) {
-            return [
-                'result' => 'success',
-                'message' => '게시글이 성공적으로 업데이트되었습니다.'
-            ];
-        } else {
-            return [
-                'result' => 'failure',
-                'message' => '게시글 업데이트 중 오류가 발생했습니다.'
-            ];
-        }
+        return $this->boardsModel->writeBoardsUpdate($article_no, $board_id, $data);
     }
 
     /*
@@ -172,6 +144,7 @@ class BoardsService
     {
         $result = $this->boardsModel->getArticleDataByNo($board_no, $article_no);
         
+        // HTML로 변환
         $result['content'] = htmlspecialchars_decode($result['content']);
 
         $articleData = $result;
@@ -191,5 +164,96 @@ class BoardsService
         $categoryData = $result;
 
         return $categoryData;
+    }
+    
+    // 개별 댓글 -- 삭제 예정
+    public function getCommentDataByNo($board_no, $comment_no)
+    {
+        return $this->boardsModel->getCommentDataByNo($board_no, $comment_no);
+    }
+
+    public function commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no)
+    {
+        // 게시판 설정 가져오기
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+        if (!$board_id  || empty($boardsConfig)) {
+            return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
+        }
+
+        // comment_no 가 있다면. 실제 댓글이 있는지 확인.
+        $comment = [];
+        if ($comment_no) {
+            $result = $this->getComments($boardsConfig['no'], $article_no, $comment_no);
+            if ($result['result'] === 'failure') {
+                return ['result' => 'failure', 'message' => '댓글 정보가 없습니다.'];
+            }
+            $comment = $result['data'][0];
+        }
+
+        // parent_no 가 있다면 부모 글 정보를 가져옴.
+        $parent = [];
+        if ($parent_no) {
+            $result = $this->getComments($boardsConfig['no'], $article_no, $parent_no);
+            if ($result['result'] === 'failure') {
+                return ['result' => 'failure', 'message' => '댓글 정보가 없습니다.'];
+            }
+            $parent = $result['data'][0];
+        }
+
+        // 현재 인증된 회원 ID 가져오기
+        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
+        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        
+
+        // POST 데이터는 formData 배열로 전송 됨
+        $formData = $_POST['formData'] ?? null;
+        if (empty($formData)) {
+            return ['result' => 'failure', 'message' => '입력 정보가 비어 있습니다. 잘못된 접속입니다.'];
+        }
+
+        // 이미지 저장 디렉토리
+        $storagePath = "/storage/board/$board_id/";
+        
+        $content = $formData['content'];
+        $content = CommonHelper::updateStorageImages($content, $storagePath);
+
+        // formData에 추가
+        $formData['board_no'] = $boardsConfig['no'];
+        $formData['article_no'] = $article_no;
+        $formData['parent_no']  = $parent_no;
+        $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
+        $formData['content'] = $content;
+        $formData['path'] = !empty($parent) ? $parent['path'] : '';
+        
+        $numericFields = ['board_no', 'article_no', 'parent_no'];
+        $data = $this->formDataMiddleware->processFormData($formData, $numericFields);
+
+        // 실제 게시판 업데이트
+        return $this->boardsModel->commentWriteUpdate($comment_no, $board_id, $data);
+    }
+
+    /**
+     * 댓글을 가져오는 서비스 메서드
+     * @param int $board_no 게시판 번호
+     * @param int|null $article_no 게시글 번호 (없을 경우 전체 댓글 가져오기)
+     * @param int|null $comment_no 댓글 번호 (특정 댓글만 가져오기)
+     * @param int $page 현재 페이지 번호
+     * @param int $perPage 페이지당 댓글 수
+     * @return array 댓글 목록
+     */
+    public function getComments(
+        int $board_no, 
+        ?int $article_no = null, 
+        ?int $comment_no = null, 
+        int $page = 1, 
+        int $perPage = 10
+    ): array {
+        error_log("Service Page:".print_r($page, true));
+        $offset = ($page - 1) * $perPage;
+        error_log("Service offset:".print_r($offset, true));
+
+        // 특정 게시글 또는 게시판의 모든 댓글을 가져오는 경우
+        return $this->boardsModel->getComments($board_no, $article_no, $comment_no, $offset, $perPage);
     }
 }
