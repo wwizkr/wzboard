@@ -72,7 +72,11 @@ class AuthController
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // 유효한 토큰이 없으므로 로그인 폼을 보여줌
             $viewData = [];
-            return [$viewPath, $viewData];
+            return [
+                "viewPath" => $viewPath,
+                "viewData" => $viewData,
+                "fullpage" => true,
+            ];
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 로그인 처리
             $email = $_POST['email'] ?? '';
@@ -113,7 +117,10 @@ class AuthController
                 exit();
             } else { // 로그인 실패
                 $viewData = ['error' => 'Invalid email or password', 'email' => $email];
-                return [$viewPath, $viewData];
+                return [
+                    "viewPath" => $viewPath,
+                    "viewData" => $viewData
+                ];
             }
         }
     }

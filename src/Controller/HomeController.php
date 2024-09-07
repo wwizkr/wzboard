@@ -34,19 +34,9 @@ class HomeController
 
         // 뷰 경로와 데이터를 반환
         $skin = 'basic';
-        return ["Home/{$skin}/index", $viewData];
-    }
-
-    public function create()
-    {
-        $skin = 'classic'; // 또 다른 스킨 이름
-
-        $viewData = [
-            'title' => 'Welcome to the Home Page Create',
-            'content' => 'This is the content of the home page create.'
+        return [
+            "viewPath" => "Home/{$skin}/index",
+            "viewData" => $viewData
         ];
-
-        // 뷰 경로와 데이터를 반환, 스킨 경로 포함
-        return ["Home/{$skin}/create", $viewData];
     }
 }

@@ -82,16 +82,18 @@ class RouteHelper
         if (class_exists($controller)) {
             $controllerInstance = new $controller($container);
             if (method_exists($controllerInstance, $method)) {
-                // 메서드 호출 결과를 배열로 받아옴
                 $response = $controllerInstance->$method($vars);
 
-                // 기본값 설정
-                $viewPath = $response[0] ?? null; // 첫 번째 값: $viewPath
-                $viewData = $response[1] ?? []; // 두 번째 값: $viewData
-                $fullPage = $response[2] ?? false; // header, footer 출력여부 기본 false => 출력
+                $viewPath = $response['viewPath'] ?? null;
+                $headData = $response['headData'] ?? [];
+                $headerData = $response['headerData'] ?? [];
+                $layoutData = $response['layoutData'] ?? [];
+                $viewData = $response['viewData'] ?? [];
+                $footerData = $response['footerData'] ?? [];
+                $footData = $response['footData'] ?? [];
+                $fullPage = $response['fullPage'] ?? false;
 
-                // 페이지 렌더링
-                $viewRenderer->renderPage($viewPath, [], [], [], $viewData, [], [], $fullPage);
+                $viewRenderer->renderPage($viewPath, $headData, $headerData, $layoutData, $viewData, $footerData, $footData, $fullPage);
             } else {
                 echo 'Method not found';
             }
