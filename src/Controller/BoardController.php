@@ -1,14 +1,13 @@
 <?php
 // 파일 위치: /src/Admin/Controller/BoardController.php
 
-namespace Web\Admin\Controller;
+namespace Web\PublicHtml\Controller;
 
-use Web\Admin\Helper\AdminBoardsHelper;
+use Web\Admin\Model\AdminBoardsModel;
+use Web\Admin\Service\AdminBoardsService;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
-use Web\Admin\Model\AdminBoardsModel;
-use Web\Admin\Service\AdminBoardsService;
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Service\BoardsService;
@@ -22,9 +21,9 @@ class BoardController
 {
     protected $container;
     protected $sessionManager;
-    protected $boardsHelper;
     protected $adminBoardsModel;
     protected $adminBoardsService;
+    protected $boardsHelper;
     protected $membersModel;
     protected $membersService;
     protected $membersHelper;
@@ -46,7 +45,7 @@ class BoardController
         // BoardsHelper 인스턴스를 먼저 생성합니다.
         $this->boardsHelper = new BoardsHelper($this->adminBoardsService);
 
-        // MembersHelper 인스턴스를 생성할 때 MembersService를 전달합니다.
+        // MembersHelper 인스턴스를 생성할 때 MembersModel과 SessionManager를 전달합니다.
         $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
         
         // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
@@ -69,6 +68,13 @@ class BoardController
     public function list($vars) // 게시글 목록 작업
     {
         $boardId = $vars['boardId'] ?? null;
+
+        // 게시판 설정 데이터 가져오기
+        $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $viewPath = 'Board/'.$boardConfig['board_skin'].'/list';
+
+        // 게시판의 카테고리 데이터
+        $categoryData = [];
     
         $config = [
             'cf_page_rows' => $this->configDomain['cf_page_rows'],
@@ -97,12 +103,6 @@ class BoardController
          * $params['additionalQueries'];
          */
 
-        // 게시판 설정 데이터 가져오기
-        $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
-
-        // 게시판의 카테고리 데이터
-        $categoryData = [];
-
         // 총 게시물 수
         /*
          * $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
@@ -117,9 +117,11 @@ class BoardController
             $params['sort'],
             $params['additionalQueries']
         );
-
         // 페이징 데이터 계산
         $paginationData = CommonHelper::getPaginationData($totalItems, $params['currentPage'], $params['page_rows'], $params['page_nums']);
+        
+        // 실제 출력할 LIST HTML을 가져옴
+        $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData, $paginationData);
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
@@ -127,11 +129,14 @@ class BoardController
             'boardConfig' => $boardConfig,
             'boardId' => $boardId,
             'categoryData' => $categoryData,
-            'articleData' => $articleData,
+            'articleHtml' => $articleHtml,
             'paginationData' => $paginationData,
         ];
 
-        return ['Board/list', $viewData];
+        return [
+            'viewPath' => $viewPath,
+            'viewData' => $viewData,
+        ];
     }
 
     public function view($vars)
@@ -141,6 +146,7 @@ class BoardController
 
         // 게시판 설정 가져오기
         $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $viewPath = 'Board/'.$boardConfig['board_skin'].'/view';
 
         if (!$board_id  || empty($boardConfig)) {
             return CommonHelper::jsonResponse([
@@ -182,8 +188,11 @@ class BoardController
             'editorScript' => $editorScript,
             'articleData' => $articleData,
         ];
-
-        return ['Board/view', $viewData];
+        
+        return [
+            'viewPath' => $viewPath,
+            'viewData' => $viewData,
+        ];
     }
 
     public function write($vars)
@@ -193,6 +202,7 @@ class BoardController
 
         // 게시판 설정 가져오기
         $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $viewPath = 'Board/'.$boardConfig['board_skin'].'/write';
 
         if (!$board_id  || empty($boardConfig)) {
             return CommonHelper::jsonResponse([
@@ -202,8 +212,8 @@ class BoardController
         }
 
         // 현재 인증된 회원 ID 가져오기
-        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        //$mb_no = $_SESSION['auth']['mb_no'] ?? null;
+        $memberData = $this->membersHelper->getMemberDataByNo();
         /*
          * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
          */
@@ -234,7 +244,10 @@ class BoardController
             'memberData' => $memberData,
         ];
 
-        return ['Board/write', $viewData];
+        return [
+            'viewPath' => $viewPath,
+            'viewData' => $viewData,
+        ];
     }
     
     /*
@@ -245,7 +258,12 @@ class BoardController
     public function update()
     {
         // 토큰 검증
-        $this->formDataMiddleware->validateToken('admin');
+        $isAdmin = CommonHelper::isAdminRequest();
+        if ($isAdmin) {
+            $this->formDataMiddleware->validateToken('admin');
+        } else {
+            $this->formDataMiddleware->validateToken('user');
+        }
 
         $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
         $article_no = CommonHelper::validateParam('article_no', 'int', 0, null, INPUT_POST);
@@ -262,6 +280,11 @@ class BoardController
         // 결과를 JSON 응답으로 반환
         return CommonHelper::jsonResponse($result);
     }
+
+    /*
+     * 게시판의 글을 삭제합니다.
+     *
+     */
 
     // -------------------------------------
     // 게시판 댓글
@@ -310,7 +333,12 @@ class BoardController
     public function commentWriteUpdate()
     {
         //토큰 검증
-        $this->formDataMiddleware->validateToken('admin');
+        $isAdmin = CommonHelper::isAdminRequest();
+        if ($isAdmin) {
+            $this->formDataMiddleware->validateToken('admin');
+        } else {
+            $this->formDataMiddleware->validateToken('user');
+        }
 
         $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
         $article_no = CommonHelper::validateParam('article_no', 'int', 0, null, INPUT_POST);

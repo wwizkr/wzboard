@@ -11,6 +11,7 @@
 
 namespace Web\Admin\Controller;
 
+use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\Admin\Model\AdminBoardsModel;
@@ -27,6 +28,7 @@ use Web\PublicHtml\Middleware\CsrfTokenHandler;
 class BoardadminController
 {
     protected $container;
+    protected $sessionManager;
     protected $boardsHelper;
     protected $membersHelper;
     protected $adminBoardsModel;
@@ -41,16 +43,17 @@ class BoardadminController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
+        $this->sessionManager = $this->container->get('session_manager');
         $this->adminBoardsModel = new AdminBoardsModel($container);
         $this->adminBoardsService = new AdminBoardsService($this->adminBoardsModel);
         $this->boardsHelper = new BoardsHelper($this->adminBoardsService);
         $this->membersModel = new MembersModel($container);
         $this->membersService = new MembersService($this->membersModel);
-        $this->membersHelper = new MembersHelper($this->membersService);
+        $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
         $this->configDomain = $container->get('config_domain');
 
         // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
+        $csrfTokenHandler = new CsrfTokenHandler($this->sessionManager);
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
     }
 

@@ -453,5 +453,32 @@ class CommonHelper
         return $content;
     }
 
+    // Slug 생성 함수
+    public static function generateSlug($title)
+    {
+        // 한글과 영어, 숫자만 남기고, 나머지 문자는 모두 제거
+        $title = preg_replace('/[^a-zA-Z가-힣0-9\s-]/u', '', $title);
+
+        // 공백이나 '-' 문자를 기준으로 문자열을 나누고 다시 '-'로 결합
+        $slug = preg_replace('/\s+/', '-', trim($title));
+
+        // 모든 문자를 소문자로 변환
+        $slug = strtolower($slug);
+
+        // 타임스탬프 추가 (년월일시분초 형식)
+        $timestamp = date('YmdHis');
+        $slug .= '-' . $timestamp;
+
+        return $slug;
+    }
+
+    // 관리자 페이지에서 이루어진 요청인지 확인
+    public static function isAdminRequest()
+    {
+        $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
+
+        return $isAdmin;
+    }
+
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음
 }

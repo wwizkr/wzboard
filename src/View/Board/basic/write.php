@@ -1,15 +1,6 @@
 <form name="frm" id="frm">
 <input type="hidden" name="article_no" id="article_no" value="<?= $articleData['no'] ?? ''; ?>">
 <input type="hidden" name="board_id" id="board_id" value="<?= $boardId; ?>">
-<div class="content-fixed-top">
-    <div class="fixed-top-inner">
-        <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
-        <div class="fixed-top-btn">
-            <a href="/admin/board/<?= $boardId; ?>/list" class="btn btn-danger me-2">목록</a>
-            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/board/<?= $boardId;?>/update" data-callback="updateWrite">확인</button>
-        </div>
-    </div>
-</div>
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <div class="p-3 table-form">
@@ -37,6 +28,8 @@
                     <textarea name="formData[content]" id="content" class="editor-form" data-toolbar="basic" data-menubar="true" data-height="500"></textarea>
                 </div>
             </div>
+            <a href="/board/<?= $boardId; ?>/list" class="btn btn-danger me-2">목록</a>
+            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/board/<?= $boardId;?>/update" data-callback="updateWrite">확인</button>
         </div>
     </div>
 </div>

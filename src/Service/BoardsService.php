@@ -1,47 +1,42 @@
 <?php
-// 파일 위치: src/Service/BoardsService.php
+// 파일 위치: /src/Service/BoardsService.php
 
 namespace Web\PublicHtml\Service;
 
-use Web\Admin\Service\AdminBoardsService;
 use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
+use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class BoardsService
 {
     protected $boardsModel;
-    protected $adminBoardsService;
     protected $boardsHelper;
     protected $membersHelper;
-    protected $categoryMapping;
     protected $formDataMiddleware;
+    protected $categoryMapping;
 
     /**
      * 생성자: BoardsService 인스턴스를 생성합니다.
      *
      * @param BoardsModel $boardsModel 게시판 모델 인스턴스
-     * @param AdminBoardsService $adminBoardsService 관리자 게시판 서비스 인스턴스
      * @param BoardsHelper $boardsHelper 게시판 관련 헬퍼 인스턴스
      * @param MembersHelper $membersHelper 회원 관련 헬퍼 인스턴스
-     * @param int|null $board_no 게시판 번호 (선택적)
+     * @param FormDataMiddleware $formDataMiddleware 폼 데이터 미들웨어 인스턴스
      */
     public function __construct(
         BoardsModel $boardsModel, 
-        AdminBoardsService $adminBoardsService, 
         BoardsHelper $boardsHelper, 
         MembersHelper $membersHelper,
         FormDataMiddleware $formDataMiddleware
     ) {
         $this->boardsModel = $boardsModel;
-        $this->adminBoardsService = $adminBoardsService;
         $this->boardsHelper = $boardsHelper;
         $this->membersHelper = $membersHelper;
-        $this->categoryMapping = [];
         $this->formDataMiddleware = $formDataMiddleware;
+        $this->categoryMapping = [];
     }
 
     private function getCategoryMapping($board_no)
@@ -67,7 +62,8 @@ class BoardsService
     {
         $this->categoryMapping = $this->getCategoryMapping($board_no);
         $processedQueries = CommonHelper::additionalServiceQueries($additionalQueries, 'category', 'category_no', $this->categoryMapping);
-        return $this->boardsModel->getArticleListData(
+        
+        $data = $this->boardsModel->getArticleListData(
             $board_no, 
             $currentPage, 
             $page_rows, 
@@ -76,8 +72,47 @@ class BoardsService
             $sort, 
             $processedQueries
         );
+        
+        foreach ($data as $key => $articleData) {
+            if (isset($articleData['password'])) {
+                unset($data[$key]['password']);
+            }
+        }
+
+        return $data;
     }
     
+    public function loadArticleList($boardConfig, $articleData, $paginationData)
+    {
+        $templatePath = __DIR__ . '../../View/Board/'.$boardConfig['board_skin'].'/articleTemplate.html';
+        $template = file_get_contents($templatePath);
+
+        // 템플릿이 제대로 로드되었는지 확인
+        if ($template === false) {
+            return '템플릿 파일을 찾을 수 없습니다.';
+        }
+
+        $output = ''; // 최종 출력할 HTML
+
+        // articleData와 paginationData를 사용하여 $num 계산
+        foreach ($articleData as $index => $article) {
+            // $num 계산식
+            $num = $paginationData['totalItems'] - (($paginationData['currentPage'] - 1) * $paginationData['itemsPerPage']) - $index;
+
+            // 템플릿 파일의 내용을 기사 데이터로 대체
+            $articleHtml = str_replace(
+                ['{{num}}', '{{articleNo}}', '{{boardId}}', '{{title}}', '{{slug}}', '{{nickName}}', '{{date}}'],
+                [$num, $article['no'], $boardConfig['board_id'], htmlspecialchars($article['title']), htmlspecialchars($article['slug']), htmlspecialchars($article['nickName']), htmlspecialchars($article['created_at'])],
+                $template
+            );
+
+            // 최종 출력에 추가
+            $output .= $articleHtml;
+        }
+
+        return $output;
+    }
+
     /**
      * 게시판 글을 업데이트합니다.
      *
@@ -102,9 +137,14 @@ class BoardsService
             }
         }
 
-        // 현재 인증된 회원 ID 가져오기 :: HELPER 로 사용예정
+        // 현재 인증된 회원 ID 가져오기
+        /*
         $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        if ($mb_no) {
+            $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        }
+        */
+        $memberData = $this->membersHelper->getMemberDataByNo();
 
         // POST 데이터는 formData 배열로 전송 됨
         $formData = $_POST['formData'] ?? null;
@@ -120,15 +160,17 @@ class BoardsService
         
         $content = $formData['content'];
         $content = CommonHelper::updateStorageImages($content, $storagePath);
+        $slug = CommonHelper::generateSlug($formData['title']);
         
         // formData에 추가
         $formData['group_no'] = $boardsConfig['group_no'];
         $formData['board_no'] = $boardsConfig['no'];
         $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
         $fromData['content'] = $content;
+        $formData['slug'] = $slug;
 
         $numericFields = ['group_no', 'board_no'];
-        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
+        $data = $this->formDataMiddleware->processFormData($formData, $numericFields);
 
         // 실제 게시판 업데이트
         return $this->boardsModel->writeBoardsUpdate($article_no, $board_id, $data);
@@ -165,12 +207,6 @@ class BoardsService
 
         return $categoryData;
     }
-    
-    // 개별 댓글 -- 삭제 예정
-    public function getCommentDataByNo($board_no, $comment_no)
-    {
-        return $this->boardsModel->getCommentDataByNo($board_no, $comment_no);
-    }
 
     public function commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no)
     {
@@ -202,9 +238,13 @@ class BoardsService
         }
 
         // 현재 인증된 회원 ID 가져오기
+        /*
         $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
-        
+        if ($mb_no) {
+            $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        }
+        */
+        $memberData = $this->membersHelper->getMemberDataByNo();
 
         // POST 데이터는 formData 배열로 전송 됨
         $formData = $_POST['formData'] ?? null;
@@ -255,5 +295,12 @@ class BoardsService
 
         // 특정 게시글 또는 게시판의 모든 댓글을 가져오는 경우
         return $this->boardsModel->getComments($board_no, $article_no, $comment_no, $offset, $perPage);
+    }
+    
+    // 사용안함.
+    // 개별 댓글 -- 삭제 예정
+    public function getCommentDataByNo($board_no, $comment_no)
+    {
+        return $this->boardsModel->getCommentDataByNo($board_no, $comment_no);
     }
 }

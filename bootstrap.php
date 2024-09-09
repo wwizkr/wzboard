@@ -12,7 +12,7 @@ use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Controller\MenuController;
+use Web\PublicHtml\Helper\MenuHelper;
 
 // 환경 변수 로드
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -76,8 +76,7 @@ if ($isMobile) {
 $container->set('config_domain', $config_domain_data);
 
 // MenuController를 통해 트리화된 메뉴 데이터를 가져옴
-$menuController = new MenuController($owner_domain);
-$menuTree = $menuController->getMenuData();
+$menuTree = MenuHelper::getMenuTree();
 
 // 트리화된 메뉴 데이터를 컨테이너에 등록
 $container->set('menu_datas', $menuTree);
@@ -90,6 +89,14 @@ $container->set('session_manager', $sessionManager);
 $csrfTokenHandler = new CsrfTokenHandler($sessionManager);
 $container->set('csrf_token_handler', $csrfTokenHandler);
 
-// 사용자용 CSRF 토큰 생성 및 컨테이너에 등록
-$userCsrfToken = $sessionManager->generateCsrfToken($_ENV['USER_CSRF_TOKEN_KEY']);
+// 사용자용 CSRF 토큰이 없는 경우에만 생성
+$userCsrfTokenKey = $_ENV['USER_CSRF_TOKEN_KEY'];
+$userCsrfToken = $sessionManager->get($userCsrfTokenKey);
+
+if ($userCsrfToken === null) {
+    // 세션에 토큰이 없으면 새로 생성
+    $userCsrfToken = $sessionManager->generateCsrfToken($userCsrfTokenKey);
+}
+
+// 사용자용 CSRF 토큰을 컨테이너에 등록
 $container->set('user_csrf_token', $userCsrfToken);

@@ -149,7 +149,7 @@ class AdminBoardsModel
      * 생성된 게시판 목록을 가져옴
      * @return array
      */
-    public function getBoardsConfig($board_id='')
+    public function getBoardsConfig($board_id = null)
     {
         $param = [];
         $where = [];

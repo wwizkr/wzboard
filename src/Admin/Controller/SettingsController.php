@@ -5,27 +5,33 @@ namespace Web\Admin\Controller;
 
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\Admin\Helper\AdminSettingsHelper;
-use Web\PublicHtml\Model\SettingsModel;
-use Web\PublicHtml\Service\SettingsService;
+use Web\Admin\Model\AdminSettingsModel;
+use Web\Admin\Service\AdminSettingsService;
+use Web\Admin\Helper\AdminMenuHelper;
+
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
-use Web\PublicHtml\Controller\MenuController;
+use Web\PublicHtml\Helper\MenuHelper;
 
 class SettingsController
 {
     protected DependencyContainer $container;
-    protected SettingsModel $settingsModel;
-    protected SettingsService $settingsService;
+    protected adminSettingsModel $adminSettingsModel;
+    protected adminSettingsService $adminSettingsService;
+    protected adminMenuHelper $adminMenuHelper;
     protected FormDataMiddleware $formDataMiddleware;
+    protected menuHelper $menuHelper;
     protected array $configDomain;
     protected int $cf_id;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->settingsModel = new SettingsModel($container);
-        $this->settingsService = new SettingsService($this->settingsModel);
+        $this->adminSettingsModel = new AdminSettingsModel($container);
+        $this->adminSettingsService = new AdminSettingsService($this->adminSettingsModel);
+        $this->adminMenuHelper = new AdminMenuHelper($this->container);
+        $this->menuHelper = new MenuHelper();
         
         $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
@@ -85,7 +91,7 @@ class SettingsController
         $numericFields = ['cf_max_width'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
         
-        $updated = $this->settingsService->updateGeneralSettings($cf_id, $data);
+        $updated = $this->adminSettingsService->updateGeneralSettings($cf_id, $data);
 
         return CommonHelper::jsonResponse([
             'result' => $updated ? 'success' : 'failure',
@@ -101,6 +107,7 @@ class SettingsController
     public function menus(): array
     {
         $menuDatas = $this->container->get('menu_datas') ?? null;
+        $menuCategory = $this->adminMenuHelper->setMenuCategory();
 
         return [
             'Settings/menus',
@@ -108,6 +115,7 @@ class SettingsController
                 'title' => '메뉴 설정',
                 'content' => '',
                 'menuDatas' => $menuDatas,
+                'menuCategory' => $menuCategory,
             ]
         ];
     }
@@ -122,7 +130,7 @@ class SettingsController
         $data = CommonHelper::getJsonInput();
         $me_code = CommonHelper::validateParam('me_code', 'string', '', $data['me_code']);
 
-        $result = $this->settingsModel->getMenuByCode($this->cf_id, $me_code);
+        $result = $this->adminSettingsModel->getMenuByCode($this->cf_id, $me_code);
 
         return CommonHelper::jsonResponse([
             'result' => 'success',
@@ -170,7 +178,7 @@ class SettingsController
         $numericFields = ['me_parent', 'me_depth'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        $result = $this->settingsService->insertMenuData($type, $data);
+        $result = $this->adminSettingsService->insertMenuData($type, $data);
 
         if ($result) {
             $this->updateMenuCache();
@@ -209,7 +217,9 @@ class SettingsController
         $numericFields = ['me_parent', 'me_depth', 'me_fsize', 'me_fweight', 'me_order', 'me_pc_use', 'me_mo_use', 'me_pa_use'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
-        $updateData = $this->settingsService->updateMenuData($this->cf_id, $no, $me_code, $data);
+        $updateData = $this->adminSettingsService->updateMenuData($this->cf_id, $no, $me_code, $data);
+
+        error_log("Menu Update Data:".print_r($updateData, true));
 
         if ($updateData) {
             $this->updateMenuCache();
@@ -227,16 +237,24 @@ class SettingsController
     }
 
     /**
+     * 메뉴 삭제
+     */
+    public function menuDelete()
+    {
+        
+    }
+
+    /**
      * 메뉴 캐시 및 컨테이너 갱신
      */
     private function updateMenuCache(): void
     {
         $ownerDomain = $this->configDomain['cf_domain'];
-        $menuController = new MenuController($ownerDomain);
+        //$menuController = new MenuController($ownerDomain);
 
-        $menuController->clearMenuCache();
+        $this->menuHelper->clearMenuCache();
 
-        $menuTree = $menuController->getMenuData();
+        $menuTree = $this->menuHelper->getMenuTree();
         $this->container->set('menu_datas', $menuTree);
     }
 }

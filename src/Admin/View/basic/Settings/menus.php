@@ -39,9 +39,11 @@
                         <div class="table-td col-md-8">
                             <select name="formData[me_cate1]" id="me_cate1" class="form-select">
                                 <option value="">메뉴 분류 선택</option>
-                                <option value="boards">게시판</option>
-                                <option value="section">페이지</option>
-                                <option value="direct">직접입력</option>
+                                <?php
+                                foreach($menuCategory as $key=>$val) {
+                                    echo '<option value="'.$key.'">'.$val['title'].'</option>';
+                                }
+                                ?>
                             </select>
                         </div>
                     </div>
@@ -82,6 +84,12 @@
 <script src="/assets/js/jquery-migrate-3.5.0.min.js"></script>
 <script src="/assets/js/lib/ztree/js/jquery.ztree.all.min.js"></script>
 <script>
+var menuData = <?= json_encode($menuDatas); ?>;
+var menuCategory = <?= json_encode($menuCategory); ?>;
+
+console.log(menuData);
+console.log(menuCategory);
+
 function addDisplayNameToNodes(nodes) {
     return nodes.map(function(node) {
         let prefix = '';
@@ -232,8 +240,6 @@ function addHoverDom(treeId, treeNode) {
                     me_parent: newNode.me_parent,
                     displayName: newNode.me_name + " (" + newNode.me_code + ")"
                 });
-                console.log('노드생성');
-                console.log(addedNode[0]);
                 zTree.selectNode(addedNode[0]);
                 categoryLoader(null, treeId, addedNode[0]);
             } else {
@@ -289,7 +295,7 @@ function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
         url: "/admin/settings/menuOrder",
         data: { act: "menuorder", menu: menuData },
         success: function(response) {
-            console.log(response);
+            //console.log(response);
         }
     });
 }
@@ -308,10 +314,25 @@ function categoryLoader(event, treeId, treeNode) {
             console.log(data);
             if (data.result === "success" && data.data) {
                 var selectNode = data.data;
+                if (selectNode.me_cate1) {
+                    document.getElementById('me_cate1').value = selectNode.me_cate1;
+
+                    // 방금 만든 change 이벤트를 수동으로 트리거하여 me_cate2의 옵션을 로드
+                    var event = new Event('change');
+                    document.getElementById('me_cate1').dispatchEvent(event);
+                }
+
                 document.getElementById('no').value = selectNode.no;
                 document.getElementById('me_code').value = selectNode.me_code;
                 document.getElementById('me_name').value = selectNode.me_name;
                 document.getElementById('me_link').value = selectNode.me_link;
+
+                // me_cate2 값 설정
+                if (selectNode.me_cate2) {
+                    setTimeout(function() {
+                        document.getElementById('me_cate2').value = selectNode.me_cate2;
+                    }, 100);
+                }
             }
         }, function(errorMessage) {
             console.error("Error:", errorMessage);
@@ -362,12 +383,42 @@ function beforeRemove(treeId, nodes, targetNode) {
 }
 
 // 메뉴 업데이트 AJAX CallBack
-function updateMenuTree(updatedNodeData) {
-    var zTree = $.fn.zTree.getZTreeObj("menuTree");
-    var selectedNode = zTree.getSelectedNodes()[0];
-    if (selectedNode) {
-        selectedNode.displayName = updatedNodeData.me_name + " (" + updatedNodeData.me_code + ")";
-        zTree.updateNode(selectedNode);
+function updateMenuTree(data) {
+    alert(data.message);
+    if (data.result === 'success') {
+        var updateNodeMenu = data.data;
+        var zTree = $.fn.zTree.getZTreeObj("menuTree");
+        var selectedNode = zTree.getSelectedNodes()[0];
+        if (selectedNode) {
+            selectedNode.displayName = updateNodeMenu.me_name + " (" + updateNodeMenu.me_code + ")";
+            zTree.updateNode(selectedNode);
+        }
     }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    // me_cate1 값이 변경될 때마다 이벤트 핸들러
+    const meCate1 = document.getElementById('me_cate1');
+    const meCate2 = document.getElementById('me_cate2');
+
+    meCate1.addEventListener('change', function () {
+        const selectedValue = meCate1.value;
+
+        // me_cate2의 옵션 초기화
+        meCate2.innerHTML = '<option value="">메뉴 선택</option>';
+
+        // 선택된 값이 데이터에 존재하고, children이 있는지 확인
+        if (menuCategory[selectedValue] && menuCategory[selectedValue].children) {
+            const children = menuCategory[selectedValue].children;
+
+            // children을 순회하며 옵션 생성
+            children.forEach(function (child) {
+                const option = document.createElement('option');
+                option.value = child.me_cate2;
+                option.textContent = child.me_name;
+                meCate2.appendChild(option);
+            });
+        }
+    });
+});
 </script>

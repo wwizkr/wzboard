@@ -3,8 +3,19 @@
 
 namespace Web\PublicHtml\Helper;
 
+use Web\PublicHtml\Model\MenuModel;
+
 class MenuHelper
 {
+    public static function getMenuTree()
+    {
+        // MenuModel을 통해 캐시된 메뉴 데이터를 가져옴
+        $menuModel = new MenuModel();
+        $menuData = $menuModel->getMenuData();
+
+        return self::generateMenuTree($menuData);
+    }
+
     public static function generateMenuTree(array $menuData)
     {
         $menuTree = [];
@@ -31,58 +42,11 @@ class MenuHelper
 
         return $menuTree;
     }
+
+    public static function clearMenuCache()
+    {
+        // MenuModel에서 캐시를 관리하고 있으므로, 여기서 직접 모델의 캐시를 지울 수 있음
+        $menuModel = new MenuModel();
+        $menuModel->clearCache();
+    }
 }
-
-/*
-1. 트리 구조화 로직 설명
-Step 1: me_code를 기준으로 메뉴 항목을 인덱스화하고, 각 메뉴 항목에 children 배열을 추가합니다. 이 배열은 하위 메뉴를 담기 위해 사용됩니다.
-Step 2: 모든 메뉴 항목에 대해 부모(me_parent)가 있는지를 확인합니다. 부모가 있는 경우 해당 부모 항목의 children 배열에 현재 메뉴 항목을 추가합니다. 부모가 없는 경우, 즉 최상위 메뉴는 최종 트리 구조의 루트에 추가됩니다.
-
-$menuData = [
-    ['me_code' => '1', 'me_parent' => 0, 'me_depth' => 1, 'me_name' => 'Home'],
-    ['me_code' => '2', 'me_parent' => 0, 'me_depth' => 1, 'me_name' => 'About'],
-    ['me_code' => '3', 'me_parent' => 1, 'me_depth' => 2, 'me_name' => 'Company Info'],
-    ['me_code' => '4', 'me_parent' => 1, 'me_depth' => 2, 'me_name' => 'Contact'],
-    ['me_code' => '5', 'me_parent' => 3, 'me_depth' => 3, 'me_name' => 'Team'],
-];
-
-$menuTree = [
-    [
-        'me_code' => '1',
-        'me_parent' => 0,
-        'me_depth' => 1,
-        'me_name' => 'Home',
-        'children' => [
-            [
-                'me_code' => '3',
-                'me_parent' => 1,
-                'me_depth' => 2,
-                'me_name' => 'Company Info',
-                'children' => [
-                    [
-                        'me_code' => '5',
-                        'me_parent' => 3,
-                        'me_depth' => 3,
-                        'me_name' => 'Team',
-                        'children' => []
-                    ]
-                ]
-            ],
-            [
-                'me_code' => '4',
-                'me_parent' => 1,
-                'me_depth' => 2,
-                'me_name' => 'Contact',
-                'children' => []
-            ]
-        ]
-    ],
-    [
-        'me_code' => '2',
-        'me_parent' => 0,
-        'me_depth' => 1,
-        'me_name' => 'About',
-        'children' => []
-    ]
-];
-*/

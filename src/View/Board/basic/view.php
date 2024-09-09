@@ -1,11 +1,3 @@
-<div class="content-fixed-top">
-    <div class="fixed-top-inner">
-        <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
-        <div class="fixed-top-btn">
-            <a href="/admin/board/<?= $boardConfig['board_id']; ?>/list" class="btn btn-primary">목록</a>
-        </div>
-    </div>
-</div>
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <div class="p-3 table-form table-content">
@@ -22,9 +14,9 @@
             <div class="table-button-s"></div>
             <div class="table-button-e">
                 <ul class="d-flex">
-                    <li><a href="/admin/board/<?= $boardConfig['board_id']; ?>/write/<?= $articleData['no']; ?>" class="btn btn-sm btn-primary me-2">글수정</a></li>
-                    <li><a href="/admin/board/<?= $boardConfig['board_id']; ?>/delete/<?= $articleData['no']; ?>" class="btn btn-sm btn-primary me-2">글삭제</a></li>
-                    <li><a href="/admin/board/<?= $boardConfig['board_id']; ?>/list" class="btn btn-sm btn-primary me-2">글목록</a></li>
+                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/write/<?= $articleData['no']; ?>" class="btn btn-sm btn-primary me-2">글수정</a></li>
+                    <li><a href="javascript:void(0);" class="btn btn-sm btn-primary me-2" data-target="/board/<?= $boardConfig['board_id']; ?>/delete/<?= $articleData['no']; ?>" data-callback="articleDeleteAfter" data-message="해당 게시물을 삭제하시겠습니까?" onclick="confirmDeleteBefore(this);">글삭제</a></li>
+                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/list" class="btn btn-sm btn-primary me-2">글목록</a></li>
                 </ul>
             </div>
         </div>
@@ -49,7 +41,7 @@
                     <div class="table-button-s"></div>
                     <div class="table-button-e">
                         <ul>
-                            <li><button type="button" class="btn btn-sm btn-primary btn-form-submit-ajax me-2" data-target="/admin/board/commentWriteUpdate" data-callback="successCommentUpdate">댓글쓰기</button></li>
+                            <li><button type="button" class="btn btn-sm btn-primary btn-form-submit-ajax me-2" data-target="/board/commentWriteUpdate" data-callback="successCommentUpdate">댓글쓰기</button></li>
                         </ul>
                     </div>
                 </div>
@@ -98,7 +90,7 @@ function loadComment() {
     var perPage = 10;
 
     loadTemplate('getCommentTemplate', function(template) {
-        sendCustomAjaxRequest('POST', `/admin/board/comment/${boardId}/${articleNo}`, { page: page, perPage: perPage }, function(responseText) {
+        sendCustomAjaxRequest('POST', `/board/comment/${boardId}/${articleNo}`, { page: page, perPage: perPage }, function(responseText) {
             var data = JSON.parse(responseText);
 
             if (data.result === 'success' && data.data) {

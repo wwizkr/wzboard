@@ -3,20 +3,25 @@
 
 namespace Web\PublicHtml\Helper;
 
-use Web\PublicHtml\Service\MembersService;
+use Web\PublicHtml\Model\MembersModel;
 
 class MembersHelper
 {
-    protected $membersService; // 회원 관련 서비스 인스턴스
+    protected $container;
+    protected $membersModel; // 회원 관련 모델 인스턴스
+    protected $sessionManager; // 세션 관리자 인스턴스
 
     /**
-     * 생성자: MemberHelper 인스턴스를 생성합니다.
+     * 생성자: MembersHelper 인스턴스를 생성합니다.
      *
-     * @param MembersService $membersService 회원 서비스 인스턴스
+     * @param MembersModel $membersModel 회원 모델 인스턴스
+     * @param SessionManager $sessionManager 세션 관리자 인스턴스
      */
-    public function __construct(MembersService $membersService)
+    public function __construct(DependencyContainer $container, MembersModel $membersModel)
     {
-        $this->membersService = $membersService;
+        $this->container = $container;
+        $this->membersModel = $membersModel;
+        $this->sessionManager = $this->container->get('session_manager');
     }
 
     /**
@@ -25,9 +30,22 @@ class MembersHelper
      * @param int $mb_no 회원 번호
      * @return array 회원 정보
      */
-    function getMemberDataByNo($mb_no)
+    public function getMemberDataByNo($mb_no = null)
     {
-        return $this->membersService->getMemberDataByNo($mb_no);
+        if (!$mb_no) {
+            $mb_no = $this->sessionManager->get('auth.mb_no');
+        }
+        
+        if (!$mb_no) {
+            return null;
+        }
+
+        return $this->membersModel->getMemberDataByNo($mb_no);
+    }
+
+    public function getMemberDataById($email=null)
+    {
+        return $this->membersModel->getMemberDataById($email);
     }
 
     /**
@@ -37,6 +55,11 @@ class MembersHelper
      */
     public function getLevelData()
     {
-        return $this->membersService->getMemberLevelData();
+        return $this->membersModel->getMemberLevelData();
+    }
+
+    public function getMemberLevelData($level=null)
+    {
+        return $this->membersModel->getMemberLevelData($level);
     }
 }

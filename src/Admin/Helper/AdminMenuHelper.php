@@ -1,10 +1,25 @@
 <?php
-// 파일 위치: /src/Admin/Helper/MenuHelper.php
+// 파일 위치: /src/Admin/Helper/AdminMenuHelper.php
 
 namespace Web\Admin\Helper;
 
-class MenuHelper
+use Web\PublicHtml\Helper\DependencyContainer;
+use Web\Admin\Model\AdminSettingsModel;
+use Web\Admin\Model\AdminBoardsModel;
+
+class AdminMenuHelper
 {
+    private $container;
+    private $adminSettingsModel;
+    private $adminBoardsModel;
+
+    public function __construct(DependencyContainer $container)
+    {
+        $this->container = $container;
+        $this->adminSettingsModel = new AdminSettingsModel($this->container);
+        $this->adminBoardsModel = new AdminBoardsModel($this->container);
+    }
+
     public static function getAdminMenu()
     {
         return [
@@ -91,5 +106,27 @@ class MenuHelper
                 'icon' => 'bi-bar-chart',  // Bootstrap Icons 리포트 아이콘
             ],
         ];
+    }
+
+    public function setMenuCategory()
+    {
+        $boards = [];
+        $boardData = $this->adminBoardsModel->getBoardsConfig(null);
+        if(!empty($boardData)) {
+            foreach($boardData as $key=>$val) {
+                $boards[$key]['me_cate2'] = $val['board_id'];
+                $boards[$key]['me_name'] = $val['board_name'];
+                $boards[$key]['me_link'] = '/board/'.$val['board_id'].'/list';
+            }
+        }
+
+
+        $menuCategory = [
+            'boards' => ['title' => '게시판', 'children' => $boards],
+            'page' => ['title' => '페이지', 'children' => []],
+            'direct' => ['title' => '직접입력', 'children' => []],
+        ];
+
+        return $menuCategory;
     }
 }

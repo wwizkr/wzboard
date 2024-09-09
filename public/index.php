@@ -36,6 +36,13 @@ if (false !== $pos = strpos($uri, '?')) {
 }
 $uri = rawurldecode($uri);
 
+// 끝에 있는 슬래시 처리
+if ($uri !== '/' && substr($uri, -1) === '/') {
+    $uri = rtrim($uri, '/');
+    header('Location: ' . $uri, true, 301);
+    exit;
+}
+
 // AuthMiddleware를 통해 인증 처리
 AuthMiddleware::handle($uri);
 
@@ -66,8 +73,16 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     
     // **사용자 댓글 라우터 먼저 추가**
     $r->addRoute($httpMethods, '/board/comment/{boardId}[/{articleNo}]', 'Web\\PublicHtml\\Controller\\BoardController@comment');
-    // 웹사이트 게시판 라우트
-    $r->addRoute($httpMethods, '/board/{boardId}/{method}[/{param}]', 'Web\\PublicHtml\\Controller\\BoardController@handle');
+
+    // 기본 게시판 라우트
+    $r->addRoute($httpMethods, '/board/{boardId}/{method}', 'Web\\PublicHtml\\Controller\\BoardController@handle');
+    
+    // 게시글 번호가 있는 라우트
+    $r->addRoute($httpMethods, '/board/{boardId}/{method}/{param}', 'Web\\PublicHtml\\Controller\\BoardController@handle');
+    
+    // 게시글 번호와 슬러그가 모두 있는 라우트
+    $r->addRoute($httpMethods, '/board/{boardId}/{method}/{param}/{slug}', 'Web\\PublicHtml\\Controller\\BoardController@handle');
+    
     
     // 템플릿 관련 라우트 추가
     $r->addRoute('GET', '/template/{method}', 'Web\\PublicHtml\\Controller\\TemplateController');
@@ -76,6 +91,7 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     $r->addRoute('GET', '/', 'Web\\PublicHtml\\Controller\\HomeController@index');
     $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'DynamicController');
 });
+
 
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);

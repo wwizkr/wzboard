@@ -125,6 +125,7 @@ class BoardsModel
             unset($param);
             $param['category_no'] = $data['category_no'];
             $param['title'] = $data['title'];
+            $param['slug'] = $data['slug'];
             $param['content'] = $data['content'];
             $where['no'] = ['i', $article_no];
             $result = $this->db->sqlBindQuery('update','board_articles',$param,$where);
@@ -162,6 +163,8 @@ class BoardsModel
 
         return $result[0];
     }
+
+
 
     /*
      * 댓글 작성, 수정

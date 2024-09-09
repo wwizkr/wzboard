@@ -81,6 +81,7 @@ $schema = [
                                 nickName VARCHAR(50) NOT NULL DEFAULT '',
                                 password VARCHAR(255) NOT NULL DEFAULT '',
                                 title VARCHAR(255) NOT NULL DEFAULT '',
+                                slug VARCHAR(100) NOT NULL DEFAULT '',
                                 content TEXT NOT NULL,
                                 view_count INT DEFAULT 0,
                                 is_notice BOOLEAN DEFAULT FALSE,
@@ -97,7 +98,8 @@ $schema = [
                                 INDEX idx_mb_id (mb_id),
                                 INDEX idx_location (loc_lat,loc_lng),
                                 INDEX idx_created_at (created_at),
-                                INDEX idx_board_category (board_no, category_no)
+                                INDEX idx_board_category (board_no, category_no),
+                                INDEX idx_slug (slug)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
                         

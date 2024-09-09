@@ -5,15 +5,19 @@ namespace Web\Admin\View;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\View\ComponentsView;
+use Web\Admin\Helper\AdminMenuHelper;
 
 class AdminViewRenderer
 {
+    private $container;
     private $skinDirectory;
     private $sessionManager;
     private $componentsView;
+    private $adminMenuHelper;
 
     public function __construct(DependencyContainer $container)
     {
+        $this->container = $container;
         $configDomain = $container->get('config_domain');
         $adminSkin = $configDomain['cf_skin_admin'] ?? 'basic';
         $layoutSkin = $configDomain['cf_layout_skin'] ?? 'basic';
@@ -21,6 +25,7 @@ class AdminViewRenderer
         $this->skinDirectory = __DIR__ . "/{$adminSkin}/";
         $this->sessionManager = new SessionManager();
         $this->componentsView = new ComponentsView($layoutSkin);
+        $this->adminMenuHelper = new AdminMenuHelper($this->container);
 
         // CSRF 토큰 세션 검증
         $this->checkCsrfToken();
@@ -69,6 +74,7 @@ class AdminViewRenderer
     // 공통 헤더를 렌더링하는 메서드
     public function renderHeader(array $data = [])
     {
+        $data['menu'] = $this->adminMenuHelper->getAdminMenu();
         $this->render('Header', $data);
     }
 
@@ -94,7 +100,7 @@ class AdminViewRenderer
     public function render($viewFilePath, array $data = [])
     {
         // SessionManager를 데이터에 추가
-        $data['sessionManager'] = $this->sessionManager;
+        $data['sessionManager'] = $this->sessionManager; //head에 추가
 
         extract($data);
 

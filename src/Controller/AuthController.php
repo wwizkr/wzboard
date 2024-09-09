@@ -6,6 +6,7 @@ namespace Web\PublicHtml\Controller;
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\CryptoHelper;
 
@@ -14,14 +15,16 @@ class AuthController
     protected $container;
     protected $membersModel;
     protected $membersService;
-    protected $session;
+    protected $membersHelper;
+    protected $sessionManager;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
         $this->membersModel = new MembersModel($container);
         $this->membersService = new MembersService($this->membersModel);
-        $this->session = $this->container->get('session_manager');
+        $this->sessionManager = $this->container->get('session_manager');
+        $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
     }
 
     // 로그인
@@ -45,8 +48,8 @@ class AuthController
             exit();
         } elseif ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken)) {
             // 리프레시 토큰이 유효한 경우 새로운 JWT 토큰 생성
-            $member = $this->membersService->getMemberDataById($decodedRefreshToken['mb_id']);
-            $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
+            $member = $this->membersHelper->getMemberDataById($decodedRefreshToken['mb_id']);
+            $level  = $this->membersHelper->getMemberLevelData($member['member_level']) ?? 0;
 
             // 새로운 인증 토큰 생성
             $payload = [
@@ -70,20 +73,19 @@ class AuthController
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            // 유효한 토큰이 없으므로 로그인 폼을 보여줌
             $viewData = [];
             return [
                 "viewPath" => $viewPath,
                 "viewData" => $viewData,
-                "fullpage" => true,
+                "fullPage" => true,
             ];
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 로그인 처리
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            $member = $this->membersService->getMemberDataById($email);
-            $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
+            $member = $this->membersHelper->getMemberDataById($email);
+            $level  = $this->membersHelper->getMemberLevelData($member['member_level']) ?? 0;
 
             // 비밀번호 검증
             if ($member && CryptoHelper::verifyPassword($password, $member['password'])) {
@@ -109,7 +111,7 @@ class AuthController
 
                 // 관리자 권한이 있는 경우 관리자용 CSRF 토큰 생성
                 if ($level['is_admin']) {
-                    $this->session->generateCsrfToken($_ENV['ADMIN_CSRF_TOKEN_KEY']);
+                    $this->sessionManager->generateCsrfToken($_ENV['ADMIN_CSRF_TOKEN_KEY']);
                     header('Location: /admin/dashboard'); // 관리 페이지로 리다이렉트
                 } else {
                     header('Location: /'); // 일반 사용자 대시보드로 리다이렉트
@@ -129,7 +131,7 @@ class AuthController
     public function logout($vars)
     {
         // 세션 파괴
-        $this->session->destroy();
+        $this->sessionManager->destroy();
         // 쿠키 삭제
         setcookie('jwtToken', '', time() - 3600, '/');
         setcookie('refreshToken', '', time() - 3600, '/');

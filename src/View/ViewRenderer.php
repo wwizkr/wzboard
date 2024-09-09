@@ -6,6 +6,9 @@ use Web\PublicHtml\Helper\DependencyContainer;
 class ViewRenderer
 {
     // 스킨 디렉토리 경로를 저장하는 변수들
+    private $headerSkin;
+    private $footerSkin;
+    private $layoutSkin;
     private $headerSkinDirectory;
     private $footerSkinDirectory;
     private $layoutSkinDirectory;
@@ -20,18 +23,30 @@ class ViewRenderer
         $configDomain = $container->get('config_domain');
 
         // 컨테이너에서 각 스킨 이름을 가져옴, 기본값은 'basic'
-        $headerSkin = $configDomain['cf_skin_header'] ?? 'basic';
-        $footerSkin = $configDomain['cf_skin_footer'] ?? 'basic';
-        $layoutSkin = $configDomain['cf_skin_layout'] ?? 'basic';
+        $this->headerSkin = $configDomain['cf_skin_header'] ?? 'basic';
+        $this->footerSkin = $configDomain['cf_skin_footer'] ?? 'basic';
+        $this->layoutSkin = $configDomain['cf_skin_layout'] ?? 'basic';
         
         // 각 스킨 디렉토리의 절대 경로를 설정
-        $this->headerSkinDirectory = __DIR__ . "/Header/{$headerSkin}/";
-        $this->footerSkinDirectory = __DIR__ . "/Footer/{$footerSkin}/";
-        $this->layoutSkinDirectory = __DIR__ . "/Layout/{$layoutSkin}/";
+        $this->headerSkinDirectory = __DIR__ . "/Header/{$this->headerSkin}/";
+        $this->footerSkinDirectory = __DIR__ . "/Footer/{$this->footerSkin}/";
+        $this->layoutSkinDirectory = __DIR__ . "/Layout/{$this->layoutSkin}/";
 
-        $this->componentsView = new ComponentsView($layoutSkin);
+        $this->componentsView = new ComponentsView($this->layoutSkin);
     }
     
+    public function renderPagination($paginationData)
+    {
+        extract($paginationData);
+
+        $data = [];
+        foreach (array_keys($paginationData) as $key) {
+            $data[$key] = $$key;
+        }
+
+        // 추출한 변수들을 renderComponent에 배열로 전달
+        echo $this->componentsView->renderComponent('pagination', $data);
+    }
 
     // 헤더 스킨을 렌더링하는 메서드
     public function renderHeader(array $data = [])
@@ -86,12 +101,12 @@ class ViewRenderer
     // 전체 페이지를 렌더링하는 메서드
     public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null, ?bool $fullPage = false)
     {
-        $this->render('/partials/basic/head', $headData ?? []);
+        $this->render('/partials/'.$this->layoutSkin.'/head', $headData ?? []);
         if($fullPage === false) { $this->renderHeader($headerData ?? []); }
         $this->renderLayoutOpen($layoutData ?? []);
         $this->render($view, $viewData ?? []);
         $this->renderLayoutClose($layoutData ?? []);
         if($fullPage === false) { $this->renderFooter($footerData ?? []); }
-        $this->render('/partials/basic/foot', $footData ?? []);
+        $this->render('/partials/'.$this->layoutSkin.'/foot', $footData ?? []);
     }
 }

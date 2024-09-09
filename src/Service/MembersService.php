@@ -14,21 +14,6 @@ class MembersService
         $this->membersModel = $membersModel;
     }
 
-    public function getMemberDataById($email=null)
-    {
-        return $this->membersModel->getMemberDataById($email);
-    }
-
-    public function getMemberDataByNo($mb_no)
-    {
-        return $this->membersModel->getMemberDataByNo($mb_no);
-    }
-    
-    public function getMemberLevelData($level=null)
-    {
-        return $this->membersModel->getMemberLevelData($level);
-    }
-
     public function getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort)
     {
         return $this->membersModel->getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
@@ -38,4 +23,16 @@ class MembersService
     {
         return $this->membersModel->getTotalMemberCount($searchQuery, $filters);
     }
+    
+    /*
+    public function getMemberDataByNo($mb_no)
+    {
+        return $this->membersModel->getMemberDataByNo($mb_no);
+    }
+
+    public function getMemberLevelData($level=null)
+    {
+        return $this->membersModel->getMemberLevelData($level);
+    }
+    */
 }

@@ -63,16 +63,19 @@ class RouteHelper
      */
     public static function handleWebRoute($handler, $vars, $container, $viewRenderer)
     {
-        // DynamicController 처리
-        if ($handler === 'DynamicController') {
+        // 컨트롤러와 메서드 추출
+        if (isset($vars['boardId']) && $handler === 'Web\\PublicHtml\\Controller\\BoardController@comment') {
+            // 댓글 처리 라우팅
+            $controller = "Web\\PublicHtml\\Controller\\BoardController";
+            $method = 'comment';
+        } elseif (isset($vars['boardId'])) { // boardId가 있는 경우
+            $controller = "Web\\PublicHtml\\Controller\\BoardController";
+            $method = $vars['method'] ?? 'index';
+        } elseif($handler === 'DynamicController') {
             $controller = 'Web\\PublicHtml\\Controller\\' . ucfirst($vars['controller']) . 'Controller';
             $method = $vars['method'] ?? 'index';
         } elseif (is_string($handler) && strpos($handler, '@') !== false) {
             list($controller, $method) = explode('@', $handler);
-        } elseif (isset($vars['boardId']) && $handler === 'Web\\PublicHtml\\Controller\\BoardController@comment') {
-            // 댓글 처리 라우팅
-            $controller = "Web\\PublicHtml\\Controller\\BoardController";
-            $method = 'comment';
         } else {
             echo 'Invalid handler';
             return;

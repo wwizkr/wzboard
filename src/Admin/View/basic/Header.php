@@ -1,7 +1,7 @@
 <?php
-use Web\Admin\Helper\MenuHelper;
+//use Web\Admin\Helper\AdminMenuHelper;
 
-$menu = MenuHelper::getAdminMenu();
+//$menu = AdminMenuHelper::getAdminMenu();
 ?>
 <!-- Navbar (상단) -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark w-100">
