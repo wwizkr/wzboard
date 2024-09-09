@@ -177,6 +177,46 @@ class BoardsService
     }
 
     /*
+     * 게시글 삭제
+     * @param string $boardId 게시판 ID
+     * @param array $data 게시글 데이터
+     * @return mixed 업데이트 결과
+     */
+    public function articleDelete($article_no, $board_id)
+    {
+        // 게시판 설정 가져오기
+        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+
+        if (!$board_id  || empty($boardsConfig)) {
+            return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
+        }
+        
+        // $article_no 가 있다면 실제 게시글이 있는 지 확인
+        $articleData = [];
+        if ($article_no) {
+            $articleData = $this->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+            if(empty($articleData)) {
+                return ['result' => 'failure', 'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'];
+            }
+        }
+
+        /*
+         * 회원이 작성한 글일 경우, 본인이 아니면 삭제 불가
+         * 비회원이 작성한 글일 경우 비밀번호 입력폼으로 보내야 함.
+         * 전체관리자인 경우 댓글이 있더라도 삭제 가능
+         * 삭제된 글 및 관련 댓글, 첨부파일은 - 별도의 테이블로 보냄 ???
+         * 글 삭제 로직은 차후 추가.
+         */
+
+
+        if (!empty($this->getComments($boardsConfig['no'], $article_no))) {
+            return ['result' => 'failure', 'message' => '댓글이 있는 게시글을 삭제할 수 없습니다.'];
+        }
+
+        return ['result' => 'success', 'message' => '게시글을 삭제하였습니다.'];
+    }
+
+    /*
      * 게시글 읽기
      *
      * @param int $board_no

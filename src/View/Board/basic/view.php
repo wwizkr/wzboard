@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadComment(); // 페이지 로딩 시 첫 번째 페이지의 댓글을 불러옵니다.
 });
 
+function articleDeleteAfter(data) {
+    console.log('콜백실행');
+}
+
 function successCommentUpdate(data) {
     if (data.result === 'success') {
         if (data.action === 'insert') {

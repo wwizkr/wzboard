@@ -20,14 +20,17 @@ class FormDataMiddleware
     /**
      * CSRF 토큰을 검증합니다.
      * 
-     * @param string $formType 폼 타입 ('admin' 또는 'user')
      * @throws \Exception 토큰이 유효하지 않을 경우
      */
-    public function validateToken(string $formType): void
+    public function validateToken(): void
     {
+        // 관리자 페이지에서 이루어진 요청인지 확인
+        $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
+        // 요청에 따라 CSRF 토큰 키 설정
+        $csrfTokenKey = $isAdmin ? $_ENV['ADMIN_CSRF_TOKEN_KEY'] : $_ENV['USER_CSRF_TOKEN_KEY'];
+        // HTTP 헤더에서 CSRF 토큰 가져오기
         $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-        $csrfTokenKey = $formType === 'admin' ? $_ENV['ADMIN_CSRF_TOKEN_KEY'] : $_ENV['USER_CSRF_TOKEN_KEY'];
-        
+        // CSRF 토큰 검증
         $this->csrfTokenHandler->validateToken($csrfToken, $csrfTokenKey);
     }
 
@@ -66,7 +69,7 @@ class FormDataMiddleware
      */
     public function handle(string $formType, array $formData, array $numericFields = []): array
     {
-        $this->validateToken($formType);
+        $this->validateToken();
         return $this->processFormData($formData, $numericFields);
     }
 }

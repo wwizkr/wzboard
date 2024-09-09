@@ -258,12 +258,7 @@ class BoardController
     public function update()
     {
         // 토큰 검증
-        $isAdmin = CommonHelper::isAdminRequest();
-        if ($isAdmin) {
-            $this->formDataMiddleware->validateToken('admin');
-        } else {
-            $this->formDataMiddleware->validateToken('user');
-        }
+        $this->formDataMiddleware->validateToken();
 
         $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
         $article_no = CommonHelper::validateParam('article_no', 'int', 0, null, INPUT_POST);
@@ -285,6 +280,26 @@ class BoardController
      * 게시판의 글을 삭제합니다.
      *
      */
+    public function delete($vars)
+    {
+        $this->formDataMiddleware->validateToken();
+
+        $board_id = $vars['boardId'] ?? null;
+        $article_no = $vars['param'] ?? null;
+
+        if (!$board_id || !$article_no) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '잘못된 접속입니다.',
+                'data' => $vars,
+            ]);
+        }
+
+        $result = $this->boardsService->articleDelete($article_no, $board_id);
+
+        // 결과를 JSON 응답으로 반환
+        return CommonHelper::jsonResponse($result);
+    }
 
     // -------------------------------------
     // 게시판 댓글
@@ -333,12 +348,7 @@ class BoardController
     public function commentWriteUpdate()
     {
         //토큰 검증
-        $isAdmin = CommonHelper::isAdminRequest();
-        if ($isAdmin) {
-            $this->formDataMiddleware->validateToken('admin');
-        } else {
-            $this->formDataMiddleware->validateToken('user');
-        }
+        $this->formDataMiddleware->validateToken();
 
         $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
         $article_no = CommonHelper::validateParam('article_no', 'int', 0, null, INPUT_POST);
