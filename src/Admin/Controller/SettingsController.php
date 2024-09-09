@@ -91,11 +91,13 @@ class SettingsController
         $numericFields = ['cf_max_width'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
         
-        $updated = $this->adminSettingsService->updateGeneralSettings($cf_id, $data);
+        $updateData = $this->adminSettingsService->updateGeneralSettings($cf_id, $data);
+
+        // 캐시 설정.
 
         return CommonHelper::jsonResponse([
-            'result' => $updated ? 'success' : 'failure',
-            'message' => $updated ? '환경설정을 업데이트 하였습니다' : '환경설정 업데이트에 실패 하였습니다'
+            'result' => $updateData ? 'success' : 'failure',
+            'message' => $updateData ? '환경설정을 업데이트 하였습니다' : '환경설정 업데이트에 실패 하였습니다'
         ]);
     }
 

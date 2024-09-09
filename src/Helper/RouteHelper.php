@@ -101,6 +101,10 @@ class RouteHelper
                 echo 'Method not found';
             }
         } else {
+            
+            echo '<pre>';
+            var_dump($controller);
+            echo '</pre>';
             echo 'Controller not found';
         }
     }

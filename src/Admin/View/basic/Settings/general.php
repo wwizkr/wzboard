@@ -161,7 +161,24 @@
 
     <h2>기타 설정</h2>
     <div id="anc_cf_etc" class="table-form">
-        
+        <div class="table-row row mb-3">
+            <div class="table-th col-md-2">
+                <label for="cf_naver_clientid" class="form-label">네이버 클라이언트 ID</label>
+            </div>
+            <div class="table-td col-md-4">
+                <div class="d-flex align-items-center">
+                    <input type="text" name="formData[cf_naver_clientid]" value="" id="cf_naver_clientid" class="form-control me-2" placeholder="Naver Client ID" style="max-width: 260px;">
+                </div>
+            </div>
+            <div class="table-th col-md-2">
+                <label for="cf_naver_secret" class="form-label">네이버 Api Key</label>
+            </div>
+            <div class="table-td col-md-4">
+                <div class="d-flex align-items-center">
+                    <input type="text" name="formData[cf_naver_secret]" value="" id="cf_naver_secret" class="form-control me-2" placeholder="Naver Client Secret" style="max-width: 260px;">
+                </div>
+            </div>
+        </div>
         
     </div>
 </div>

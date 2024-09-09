@@ -37,7 +37,9 @@ class AdminSettingsService
         /*
          * 데이터 업데이트 후 캐시 갱신
          */
-        return $this->adminSettingsModel->updateConfigByCfId($cf_id, $data);
+        $result = $this->adminSettingsModel->updateConfigByCfId($cf_id, $data);
+
+        return $this->adminSettingsModel->getConfigByCfId($cf_id);
     }
 
     /**

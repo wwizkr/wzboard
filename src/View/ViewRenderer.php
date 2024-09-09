@@ -6,6 +6,8 @@ use Web\PublicHtml\Helper\DependencyContainer;
 class ViewRenderer
 {
     // 스킨 디렉토리 경로를 저장하는 변수들
+    private $config_domain;
+    private $deviceType;
     private $headerSkin;
     private $footerSkin;
     private $layoutSkin;
@@ -20,19 +22,22 @@ class ViewRenderer
     {
         $this->container = $container;
         // 컨테이너에서 config_domain 배열을 가져옴
-        $configDomain = $container->get('config_domain');
+        $this->config_domain = $container->get('config_domain');
+
+        // 디바이스 유형 설정 (PC 또는 모바일)
+        $this->deviceType = $this->config_domain['device_type'] ?? 'pc';
 
         // 컨테이너에서 각 스킨 이름을 가져옴, 기본값은 'basic'
-        $this->headerSkin = $configDomain['cf_skin_header'] ?? 'basic';
-        $this->footerSkin = $configDomain['cf_skin_footer'] ?? 'basic';
-        $this->layoutSkin = $configDomain['cf_skin_layout'] ?? 'basic';
+        $this->headerSkin = $this->config_domain['cf_skin_header'] ?? 'basic';
+        $this->footerSkin = $this->config_domain['cf_skin_footer'] ?? 'basic';
+        $this->layoutSkin = $this->config_domain['cf_skin_layout'] ?? 'basic';
         
         // 각 스킨 디렉토리의 절대 경로를 설정
         $this->headerSkinDirectory = __DIR__ . "/Header/{$this->headerSkin}/";
         $this->footerSkinDirectory = __DIR__ . "/Footer/{$this->footerSkin}/";
         $this->layoutSkinDirectory = __DIR__ . "/Layout/{$this->layoutSkin}/";
 
-        $this->componentsView = new ComponentsView($this->layoutSkin);
+        $this->componentsView = new ComponentsView($this->headerSkin); // 스킨 이름을 전달
     }
     
     public function renderPagination($paginationData)
@@ -54,7 +59,8 @@ class ViewRenderer
         // 컨테이너에서 트리화된 메뉴 데이터를 가져옴
         $menuData = $this->container->get('menu_datas');
         
-        $data['menu'] = $this->componentsView->renderMenu($menuData);
+        // renderMenu 메서드를 사용하여 메뉴를 렌더링
+        $data['menu'] = $this->componentsView->renderMenu($this->config_domain, $menuData);
 
         $this->render($this->headerSkinDirectory . 'Header', $data);
     }
@@ -93,7 +99,7 @@ class ViewRenderer
                 include $fullViewFilePath;
             } else {
                 // 파일을 찾을 수 없는 경우 오류 메시지 출력
-                echo "뷰 파일을 찾을 수 없습니다: {$fullViewFilePath}"; //에러페이지로 대체할 것.
+                echo "뷰 파일을 찾을 수 없습니다: {$fullViewFilePath}"; // 에러 페이지로 대체할 것.
             }
         }
     }
@@ -110,3 +116,4 @@ class ViewRenderer
         $this->render('/partials/'.$this->layoutSkin.'/foot', $footData ?? []);
     }
 }
+?>
