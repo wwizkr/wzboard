@@ -101,8 +101,27 @@ class BoardsService
 
             // 템플릿 파일의 내용을 기사 데이터로 대체
             $articleHtml = str_replace(
-                ['{{num}}', '{{articleNo}}', '{{boardId}}', '{{title}}', '{{slug}}', '{{nickName}}', '{{date}}'],
-                [$num, $article['no'], $boardConfig['board_id'], htmlspecialchars($article['title']), htmlspecialchars($article['slug']), htmlspecialchars($article['nickName']), htmlspecialchars($article['created_at'])],
+                [
+                    '{{num}}',
+                    '{{articleNo}}',
+                    '{{boardId}}',
+                    '{{title}}',
+                    '{{slug}}',
+                    '{{nickName}}',
+                    '{{hit}}',
+                    '{{comment}}',
+                    '{{date}}'],
+                [
+                    $num,
+                    $article['no'],
+                    $boardConfig['board_id'],
+                    htmlspecialchars($article['title']),
+                    htmlspecialchars($article['slug']),
+                    htmlspecialchars($article['nickName']),
+                    number_format($article['view_count']),
+                    number_format($article['comment_count']),
+                    htmlspecialchars($article['created_at'])
+                ],
                 $template
             );
 

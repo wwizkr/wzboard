@@ -87,6 +87,7 @@ $schema = [
                                 is_notice BOOLEAN DEFAULT FALSE,
                                 read_level INT DEFAULT 0,
                                 download_level INT DEFAULT 0,
+                                comment_count INT DEFAULT 0,
                                 like_count INT DEFAULT 0,
                                 dislike_count INT DEFAULT 0,
                                 loc_lat DECIMAL(10,8) DEFAULT NULL,

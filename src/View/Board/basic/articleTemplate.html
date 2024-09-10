@@ -1,10 +1,15 @@
-<li class="list-group-item list-group-body">
-    <div class="row list-group-row">
-        <div class="col-custom-60 list-group-col text-center">{{num}}</div>
-        <div class="col list-group-col">
+<li class="list-group-li list-group-body">
+    <div class="list-group-row">
+        <div class="list-group-col col-custom-60 text-center">{{num}}</div>
+        <div class="list-group-col col-custom-auto">
             <a href="/board/{{boardId}}/view/{{articleNo}}/{{slug}}">{{title}}</a>
+            <div class="list-article-info">
+                <div class="list-item list-name mobile-only">{{nickName}}</div>
+                <div class="list-item list-date">{{date}}</div>
+                <div class="list-item list-comment">{{comment}}</div>
+            </div>
         </div>
-        <div class="col-custom-120 list-group-col text-center">{{nickName}}</div>
-        <div class="col-custom-120 list-group-col text-center">{{date}}</div>
+        <div class="list-group-col text-center mobile-none">{{nickName}}</div>
+        <div class="list-group-col text-center col-custom-80 mobile-none">{{hit}}</div>
     </div>
 </li>

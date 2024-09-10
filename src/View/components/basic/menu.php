@@ -27,7 +27,7 @@ function print_menu_data($config_domain, $menu = array())
             continue;
         }
 
-        $me_link = $v['me_link'];
+        $me_link = $v['me_link'] ?? 'javascript:void(0);';
         $me_name = generate_menu_name($v);
 
         // 메뉴 아이템 템플릿에 데이터 바인딩
@@ -58,7 +58,7 @@ function print_sub_menu($children, $depth, $config_domain)
             continue;
         }
 
-        $me_link = $menu['me_link'];
+        $me_link = $v['me_link'] ?? 'javascript:void(0);';
         $me_name = generate_menu_name($menu);
 
         // 서브 메뉴 아이템 템플릿에 데이터 바인딩

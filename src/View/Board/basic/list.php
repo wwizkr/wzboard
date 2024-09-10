@@ -1,16 +1,15 @@
 <link href="/assets/css/board/<?= $boardConfig['board_skin']; ?>/style.css" rel="stylesheet">
 <form name="flist" id="flist">
-<div class="page-container container-fluid">
-    <div class="col-12 mb-3 table-container">
-        <h2>목록</h2>
-        <div class="p-3 table-list table-list-scroll">
+<div class="page-container">
+    <div class="table-container">
+        <div class="table-list">
             <ul class="list-group">
-                <li class="list-group-item list-group-head">
-                    <div class="row list-group-row">
-                        <div class="col-custom-60 list-group-col text-center">번호</div>
-                        <div class="col list-group-col text-center">제목</div>
-                        <div class="col-custom-120 list-group-col text-center">글쓴이</div>
-                        <div class="col-custom-120 list-group-col text-center">일자</div>
+                <li class="list-group-li list-group-head">
+                    <div class="list-group-row">
+                        <div class="list-group-col col-custom-60 text-center">번호</div>
+                        <div class="list-group-col col-custom-auto text-center">제목</div>
+                        <div class="list-group-col text-center">작성자</div>
+                        <div class="list-group-col col-custom-80 text-center">조회</div>
                     </div>
                 </li>
                 <?= $articleHtml; ?>
