@@ -36,7 +36,7 @@ class BoardController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->sessionManager = new SessionManager();
+        //$this->sessionManager = new SessionManager();
         $this->adminBoardsModel = new AdminBoardsModel($container);
         $this->adminBoardsService = new AdminBoardsService($this->adminBoardsModel);
         $this->membersModel = new MembersModel($container);
@@ -89,9 +89,9 @@ class BoardController
 
         /*
          * $params // 결과 사용
-         * $params['currentPage'];
-         * $params['searchQuery'];
-         * $params['filters'];
+         * $params['page'];
+         * $params['search'];
+         * $params['filter'];
          * $params['sort']['order'];
          * $params['sort']['field'];
          * $params['additionalQueries'];
@@ -107,19 +107,22 @@ class BoardController
         /*
          * $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
         */
-        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['searchQuery'], $params['filters'], $params['additionalQueries']);
+        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['search'], $params['filter'], $params['additionalQueries']);
         $articleData = $this->boardsService->getArticleListData(
             $boardConfig['no'],
-            $params['currentPage'],
+            $params['page'],
             $params['page_rows'],
-            $params['searchQuery'],
-            $params['filters'],
+            $params['search'],
+            $params['filter'],
             $params['sort'],
             $params['additionalQueries']
         );
 
+        // 쿼리 문자열 생성
+        $queryString = CommonHelper::getQueryString($params);
+
         // 페이징 데이터 계산
-        $paginationData = CommonHelper::getPaginationData($totalItems, $params['currentPage'], $params['page_rows'], $params['page_nums']);
+        $paginationData = CommonHelper::getPaginationData($totalItems, $params['page'], $params['page_rows'], $params['page_nums'], $queryString);
 
         // 뷰에 전달할 데이터 구성
         $viewData = [

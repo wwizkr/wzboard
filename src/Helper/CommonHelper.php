@@ -282,6 +282,8 @@ class CommonHelper
             $default = $paramConfig[1] ?? '';
             $allowedValues = $paramConfig[2] ?? null;
 
+            error_log("allowedValues:".print_r($allowedValues, true));
+
             $paramNameWithoutBrackets = rtrim($paramName, '[]');
             $value = $_GET[$paramNameWithoutBrackets] ?? $_POST[$paramNameWithoutBrackets] ?? $default;
 
@@ -321,7 +323,8 @@ class CommonHelper
         foreach ($additionalQueries as $query) {
             $field = $query[0];
             $value = $query[1];
-            
+
+            // 배열인 경우
             if (is_array($value)) {
                 if ($mappingBeforeField && $mappingAfterField && $field === $mappingBeforeField) {
                     $categoryNumbers = array_filter(array_map(function ($name) use ($mappingData) {
@@ -335,12 +338,18 @@ class CommonHelper
                     $processed[] = [$field, $value];
                 }
             } else {
-                // 배열이 아닌 경우
-                $processed[] = [$field, $value];
+                // 배열이 아닌 경우에도 동일한 매핑 적용
+                if ($mappingBeforeField && $mappingAfterField && $field === $mappingBeforeField) {
+                    $mappedValue = $mappingData[$value] ?? null;
+                    if ($mappedValue !== null) {
+                        $processed[] = [$mappingAfterField, $mappedValue];
+                    }
+                } else {
+                    // 매핑이 필요하지 않은 경우
+                    $processed[] = [$field, $value];
+                }
             }
         }
-
-        //error_log("Common processedData:" . print_r($processed, true));
 
         return $processed;
     }
@@ -353,24 +362,89 @@ class CommonHelper
      * @param array $addWhere 배열 추가
      * @param array $bindValues 배열 추가
      * 쿼리문에 추가할 $addWhere, $bindValues 배열을 추가.
+        $additionalQueries = [
+            ['category', ['sports', 'health']],
+            ['title', 'example'],
+        ];
+
+        $searchType = [
+            'category' => 'LIKE',  // 'category' 필드는 배열의 LIKE 검색
+            'title' => 'LIKE-RIGHT', // 'title' 필드는 LIKE-RIGHT 검색
+        ];
+
+        $addWhere = [];
+        $bindValues = [];
+
+        CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, $searchType);
+
+        // 결과:
+        // $addWhere: ["(category LIKE ? OR category LIKE ?)", "title LIKE ?"]
+        // $bindValues: ["%sports%", "%health%", "example%"]
      */
-    public static function additionalModelQueries($additionalQueries, &$addWhere, &$bindValues)
+    public static function additionalModelQueries($additionalQueries, &$addWhere, &$bindValues, $searchType = [])
     {
-        //error_log("AdditionalQueries:".print_r($additionalQueries,true));
+        // error_log("AdditionalQueries:" . print_r($additionalQueries, true));
+
         foreach ($additionalQueries as $index => $query) {
             $field = $query[0];
             $value = $query[1];
-            
+
+            // $searchType에서 해당 필드의 검색 유형을 가져옴 (기본값은 '=')
+            $type = $searchType[$field] ?? '=';
+
             if (is_array($value)) {
                 $placeholders = [];
                 foreach ($value as $i => $v) {
                     $placeholders[] = "?";
-                    $bindValues[] = $v;
+                    
+                    // 배열 내의 각 값에 대한 처리
+                    if ($type === 'LIKE') {
+                        $bindValues[] = "%$v%";
+                    } elseif ($type === 'LIKE-LEFT') {
+                        $bindValues[] = "%$v";
+                    } elseif ($type === 'LIKE-RIGHT') {
+                        $bindValues[] = "$v%";
+                    } else {
+                        $bindValues[] = $v;
+                    }
                 }
-                $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
+
+                // 배열에 대한 조건 처리
+                if (empty($searchType) || $type === 'IN' || $type === '=') {
+                    // 기본적으로 빈 배열이거나 'IN' 또는 '='일 때 IN 조건 사용
+                    $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
+                } elseif ($type === 'OR') {
+                    // OR 검색을 위해 조건을 생성
+                    $orConditions = array_map(function ($placeholder) use ($field) {
+                        return "$field = $placeholder";
+                    }, $placeholders);
+                    $addWhere[] = '(' . implode(' OR ', $orConditions) . ')';
+                } elseif (in_array($type, ['LIKE', 'LIKE-LEFT', 'LIKE-RIGHT'])) {
+                    // LIKE 검색을 위해 조건을 생성
+                    $likeConditions = array_map(function ($placeholder) use ($field) {
+                        return "$field LIKE $placeholder";
+                    }, $placeholders);
+                    $addWhere[] = '(' . implode(' OR ', $likeConditions) . ')';
+                }
             } else {
-                $addWhere[] = "$field = ?";
-                $bindValues[] = $value;
+                // 단일 값에 대한 검색 처리
+                if ($type === 'LIKE') {
+                    $addWhere[] = "$field LIKE ?";
+                    $bindValues[] = "%$value%";
+                } elseif ($type === 'LIKE-LEFT') {
+                    $addWhere[] = "$field LIKE ?";
+                    $bindValues[] = "%$value";
+                } elseif ($type === 'LIKE-RIGHT') {
+                    $addWhere[] = "$field LIKE ?";
+                    $bindValues[] = "$value%";
+                } elseif ($type === 'OR') {
+                    $addWhere[] = "$field = ?";
+                    $bindValues[] = $value;
+                } else {
+                    // 기본 '=' 검색
+                    $addWhere[] = "$field = ?";
+                    $bindValues[] = $value;
+                }
             }
         }
     }

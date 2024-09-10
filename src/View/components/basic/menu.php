@@ -33,7 +33,7 @@ function print_menu_data($config_domain, $menu = array())
         // 메뉴 아이템 템플릿에 데이터 바인딩
         $menuHtml = str_replace(
             ['{{depth}}', '{{code}}', '{{swiperSlide}}', '{{class}}', '{{link}}', '{{target}}', '{{name}}', '{{children}}'],
-            [$v['me_depth'], $v['me_code'], $swiper_slide, $v['me_class'], $me_link, $v['me_target'], $me_name, print_sub_menu($v['children'], $v['me_depth'] + 1, $config_domain)],
+            [$v['me_depth'], $v['me_code'], $swiper_slide, $v['me_class'], $me_link, $v['me_target'] ?? 'self', $me_name, print_sub_menu($v['children'], $v['me_depth'] + 1, $config_domain)],
             $template
         );
 

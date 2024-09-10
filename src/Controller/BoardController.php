@@ -122,7 +122,7 @@ class BoardController
         $queryString = CommonHelper::getQueryString($params);
 
         // 페이징 데이터 계산
-        $paginationData = CommonHelper::getPaginationData($totalItems, $params['page'], $params['page_rows'], $params['page_nums'],  $queryString);
+        $paginationData = CommonHelper::getPaginationData($totalItems, $params['page'], $params['page_rows'], $params['page_nums'], $queryString);
         
         // 실제 출력할 LIST HTML을 가져옴
         $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData, $paginationData);

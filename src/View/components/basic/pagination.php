@@ -8,8 +8,3 @@
         <?php endfor; ?>
     </ul>
 </nav>
-
-<a href="https://search.shopping.naver.com/search/all?query='나이키 신발'" class="boxbs2" target="_blank">네이버 검색어 테스트</a><BR>
-
-<?= '생성된 쿼리스트링::'.$queryString.'<br>'; ?>
-<?= '디코딩된 쿼리스트링::'.urldecode($queryString); ?>
