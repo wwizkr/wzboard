@@ -74,14 +74,14 @@ class BoardController
         $viewPath = 'Board/'.$boardConfig['board_skin'].'/list';
 
         // 게시판의 카테고리 데이터
-        $categoryData = [];
+        $categoryData = $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']);
     
         $config = [
             'cf_page_rows' => $this->configDomain['cf_page_rows'],
             'cf_page_nums' => $this->configDomain['cf_page_nums']
         ];
 
-        $allowedFilters = ['nickName']; // 검색어와 매칭시킬 필드
+        $allowedFilters = ['nickName','title','content']; // 검색어와 매칭시킬 필드
         $allowedSortFields = ['no', 'create_at']; // 정렬에 사용할 필드
         
         // 추가 검색에 사용할 필드 및 값
@@ -95,8 +95,8 @@ class BoardController
 
         /*
          * $params // 결과 사용
-         * $params['currentPage'];
-         * $params['searchQuery'];
+         * $params['page'];
+         * $params['search'];
          * $params['filters'];
          * $params['sort']['order'];
          * $params['sort']['field'];
@@ -107,18 +107,22 @@ class BoardController
         /*
          * $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
         */
-        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['searchQuery'], $params['filters'], $params['additionalQueries']);
+        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['search'], $params['filter'], $params['additionalQueries']);
         $articleData = $this->boardsService->getArticleListData(
             $boardConfig['no'],
-            $params['currentPage'],
+            $params['page'],
             $params['page_rows'],
-            $params['searchQuery'],
-            $params['filters'],
+            $params['search'],
+            $params['filter'],
             $params['sort'],
             $params['additionalQueries']
         );
+
+        // 쿼리 문자열 생성
+        $queryString = CommonHelper::getQueryString($params);
+
         // 페이징 데이터 계산
-        $paginationData = CommonHelper::getPaginationData($totalItems, $params['currentPage'], $params['page_rows'], $params['page_nums']);
+        $paginationData = CommonHelper::getPaginationData($totalItems, $params['page'], $params['page_rows'], $params['page_nums'],  $queryString);
         
         // 실제 출력할 LIST HTML을 가져옴
         $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData, $paginationData);
@@ -161,6 +165,10 @@ class BoardController
         /*
          * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
          * 관리자는 필요없음.
+         */
+
+        /*
+         * 조회수 증가 -> service -> model
          */
 
         // 에디터 스크립트

@@ -265,12 +265,14 @@ class CommonHelper
     public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = []): array
     {
         $params = [
-            'currentPage' => self::validateParam('page', 'int', 1, null, INPUT_GET) ?: self::validateParam('page', 'int', 1, null, INPUT_POST),
-            'searchQuery' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: self::validateParam('search', 'string', '', null, INPUT_POST),
-            'filters' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? $_POST['filter'] ?? []),
+            'page' => max(1, self::validateParam('page', 'int', 1, null, INPUT_GET) ?: self::validateParam('page', 'int', 1, null, INPUT_POST)),
+            'search' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: self::validateParam('search', 'string', '', null, INPUT_POST),
+            'filter' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? $_POST['filter'] ?? []),
             'sort' => self::validateSort($allowedSortFields, $_GET['sort'] ?? $_POST['sort'] ?? []),
-            'page_rows' => $config['cf_page_rows'] ?? 20,
-            'page_nums' => $config['cf_page_nums'] ?? 10,
+            'page_rows' => max(1, self::validateParam('page_rows', 'int', $config['cf_page_rows'] ?? 20, null, INPUT_GET) ?: 
+                               self::validateParam('page_rows', 'int', $config['cf_page_rows'] ?? 20, null, INPUT_POST)),
+            'page_nums' => max(1, self::validateParam('page_nums', 'int', $config['cf_page_nums'] ?? 10, null, INPUT_GET) ?: 
+                               self::validateParam('page_nums', 'int', $config['cf_page_nums'] ?? 10, null, INPUT_POST)),
             'additionalQueries' => [],
         ];
 
@@ -374,6 +376,58 @@ class CommonHelper
     }
 
     /**
+     * 파라미터 배열을 받아서 URL 쿼리 문자열을 생성합니다.
+     *
+     * @param array $params 파라미터 배열
+     * @return string URL 쿼리 문자열
+     */
+    public static function getQueryString(array $params): string
+    {
+        $queryArray = [];
+
+        // 기본 파라미터를 쿼리 문자열로 변환
+        foreach ($params as $key => $value) {
+            if (in_array($key, ['page', 'filter', 'sort', 'additionalQueries', 'page_rows', 'page_nums'])) {
+                continue; // 이 파라미터들은 별도로 처리  'page_rows', 'page_nums' => 쿼리스트링에서 제외
+            }
+
+            $queryArray[] = urlencode($key) . '=' . urlencode((string) $value);
+        }
+
+        // 필터 및 정렬 파라미터 추가
+        foreach (['filter', 'sort'] as $key) {
+            if (!empty($params[$key])) {
+                foreach ($params[$key] as $filterKey => $filterValue) {
+                    if (is_array($filterValue)) {
+                        foreach ($filterValue as $val) {
+                            $queryArray[] = urlencode($key . '[]') . '=' . urlencode((string) $val);
+                        }
+                    } else {
+                        $queryArray[] = urlencode($key . '[]') . '=' . urlencode((string) $filterValue);
+                    }
+                }
+            }
+        }
+
+        // 추가 파라미터 추가
+        if (!empty($params['additionalQueries'])) {
+            foreach ($params['additionalQueries'] as $query) {
+                list($name, $value) = $query;
+                if (is_array($value)) {
+                    foreach ($value as $val) {
+                        $queryArray[] = urlencode($name . '[]') . '=' . urlencode((string) $val);
+                    }
+                } else {
+                    $queryArray[] = urlencode($name) . '=' . urlencode((string) $value);
+                }
+            }
+        }
+
+        // 쿼리 문자열 생성
+        return '&' . implode('&', $queryArray);
+    }
+
+    /**
      * 페이지네이션 데이터를 계산합니다.[수정 예정]
      * 
      * @param int $totalItems 총 아이템 수
@@ -382,7 +436,7 @@ class CommonHelper
      * @param int $pageNums 표시할 페이지 번호 수
      * @return array 페이지네이션 데이터
      */
-    public static function getPaginationData(int $totalItems, int $currentPage, int $itemsPerPage, int $pageNums): array
+    public static function getPaginationData(int $totalItems, int $currentPage, int $itemsPerPage, int $pageNums, string $queryString = ''): array
     {
         return [
             'totalItems' => $totalItems,
@@ -390,6 +444,7 @@ class CommonHelper
             'totalPages' => ceil($totalItems / $itemsPerPage),
             'itemsPerPage' => $itemsPerPage,
             'pageNums' => $pageNums,
+            'queryString' => $queryString,
         ];
     }
 

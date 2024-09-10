@@ -68,6 +68,8 @@ class BoardsModel
             'values' => $bindValues
         ];
 
+        error_log("add Where::".print_r($addWhere, true));
+
         return $this->db->sqlBindQuery('select', 'board_articles', [], $where, $options);
     }
     

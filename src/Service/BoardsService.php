@@ -41,7 +41,7 @@ class BoardsService
 
     private function getCategoryMapping($board_no)
     {
-        // 게시판 개별 카테고리 가져오기
+        // 게시판 매핑된 개별 카테고리 가져오기 -> 검색어로 전환
         $boardCategory = $this->boardsHelper->getBoardsCategoryMapping($board_no);
         $mapCategory = [];
         foreach($boardCategory as $key=>$val) {
