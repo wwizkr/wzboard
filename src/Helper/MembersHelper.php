@@ -33,7 +33,8 @@ class MembersHelper
     public function getMemberDataByNo($mb_no = null)
     {
         if (!$mb_no) {
-            $mb_no = $this->sessionManager->get('auth.mb_no');
+            $mb = $this->sessionManager->get('auth');
+            $mb_no = $mb['mb_no'] ?? null;
         }
         
         if (!$mb_no) {

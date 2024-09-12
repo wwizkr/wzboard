@@ -282,8 +282,6 @@ class CommonHelper
             $default = $paramConfig[1] ?? '';
             $allowedValues = $paramConfig[2] ?? null;
 
-            error_log("allowedValues:".print_r($allowedValues, true));
-
             $paramNameWithoutBrackets = rtrim($paramName, '[]');
             $value = $_GET[$paramNameWithoutBrackets] ?? $_POST[$paramNameWithoutBrackets] ?? $default;
 
@@ -354,33 +352,6 @@ class CommonHelper
         return $processed;
     }
     
-    /**
-     * 리스트 페이지의 추가 파라미터 매핑 및 정리 Model
-     * 
-     * @param array $config 설정 배열 (페이지당 행 수, 페이지 번호 수 등)
-     * @param array $additionalQueries 허용된 필터 목록
-     * @param array $addWhere 배열 추가
-     * @param array $bindValues 배열 추가
-     * 쿼리문에 추가할 $addWhere, $bindValues 배열을 추가.
-        $additionalQueries = [
-            ['category', ['sports', 'health']],
-            ['title', 'example'],
-        ];
-
-        $searchType = [
-            'category' => 'LIKE',  // 'category' 필드는 배열의 LIKE 검색
-            'title' => 'LIKE-RIGHT', // 'title' 필드는 LIKE-RIGHT 검색
-        ];
-
-        $addWhere = [];
-        $bindValues = [];
-
-        CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, $searchType);
-
-        // 결과:
-        // $addWhere: ["(category LIKE ? OR category LIKE ?)", "title LIKE ?"]
-        // $bindValues: ["%sports%", "%health%", "example%"]
-     */
     public static function additionalModelQueries($additionalQueries, &$addWhere, &$bindValues, $searchType = [])
     {
         // error_log("AdditionalQueries:" . print_r($additionalQueries, true));
@@ -532,14 +503,14 @@ class CommonHelper
     {
         // 오늘 날짜 형식 설정
         $dateFolder = date('Ymd'); // 예: 20240828
-        $storagePath = $storagePath.$dateFolder;
+        $storagePath = rtrim($storagePath, '/') . '/' . $dateFolder;
 
         // 폴더가 존재하지 않으면 생성
         if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $storagePath)) {
             mkdir($_SERVER['DOCUMENT_ROOT'] . $storagePath, 0777, true);
         }
 
-        // 정규식을 사용하여 $conetnt 내의 모든 /tmp/ 경로의 파일들을 찾기
+        // 정규식을 사용하여 $content 내의 모든 /storage/tmp/ 경로의 파일들을 찾기
         preg_match_all('/\/storage\/tmp\/[^\s"\']+/', $content, $matches);
 
         // 찾은 파일들을 새로운 경로로 복사하고 경로를 업데이트
@@ -552,11 +523,11 @@ class CommonHelper
                 // 파일이 존재하면 복사 후 경로 변경
                 if (file_exists($sourcePath)) {
                     if (copy($sourcePath, $destinationPath)) {
-                        error_log("File copied successfully from $sourcePath to $destinationPath");
-                        
                         // 복사 성공 시 콘텐츠 내 경로 변경
                         $newFilePath = $storagePath . '/' . $fileName;
                         $contentBeforeReplace = $content; // 변경 전 콘텐츠 백업
+
+                        // 경로 변경 시 절대 경로로 통일
                         $content = str_replace($filePath, $newFilePath, $content);
 
                         // 로그: 콘텐츠 경로 변경 후 로그
@@ -568,13 +539,13 @@ class CommonHelper
 
                         // 원본 파일 삭제
                         if (!unlink($sourcePath)) {
-                            error_log("Failed to delete source file: $sourcePath");
+                            //error_log("Failed to delete source file: $sourcePath");
                         }
                     } else {
-                        error_log("Failed to copy file from $sourcePath to $destinationPath");
+                        //error_log("Failed to copy file from $sourcePath to $destinationPath");
                     }
                 } else {
-                    error_log("Source file does not exist: $sourcePath");
+                    //error_log("Source file does not exist: $sourcePath");
                 }
             }
         }
@@ -602,6 +573,7 @@ class CommonHelper
     }
 
     // 관리자 페이지에서 이루어진 요청인지 확인
+    
     public static function isAdminRequest()
     {
         $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;

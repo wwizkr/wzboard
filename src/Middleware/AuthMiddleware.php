@@ -88,6 +88,8 @@ class AuthMiddleware
         if ($decodedToken) {
             $_SESSION['auth'] = [
                 'mb_no' => $decodedToken['mb_no'],
+                'mb_id' => $decodedToken['mb_id'],
+                'mb_level' => $decodedToken['mb_level'],
                 'is_admin' => $decodedToken['is_admin'] ?? 0,
                 'is_super' => $decodedToken['is_super'] ?? 0,
             ];

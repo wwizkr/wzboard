@@ -400,6 +400,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // me_cate1 값이 변경될 때마다 이벤트 핸들러
     const meCate1 = document.getElementById('me_cate1');
     const meCate2 = document.getElementById('me_cate2');
+    const meName = document.getElementById('me_name');
+    const meLink = document.getElementById('me_link');
 
     meCate1.addEventListener('change', function () {
         const selectedValue = meCate1.value;
@@ -416,9 +418,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 const option = document.createElement('option');
                 option.value = child.me_cate2;
                 option.textContent = child.me_name;
+                option.setAttribute('data-title', child.me_title);
+                option.setAttribute('data-link', child.me_link);
                 meCate2.appendChild(option);
             });
         }
+    });
+
+    meCate2.addEventListener('change', function() {
+        // 선택된 옵션 가져오기
+        const selectedOption = this.options[this.selectedIndex];
+
+        // 선택된 옵션의 data-name과 data-link 속성 값 가져오기
+        const dataName = selectedOption.getAttribute('data-title');
+        const dataLink = selectedOption.getAttribute('data-link');
+
+        // me_name과 me_link 요소에 값 설정하기
+        document.getElementById('me_name').value = dataName || '';
+        document.getElementById('me_link').value = dataLink || '';
     });
 });
 </script>

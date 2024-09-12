@@ -178,14 +178,16 @@ class BoardsService
         $storagePath = "/storage/board/$board_id/";
         
         $content = $formData['content'];
+        unset($formData['content']);
         $content = CommonHelper::updateStorageImages($content, $storagePath);
+        
         $slug = CommonHelper::generateSlug($formData['title']);
         
         // formData에 추가
         $formData['group_no'] = $boardsConfig['group_no'];
         $formData['board_no'] = $boardsConfig['no'];
         $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
-        $fromData['content'] = $content;
+        $formData['content'] = $content;
         $formData['slug'] = $slug;
 
         $numericFields = ['group_no', 'board_no'];
@@ -348,10 +350,7 @@ class BoardsService
         int $page = 1, 
         int $perPage = 10
     ): array {
-        error_log("Service Page:".print_r($page, true));
         $offset = ($page - 1) * $perPage;
-        error_log("Service offset:".print_r($offset, true));
-
         // 특정 게시글 또는 게시판의 모든 댓글을 가져오는 경우
         return $this->boardsModel->getComments($board_no, $article_no, $comment_no, $offset, $perPage);
     }

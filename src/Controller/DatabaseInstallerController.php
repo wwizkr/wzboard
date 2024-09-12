@@ -136,39 +136,76 @@ class DatabaseInstallerController
 
             // 필드 정의에서 마지막 콤마 제거
             $fieldDef = rtrim($fieldDef, ',');
-            
+
             $stmt = $this->db->query("SHOW COLUMNS FROM `{$tableName}` LIKE '{$fieldName}'");
             $columnExists = $stmt->rowCount() > 0;
 
-            // AUTO_INCREMENT와 PRIMARY KEY를 별도로 처리
-            $isAutoIncrement = stripos($fieldDef, 'AUTO_INCREMENT') !== false;
-            $isPrimaryKey = stripos($fieldDef, 'PRIMARY KEY') !== false;
-            $fieldDefClean = preg_replace('/\s*(AUTO_INCREMENT|PRIMARY KEY)\s*/i', '', $fieldDef);
+            // 필드 정의를 세부적으로 파싱
+            preg_match('/^(\w+)\s+(\w+(?:\([^\)]+\))?)\s*((?:NOT NULL|NULL)?)?\s*(DEFAULT\s+[^,]+)?\s*(AUTO_INCREMENT)?\s*(PRIMARY KEY)?\s*(COMMENT\s+\'(?:[^\'\\\\]|\\\\.)*\')?/i', $fieldDef, $matches);
 
+            $cleanFieldName = $matches[1];
+            $dataType = $matches[2];
+            $nullability = $matches[3] ?? '';
+            $defaultValue = $matches[4] ?? '';
+            $autoIncrement = $matches[5] ?? '';
+            $primaryKey = $matches[6] ?? '';
+            $comment = $matches[7] ?? '';
+
+            // COMMENT 값 추출
+            $commentValue = '';
+            if ($comment && preg_match('/COMMENT\s+\'((?:[^\'\\\\]|\\\\.)*)\'/i', $comment, $commentMatches)) {
+                $commentValue = $commentMatches[1];
+            }
+
+            // SQL 문 구성 (COMMENT 제외)
+            $sqlParts = array_filter([
+                $dataType,
+                $nullability,
+                $defaultValue,
+                $autoIncrement
+            ]);
+            $cleanFieldType = implode(' ', $sqlParts);
+
+            // SQL 문 준비
             if (!$columnExists) {
-                // 새로운 컬럼 추가
-                $sql = "ALTER TABLE `{$tableName}` ADD COLUMN {$fieldDefClean}";
+                $sql = "ALTER TABLE `{$tableName}` ADD COLUMN `{$cleanFieldName}` {$cleanFieldType}";
             } else {
-                // 기존 컬럼 수정
-                $sql = "ALTER TABLE `{$tableName}` MODIFY COLUMN {$fieldDefClean}";
+                $sql = "ALTER TABLE `{$tableName}` MODIFY COLUMN `{$cleanFieldName}` {$cleanFieldType}";
             }
 
-            // AUTO_INCREMENT 추가 (필요한 경우)
-            if ($isAutoIncrement) {
-                $sql .= " AUTO_INCREMENT";
+            // COMMENT가 있으면 SQL에 추가
+            if ($commentValue) {
+                $sql .= " COMMENT :comment";
             }
 
-            error_log("실행할 SQL: " . $sql);
-            $this->db->exec($sql);
-            error_log("컬럼 처리 완료: {$tableName}.{$fieldName}");
+            error_log("준비된 SQL: " . $sql);
+
+            // PDO prepared statement 사용
+            $stmt = $this->db->getPdoInstance()->prepare($sql);
+            
+            // COMMENT 바인딩 (있는 경우에만)
+            if ($commentValue) {
+                $stmt->bindParam(':comment', $commentValue, PDO::PARAM_STR);
+            }
+
+            // SQL 실행
+            $result = $stmt->execute();
+
+            if ($result) {
+                error_log("컬럼 처리 완료: {$tableName}.{$fieldName}");
+            } else {
+                error_log("컬럼 처리 실패: {$tableName}.{$fieldName}");
+                error_log("SQL 오류 정보: " . print_r($stmt->errorInfo(), true));
+            }
 
             // PRIMARY KEY 처리 (필요한 경우)
-            if ($isPrimaryKey) {
-                $pkSql = "ALTER TABLE `{$tableName}` DROP PRIMARY KEY, ADD PRIMARY KEY ({$fieldName})";
+            if ($primaryKey) {
+                $pkSql = "ALTER TABLE `{$tableName}` DROP PRIMARY KEY, ADD PRIMARY KEY (`{$cleanFieldName}`)";
                 error_log("PRIMARY KEY 설정 SQL: " . $pkSql);
                 $this->db->exec($pkSql);
                 error_log("PRIMARY KEY 설정 완료: {$tableName}.{$fieldName}");
             }
+
         } catch (PDOException $e) {
             error_log("필드 처리 중 오류 발생: {$tableName}.{$fieldName} - " . $e->getMessage());
             error_log("스택 트레이스: " . $e->getTraceAsString());
