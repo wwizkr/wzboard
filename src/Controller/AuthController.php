@@ -135,7 +135,7 @@ class AuthController
         // 쿠키 삭제
         setcookie('jwtToken', '', time() - 3600, '/');
         setcookie('refreshToken', '', time() - 3600, '/');
-        header('Location: /login'); // 로그아웃 후 로그인 페이지로 리다이렉트
+        header('Location: /');
         exit();
     }
 }

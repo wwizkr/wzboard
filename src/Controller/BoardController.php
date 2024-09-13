@@ -29,7 +29,7 @@ class BoardController
     protected $membersHelper;
     protected $boardsService;
     protected $boardsModel;
-    protected $configDomain;
+    protected $config_domain;
     protected $formDataMiddleware;
 
     public function __construct(DependencyContainer $container)
@@ -62,70 +62,42 @@ class BoardController
 
         // BoardsHelper에 boardsService를 설정합니다.
         $this->boardsHelper->setBoardsService($this->boardsService);
-        $this->configDomain = $container->get('config_domain');
+        $this->config_domain = $container->get('config_domain');
     }
 
     public function list($vars) // 게시글 목록 작업
     {
-        $boardId = $vars['boardId'] ?? null;
-
+        $boardId = CommonHelper::validateParam('boardId', 'string', $vars['boardId']) ?? null;
         // 게시판 설정 데이터 가져오기
         $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
         $viewPath = 'Board/'.$boardConfig['board_skin'].'/list';
 
+        if (empty($boardConfig)) {
+            $message = '게시판 정보를 찾을 수 없습니다.';
+            $url = '/';
+            CommonHelper::alertAndRedirect($message, $url);
+        }
+
         // 게시판의 카테고리 데이터
         $categoryData = $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']);
-    
-        $config = [
-            'cf_page_rows' => $this->configDomain['cf_page_rows'],
-            'cf_page_nums' => $this->configDomain['cf_page_nums']
-        ];
-
-        $allowedFilters = ['nickName','title','content']; // 검색어와 매칭시킬 필드
-        $allowedSortFields = ['no', 'create_at']; // 정렬에 사용할 필드
         
-        // 추가 검색에 사용할 필드 및 값
-        // array 사용의 경우 OR 검색으로 여러개의 검색 결과
-        // string 사용의 경우 단일 검색
-        $additionalParams = [
-            'category[]' => ['array', [], isset($_GET['category']) ? $_GET['category'] : []],
-            //'status' => ['string', 'all', ['all', 'active', 'inactive']] // 단일 검색 추가 예시
-        ];
-        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
-
-        /*
-         * $params // 결과 사용
-         * $params['page'];
-         * $params['search'];
-         * $params['filters'];
-         * $params['sort']['order'];
-         * $params['sort']['field'];
-         * $params['additionalQueries'];
-         */
-
-        // 총 게시물 수
-        /*
-         * $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
-        */
-        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['search'], $params['filter'], $params['additionalQueries']);
-        $articleData = $this->boardsService->getArticleListData(
-            $boardConfig['no'],
-            $params['page'],
-            $params['page_rows'],
-            $params['search'],
-            $params['filter'],
-            $params['sort'],
-            $params['additionalQueries']
-        );
+        // 게시판 목록 가져오기 => [totalItems, params, articleList]
+        $articleData = $this->getArticleList($boardConfig);
 
         // 쿼리 문자열 생성
-        $queryString = CommonHelper::getQueryString($params);
+        $queryString = CommonHelper::getQueryString($articleData['params']);
 
         // 페이징 데이터 계산
-        $paginationData = CommonHelper::getPaginationData($totalItems, $params['page'], $params['page_rows'], $params['page_nums'], $queryString);
+        $paginationData = CommonHelper::getPaginationData(
+            $articleData['totalItems'],
+            $articleData['params']['page'],
+            $articleData['params']['page_rows'],
+            $articleData['params']['page_nums'],
+            $queryString
+        );
         
         // 실제 출력할 LIST HTML을 가져옴
-        $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData, $paginationData);
+        $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData['articleList'], $paginationData);
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
@@ -140,6 +112,61 @@ class BoardController
         return [
             'viewPath' => $viewPath,
             'viewData' => $viewData,
+        ];
+    }
+    
+    /*
+     * 게시글을 불러오는 메소드
+     *
+     * 메소드를 분리해서 api에서 재사용하거나, ajax로 전환 시 사용 가능하게 함.
+     * @param $boardConfig
+     * return array
+     */
+    public function getArticleList($boardConfig = [])
+    {
+        $config = [
+            'cf_page_rows' => $this->config_domain['cf_page_rows'],
+            'cf_page_nums' => $this->config_domain['cf_page_nums']
+        ];
+
+        $allowedFilters = ['nickName','title','content']; // 검색어와 매칭시킬 필드
+        $allowedSortFields = ['no', 'create_at']; // 정렬에 사용할 필드
+        
+        // 추가 검색에 사용할 필드 및 값
+        // array 사용의 경우 OR 검색으로 여러개의 검색 결과
+        // string 사용의 경우 단일 검색
+        $additionalParams = [
+            'category[]' => ['array', [], isset($_GET['category']) ? $_GET['category'] : []],
+            //'status' => ['string', 'all', ['all', 'active', 'inactive']] // 단일 검색 추가 예시
+        ];
+
+        /* 
+         * $params => array
+         * $params['page'];
+         * $params['search'];
+         * $params['filter'];
+         * $params['sort']['order'];
+         * $params['sort']['field'];
+         * $params['additionalQueries'];
+         */
+        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
+
+        // 총 게시물 수 $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
+        $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['search'], $params['filter'], $params['additionalQueries']);
+        $articleList = $this->boardsService->getArticleListData(
+            $boardConfig['no'],
+            $params['page'],
+            $params['page_rows'],
+            $params['search'],
+            $params['filter'],
+            $params['sort'],
+            $params['additionalQueries']
+        );
+
+        return [
+            'params' => $params,
+            'totalItems' => $totalItems,
+            'articleList' => $articleList,
         ];
     }
 
@@ -172,8 +199,7 @@ class BoardController
          */
 
         // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->configDomain['cf_editor'];
-        $editor = 'tinymce';
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
         $editorScript = CommonHelper::getEditorScript($editor);
 
         // 글 정보
@@ -228,7 +254,7 @@ class BoardController
 
 
         // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->configDomain['cf_editor'];
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
         $editor = 'tinymce';
         $editorScript = CommonHelper::getEditorScript($editor);
 

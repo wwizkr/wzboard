@@ -262,41 +262,81 @@ class CommonHelper
      * @param array $additionalParams 추가 파라미터 설정 (키: 파라미터 이름, 값: [타입, 기본값])
      * @return array 리스트 파라미터
      */
-    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = []): array
+    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = [], array $searchParams = []): array
     {
+        // 빈배열이 올 경우 에러방지
+        if (empty($searchParams)) {
+            $searchParams['search'] = null;
+            $searchParams['filter'] = null;
+            $searchParams['sort'] = [];
+        }
         $params = [
-            'page' => max(1, self::validateParam('page', 'int', 1, null, INPUT_GET) ?: self::validateParam('page', 'int', 1, null, INPUT_POST)),
-            'search' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: self::validateParam('search', 'string', '', null, INPUT_POST),
-            'filter' => self::validateArrayParam($allowedFilters, $_GET['filter'] ?? $_POST['filter'] ?? []),
-            'sort' => self::validateSort($allowedSortFields, $_GET['sort'] ?? $_POST['sort'] ?? []),
-            'page_rows' => max(1, self::validateParam('page_rows', 'int', $config['cf_page_rows'] ?? 20, null, INPUT_GET) ?: 
-                               self::validateParam('page_rows', 'int', $config['cf_page_rows'] ?? 20, null, INPUT_POST)),
-            'page_nums' => max(1, self::validateParam('page_nums', 'int', $config['cf_page_nums'] ?? 10, null, INPUT_GET) ?: 
-                               self::validateParam('page_nums', 'int', $config['cf_page_nums'] ?? 10, null, INPUT_POST)),
+            'page' => max(
+                1,
+                self::validateParam('page', 'int', 1, null, INPUT_GET) ?: 
+                self::validateParam('page', 'int', 1, null, INPUT_POST) ?: 
+                ($_GET['page'] ?? $_POST['page'] ?? 1)
+            ),
+            'search' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: 
+                       self::validateParam('search', 'string', '', null, INPUT_POST) ?: 
+                       ($_GET['search'] ?? $_POST['search'] ?? $searchParams['search']),
+            'filter' => self::validateArrayParam(
+                $allowedFilters, 
+                $_GET['filter'] ?? $_POST['filter'] ?? $searchParams['filter']
+            ),
+            'sort' => self::validateSort(
+                $allowedSortFields, 
+                $_GET['sort'] ?? $_POST['sort'] ?? $searchParams['sort']
+            ),
+            'page_rows' => max(
+                1,
+                self::validateParam('page_rows', 'int', $config['cf_page_rows'] ?? 20, null, INPUT_GET) ?: 
+                self::validateParam('page_rows', 'int', $config['cf_page_rows'] ?? 20, null, INPUT_POST) ?: 
+                ($_GET['page_rows'] ?? $_POST['page_rows'] ?? ($config['cf_page_rows'] ?? 20))
+            ),
+            'page_nums' => max(
+                1,
+                self::validateParam('page_nums', 'int', $config['cf_page_nums'] ?? 10, null, INPUT_GET) ?: 
+                self::validateParam('page_nums', 'int', $config['cf_page_nums'] ?? 10, null, INPUT_POST) ?: 
+                ($_GET['page_nums'] ?? $_POST['page_nums'] ?? ($config['cf_page_nums'] ?? 10))
+            ),
             'additionalQueries' => [],
         ];
 
         // 추가 파라미터 처리
+        //$additionalParams = [
+        //    'category' => ['string', $trialCategory, $trialCategory ? $allowedCategory : []],
+        //    //'status' => ['string', 'all', ['all', 'active', 'inactive']] // 단일 검색 추가 예시
+        //];
         foreach ($additionalParams as $paramName => $paramConfig) {
             $type = $paramConfig[0] ?? 'string';
             $default = $paramConfig[1] ?? '';
             $allowedValues = $paramConfig[2] ?? null;
-
             $paramNameWithoutBrackets = rtrim($paramName, '[]');
-            $value = $_GET[$paramNameWithoutBrackets] ?? $_POST[$paramNameWithoutBrackets] ?? $default;
 
             if ($type === 'array') {
-                if (is_array($value) && ($allowedValues === null || array_diff($value, $allowedValues) === [])) {
+                $value = $_GET[$paramNameWithoutBrackets] ?? $_POST[$paramNameWithoutBrackets] ?? [];
+                if (!is_array($value)) {
+                    $value = [$value]; // 단일 값을 배열로 변환
+                }
+                if ($allowedValues === null || empty(array_diff($value, $allowedValues))) {
                     $params['additionalQueries'][] = [$paramNameWithoutBrackets, $value];
                 }
             } else {
-                $value = self::validateParam($paramNameWithoutBrackets, $type, $default, null, INPUT_GET) ?: 
-                         self::validateParam($paramNameWithoutBrackets, $type, $default, null, INPUT_POST);
+                $value = self::validateParam($paramNameWithoutBrackets, $type, null, null, INPUT_GET);
+                if ($value === null) {
+                    $value = self::validateParam($paramNameWithoutBrackets, $type, null, null, INPUT_POST);
+                }
+                if ($value === null) {
+                    $value = $default;
+                }
                 if ($allowedValues === null || in_array($value, $allowedValues)) {
                     $params['additionalQueries'][] = [$paramNameWithoutBrackets, $value];
                 }
             }
         }
+
+        error_log("Params::".print_r($params, true));
 
         return $params;
     }
@@ -313,10 +353,6 @@ class CommonHelper
      */
     public static function additionalServiceQueries($additionalQueries, $mappingBeforeField = '', $mappingAfterField = '', array $mappingData = [])
     {
-        //error_log("Common additionalQueries:" . print_r($additionalQueries, true));
-        //error_log("Common mappingBeforeField:" . print_r($mappingBeforeField, true));
-        //error_log("Common mappingAfterField:" . print_r($mappingAfterField, true));
-        //error_log("Common mappingData:" . print_r($mappingData, true));
         $processed = [];
         foreach ($additionalQueries as $query) {
             $field = $query[0];
@@ -348,75 +384,118 @@ class CommonHelper
                 }
             }
         }
-
+        error_log("processed:::".print_r($processed, true));
         return $processed;
     }
     
+    /**
+     * 추가 쿼리 조건을 처리하여 WHERE 절과 바인딩 값을 생성합니다.
+     *
+     * @param array $additionalQueries 추가 쿼리 조건 배열 ([필드명, 값] 형식)
+     * @param array &$addWhere WHERE 절 조건을 저장할 배열 (참조로 전달)
+     * @param array &$bindValues 바인딩 값을 저장할 배열 (참조로 전달)
+     * @param array $searchType 각 필드별 검색 타입 (기본값: '=')
+     * @return void
+     */
+     //$processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, ['category' => 'LIKE-RIGHT']);
     public static function additionalModelQueries($additionalQueries, &$addWhere, &$bindValues, $searchType = [])
     {
-        // error_log("AdditionalQueries:" . print_r($additionalQueries, true));
-
         foreach ($additionalQueries as $index => $query) {
             $field = $query[0];
             $value = $query[1];
-
-            // $searchType에서 해당 필드의 검색 유형을 가져옴 (기본값은 '=')
             $type = $searchType[$field] ?? '=';
 
-            if (is_array($value)) {
-                $placeholders = [];
-                foreach ($value as $i => $v) {
-                    $placeholders[] = "?";
-                    
-                    // 배열 내의 각 값에 대한 처리
-                    if ($type === 'LIKE') {
-                        $bindValues[] = "%$v%";
-                    } elseif ($type === 'LIKE-LEFT') {
-                        $bindValues[] = "%$v";
-                    } elseif ($type === 'LIKE-RIGHT') {
-                        $bindValues[] = "$v%";
-                    } else {
-                        $bindValues[] = $v;
+            switch ($type) {
+                case 'BETWEEN':
+                    // 범위 검색 (날짜, 숫자 등)
+                    if (is_array($value) && count($value) == 2) {
+                        $addWhere[] = "$field BETWEEN ? AND ?";
+                        $bindValues = array_merge($bindValues, $value);
                     }
-                }
-
-                // 배열에 대한 조건 처리
-                if (empty($searchType) || $type === 'IN' || $type === '=') {
-                    // 기본적으로 빈 배열이거나 'IN' 또는 '='일 때 IN 조건 사용
-                    $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
-                } elseif ($type === 'OR') {
-                    // OR 검색을 위해 조건을 생성
-                    $orConditions = array_map(function ($placeholder) use ($field) {
-                        return "$field = $placeholder";
-                    }, $placeholders);
-                    $addWhere[] = '(' . implode(' OR ', $orConditions) . ')';
-                } elseif (in_array($type, ['LIKE', 'LIKE-LEFT', 'LIKE-RIGHT'])) {
-                    // LIKE 검색을 위해 조건을 생성
-                    $likeConditions = array_map(function ($placeholder) use ($field) {
-                        return "$field LIKE $placeholder";
-                    }, $placeholders);
-                    $addWhere[] = '(' . implode(' OR ', $likeConditions) . ')';
-                }
-            } else {
-                // 단일 값에 대한 검색 처리
-                if ($type === 'LIKE') {
-                    $addWhere[] = "$field LIKE ?";
-                    $bindValues[] = "%$value%";
-                } elseif ($type === 'LIKE-LEFT') {
-                    $addWhere[] = "$field LIKE ?";
-                    $bindValues[] = "%$value";
-                } elseif ($type === 'LIKE-RIGHT') {
-                    $addWhere[] = "$field LIKE ?";
-                    $bindValues[] = "$value%";
-                } elseif ($type === 'OR') {
-                    $addWhere[] = "$field = ?";
+                    break;
+                case 'NULL':
+                    // NULL 값 검색
+                    $addWhere[] = "$field IS NULL";
+                    break;
+                case 'NOT NULL':
+                    // NOT NULL 값 검색
+                    $addWhere[] = "$field IS NOT NULL";
+                    break;
+                case '>':
+                case '<':
+                case '>=':
+                case '<=':
+                    // 비교 연산자 검색
+                    $addWhere[] = "$field $type ?";
                     $bindValues[] = $value;
-                } else {
-                    // 기본 '=' 검색
-                    $addWhere[] = "$field = ?";
+                    break;
+                case 'REGEXP':
+                    // 정규표현식 검색
+                    $addWhere[] = "$field REGEXP ?";
                     $bindValues[] = $value;
-                }
+                    break;
+                case 'FULLTEXT':
+                    // 전문 검색
+                    $addWhere[] = "MATCH ($field) AGAINST (? IN BOOLEAN MODE)";
+                    $bindValues[] = $value;
+                    break;
+                default:
+                    if (is_array($value)) {
+                        $placeholders = array_fill(0, count($value), '?');
+                        if ($type === 'IN' || $type === '=') {
+                            // IN 검색 또는 다중 값 일치 검색
+                            $addWhere[] = "$field IN (" . implode(',', $placeholders) . ")";
+                        } elseif ($type === 'OR') {
+                            // OR 조건으로 다중 값 검색
+                            $orConditions = array_map(function($ph) use ($field) {
+                                return "$field = $ph";
+                            }, $placeholders);
+                            $addWhere[] = '(' . implode(' OR ', $orConditions) . ')';
+                        } elseif (in_array($type, ['LIKE', 'LIKE-LEFT', 'LIKE-RIGHT'])) {
+                            // LIKE 검색 (전체, 왼쪽, 오른쪽 일치)
+                            $likeConditions = array_map(function($ph) use ($field) {
+                                return "$field LIKE $ph";
+                            }, $placeholders);
+                            $addWhere[] = '(' . implode(' OR ', $likeConditions) . ')';
+                        }
+                        foreach ($value as $v) {
+                            $bindValues[] = self::prepareLikeValue($v, $type);
+                        }
+                    } else {
+                        // 단일 값 검색 (LIKE 또는 정확한 일치)
+                        if (in_array($type, ['LIKE', 'LIKE-LEFT', 'LIKE-RIGHT'])) {
+                            $addWhere[] = "$field LIKE ?";
+                        } else {
+                            $addWhere[] = "$field = ?";
+                        }
+                        $bindValues[] = self::prepareLikeValue($value, $type);
+                    }
             }
+        }
+    }
+
+    /**
+     * LIKE 검색을 위한 값을 준비합니다.
+     *
+     * @param string $value 검색할 값
+     * @param string $type 검색 타입 ('LIKE', 'LIKE-LEFT', 'LIKE-RIGHT')
+     * @return string 준비된 검색 값
+     */
+    private static function prepareLikeValue($value, $type)
+    {
+        switch ($type) {
+            case 'LIKE':
+                // 양쪽 일치
+                return "%$value%";
+            case 'LIKE-LEFT':
+                // 왼쪽 일치
+                return "%$value";
+            case 'LIKE-RIGHT':
+                // 오른쪽 일치
+                return "$value%";
+            default:
+                // 기본값 (변경 없음)
+                return $value;
         }
     }
 
@@ -429,19 +508,19 @@ class CommonHelper
     public static function getQueryString(array $params): string
     {
         $queryArray = [];
+        $excludeParams = ['page', 'filter', 'sort', 'additionalQueries', 'page_rows', 'page_nums'];
 
         // 기본 파라미터를 쿼리 문자열로 변환
         foreach ($params as $key => $value) {
-            if (in_array($key, ['page', 'filter', 'sort', 'additionalQueries', 'page_rows', 'page_nums'])) {
-                continue; // 이 파라미터들은 별도로 처리  'page_rows', 'page_nums' => 쿼리스트링에서 제외
+            if (in_array($key, $excludeParams)) {
+                continue; // 이 파라미터들은 별도로 처리 또는 제외
             }
-
             $queryArray[] = urlencode($key) . '=' . urlencode((string) $value);
         }
 
         // 필터 및 정렬 파라미터 추가
         foreach (['filter', 'sort'] as $key) {
-            if (!empty($params[$key])) {
+            if (!empty($params[$key]) && is_array($params[$key])) {
                 foreach ($params[$key] as $filterKey => $filterValue) {
                     if (is_array($filterValue)) {
                         foreach ($filterValue as $val) {
@@ -455,21 +534,23 @@ class CommonHelper
         }
 
         // 추가 파라미터 추가
-        if (!empty($params['additionalQueries'])) {
+        if (!empty($params['additionalQueries']) && is_array($params['additionalQueries'])) {
             foreach ($params['additionalQueries'] as $query) {
-                list($name, $value) = $query;
-                if (is_array($value)) {
-                    foreach ($value as $val) {
-                        $queryArray[] = urlencode($name . '[]') . '=' . urlencode((string) $val);
+                if (is_array($query) && count($query) == 2) {
+                    list($name, $value) = $query;
+                    if (is_array($value)) {
+                        foreach ($value as $val) {
+                            $queryArray[] = urlencode($name . '[]') . '=' . urlencode((string) $val);
+                        }
+                    } else {
+                        $queryArray[] = urlencode($name) . '=' . urlencode((string) $value);
                     }
-                } else {
-                    $queryArray[] = urlencode($name) . '=' . urlencode((string) $value);
                 }
             }
         }
 
-        // 쿼리 문자열 생성
-        return '&' . implode('&', $queryArray);
+        // 쿼리 문자열 생성 ('&'로 시작)
+        return $queryArray ? '&' . implode('&', $queryArray) : '';
     }
 
     /**
