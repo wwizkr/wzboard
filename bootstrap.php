@@ -4,9 +4,9 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
-//use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Web\PublicHtml\Helper\DatabaseQuery;
 use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CacheHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\SessionManager;
@@ -72,8 +72,11 @@ if ($isMobile) {
     $config_domain_data['device_type'] = 'pc';
 }
 
-// config_domain 배열을 컨테이너에 등록
+// config_domain 배열을 컨테이너에 등록 --- 전체 수정된 후 삭제할 것.
 $container->set('config_domain', $config_domain_data);
+
+// ConfigHelper에 설정 등록
+ConfigHelper::setConfig('config_domain', $config_domain_data);
 
 // MenuController를 통해 트리화된 메뉴 데이터를 가져옴
 $menuTree = MenuHelper::getMenuTree();
@@ -100,3 +103,9 @@ if ($userCsrfToken === null) {
 
 // 사용자용 CSRF 토큰을 컨테이너에 등록
 $container->set('user_csrf_token', $userCsrfToken);
+
+// 서비스 프로바이더 파일 포함
+require_once __DIR__ . '/config/serviceProviders.php';
+
+// 서비스와 모델 등록
+registerServices($container);

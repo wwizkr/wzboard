@@ -11,7 +11,7 @@ class AdminBoardsModel
     use DatabaseHelperTrait;
 
     protected $db;
-    protected $configDomain;
+    protected $config_domain;
 
     /**
      * 생성자: 의존성 주입을 통해 데이터베이스 연결을 설정합니다.
@@ -19,7 +19,7 @@ class AdminBoardsModel
     public function __construct(DependencyContainer $container)
     {
         $this->db = $container->get('db');
-        $this->configDomain = $container->get('config_domain');
+        $this->config_domain = $container->get('config_domain');
     }
 
     /*

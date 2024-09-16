@@ -6,37 +6,26 @@ namespace Web\PublicHtml\Service;
 use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
-use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\PublicHtml\Helper\DependencyContainer;
 
 class BoardsService
 {
-    protected $boardsModel;
-    protected $boardsHelper;
-    protected $membersHelper;
-    protected $formDataMiddleware;
-    protected $categoryMapping;
-
-    /**
-     * 생성자: BoardsService 인스턴스를 생성합니다.
-     *
-     * @param BoardsModel $boardsModel 게시판 모델 인스턴스
-     * @param BoardsHelper $boardsHelper 게시판 관련 헬퍼 인스턴스
-     * @param MembersHelper $membersHelper 회원 관련 헬퍼 인스턴스
-     * @param FormDataMiddleware $formDataMiddleware 폼 데이터 미들웨어 인스턴스
-     */
-    public function __construct(
-        BoardsModel $boardsModel, 
-        BoardsHelper $boardsHelper, 
-        MembersHelper $membersHelper,
-        FormDataMiddleware $formDataMiddleware
-    ) {
-        $this->boardsModel = $boardsModel;
-        $this->boardsHelper = $boardsHelper;
-        $this->membersHelper = $membersHelper;
-        $this->formDataMiddleware = $formDataMiddleware;
-        $this->categoryMapping = [];
+    protected DependencyContainer $container;
+    protected BoardsModel $boardsModel;
+    protected BoardsHelper $boardsHelper;
+    protected MembersHelper $membersHelper;
+    protected FormDataMiddleware $formDataMiddleware;
+    protected array $categoryMapping = [];
+    
+    public function __construct(DependencyContainer $container)
+    {
+        $this->container = $container;
+        $this->boardsModel = $container->get('BoardsModel');
+        $this->boardsHelper = $container->get('BoardsHelper');
+        $this->membersHelper = $container->get('MembersHelper');
+        $this->formDataMiddleware = $container->get('FormDataMiddleware');
     }
 
     private function getCategoryMapping($board_no)
@@ -157,12 +146,6 @@ class BoardsService
         }
 
         // 현재 인증된 회원 ID 가져오기
-        /*
-        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        if ($mb_no) {
-            $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
-        }
-        */
         $memberData = $this->membersHelper->getMemberDataByNo();
 
         // POST 데이터는 formData 배열로 전송 됨
@@ -189,6 +172,7 @@ class BoardsService
         $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
         $formData['content'] = $content;
         $formData['slug'] = $slug;
+        $formData['user_ip'] = CommonHelper::getUserIp();
 
         $numericFields = ['group_no', 'board_no'];
         $data = $this->formDataMiddleware->processFormData($formData, $numericFields);

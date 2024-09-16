@@ -15,7 +15,8 @@
         "monolog/monolog": "^3.7",
         "symfony/cache": "^7.1",
         "ezyang/htmlpurifier": "^4.17",
-        "hybridauth/hybridauth": "^3.11"
+        "hybridauth/hybridauth": "^3.11",
+        "psr/container": "^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.3"

@@ -3,11 +3,20 @@
 
 namespace Web\Admin\Helper;
 
+use Web\PublicHtml\Helper\DependencyContainer;
+
 class AdminBoardsHelper
 {
+    protected $container;
+
+    public function __construct(DependencyContainer $container)
+    {
+        $this->container = $container;
+    }
+
     public static function getBoardSkinDir()
     {
-        $boards_skin_path = __DIR__ . '/../../View/Boards';
+        $boards_skin_path = dirname(__DIR__, 2) . '/View/Board';
         $result = [];
 
         if (is_dir($boards_skin_path)) {

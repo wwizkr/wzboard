@@ -1,42 +1,17 @@
 <?php
-// 파일 위치: /src/Admin/Controller/BoardadminController.php
-// 게시판 그룹관리, 카테고리 관리, 게시판 설정 관리 등 관리 컨트롤러
-/*
- * Json 응답값
- * @param result = "success" : "failure"
- * @param message = "text"
- * @param gotoUrl = "url" 있을 경우 해당 URL로 이동
- * @param refresh = true 이면 새로 고침
- */
-
 namespace Web\Admin\Controller;
 
-use Web\PublicHtml\Helper\SessionManager;
-use Web\PublicHtml\Helper\BoardsHelper;
-use Web\PublicHtml\Helper\MembersHelper;
-use Web\Admin\Model\AdminBoardsModel;
-use Web\Admin\Service\AdminBoardsService;
-use Web\PublicHtml\Model\BoardsModel;
-use Web\PublicHtml\Service\BoardsService;
-use Web\PublicHtml\Model\MembersModel;
-use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class BoardadminController
 {
-    protected $container;
+    protected DependencyContainer $container;
     protected $sessionManager;
     protected $boardsHelper;
     protected $membersHelper;
-    protected $adminBoardsModel;
     protected $adminBoardsService;
-    protected $boardsModel;
-    protected $boardsService;
-    protected $membersModel;
-    protected $membersService;
     protected $configDomain;
     protected $formDataMiddleware;
 
@@ -44,169 +19,136 @@ class BoardadminController
     {
         $this->container = $container;
         $this->sessionManager = $this->container->get('session_manager');
-        $this->adminBoardsModel = new AdminBoardsModel($container);
-        $this->adminBoardsService = new AdminBoardsService($this->adminBoardsModel);
-        $this->boardsHelper = new BoardsHelper($this->adminBoardsService);
-        $this->membersModel = new MembersModel($container);
-        $this->membersService = new MembersService($this->membersModel);
-        $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
-        $this->configDomain = $container->get('config_domain');
-
-        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($this->sessionManager);
-        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
+        $this->boardsHelper = $this->container->get('BoardsHelper');
+        $this->membersHelper = $this->container->get('MembersHelper');
+        $this->adminBoardsService = $this->container->get('AdminBoardsService');
+        $this->configDomain = $this->container->get('config_domain');
+        $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
-    // ---------------------------
-    // 그룹 관리 메서드
-    // ---------------------------
-
-    public function group()
+    public function group(): array
     {
-        $viewData = [
-            'title' => '게시판 그룹 관리',
-            'content' => '',
-            'config_domain' => $this->configDomain,
-            'groupData' => $this->boardsHelper->getGroupData(),
-            'levelData' => $this->membersHelper->getLevelData(),
+        return [
+            'AdminBoards/group',
+            [
+                'title' => '게시판 그룹 관리',
+                'content' => '',
+                'config_domain' => $this->configDomain,
+                'groupData' => $this->boardsHelper->getGroupData(),
+                'levelData' => $this->membersHelper->getLevelData(),
+            ]
         ];
-
-        return ['AdminBoards/group', $viewData];
     }
 
-    public function groupUpdate()
+    public function groupUpdate(): array
     {
         $action = $_POST['action'] ?? null;
-        $group_no = CommonHelper::pickNumber($_POST['group_no'], 0) ?? 0;
+        $group_no = (int)($_POST['group_no'] ?? 0);
         $formData = $_POST['formData'] ?? null;
 
         if (empty($formData)) {
-            return CommonHelper::jsonResponse([
-                'result' => 'failure',
-                'message' => '입력정보가 비어 있습니다.'
-            ]);
+            return $this->jsonFailureResponse('입력정보가 비어 있습니다.');
         }
 
         $numericFields = ['allow_level', 'order_num'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
-            unset($data['group_id']); // update 시 아이디는 변경 불가
+            unset($data['group_id']);
             $this->adminBoardsService->updateBoardsGroup($group_no, $data);
         } else {
             $this->adminBoardsService->insertBoardsGroup($data);
         }
 
-        return CommonHelper::jsonResponse([
-            'result' => 'success',
-            'message' => '처리하였습니다.'
-        ]);
+        return $this->jsonSuccessResponse('처리하였습니다.');
     }
 
-    // 카테고리 관리 메서드
-
-    public function category()
+    public function category(): array
     {
-        $viewData = [
-            'title' => '게시판 카테고리 관리',
-            'content' => '',
-            'config_domain' => $this->configDomain,
-            'categoryData' => $this->boardsHelper->getCategoryData(),
-            'levelData' => $this->membersHelper->getLevelData(),
+        return [
+            'AdminBoards/category',
+            [
+                'title' => '게시판 카테고리 관리',
+                'content' => '',
+                'config_domain' => $this->configDomain,
+                'categoryData' => $this->boardsHelper->getCategoryData(),
+                'levelData' => $this->membersHelper->getLevelData(),
+            ]
         ];
-
-        return ['AdminBoards/category', $viewData];
     }
 
-    public function categoryUpdate()
+    public function categoryUpdate(): array
     {
         $action = $_POST['action'] ?? null;
-        $category_no = CommonHelper::pickNumber($_POST['category_no'], 0) ?? 0;
+        $category_no = (int)($_POST['category_no'] ?? 0);
         $formData = $_POST['formData'] ?? null;
 
         if (empty($formData)) {
-            return CommonHelper::jsonResponse([
-                'result' => 'failure',
-                'message' => '입력정보가 비어 있습니다.'
-            ]);
+            return $this->jsonFailureResponse('입력정보가 비어 있습니다.');
         }
 
         $numericFields = ['allow_level', 'order_num'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
-            //$categoryData = $this->adminBoardsService->getBoardsCategory($category_no);
             $this->adminBoardsService->updateBoardsCategory($category_no, $data);
         } else {
             $this->adminBoardsService->insertBoardsCategory($data);
         }
 
-        return CommonHelper::jsonResponse([
-            'result' => 'success',
-            'message' => '처리하였습니다.'
-        ]);
+        return $this->jsonSuccessResponse('처리하였습니다.');
     }
 
-    // 게시판 관리 메서드 목록, 생성, 수정, 삭제
-
-    public function boards()
+    public function boards(): array
     {
-        $viewData = [
-            'title' => '게시판 관리',
-            'content' => '',
-            'config_domain' => $this->configDomain,
-            'boardsConfig' => $this->boardsHelper->getBoardsConfig(),
-            'levelData' => $this->membersHelper->getLevelData(),
+        return [
+            'AdminBoards/boards',
+            [
+                'title' => '게시판 관리',
+                'content' => '',
+                'config_domain' => $this->configDomain,
+                'boardsConfig' => $this->boardsHelper->getBoardsConfig(),
+                'levelData' => $this->membersHelper->getLevelData(),
+            ]
         ];
-
-        return ['AdminBoards/boards', $viewData];
     }
 
-    public function boardform($vars)
+    public function boardform(array $vars): array
     {
         $board_id = $vars['param'] ?? '';
-        $boardConfig = [];
+        $boardConfig = $board_id ? $this->boardsHelper->getBoardsConfig($board_id) : [];
 
-        if ($board_id) {
-            $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
-        }
-
-        $viewData = [
-            'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
-            'content' => '',
-            'config_domain' => $this->configDomain,
-            'groupData' => $this->boardsHelper->getGroupData(),
-            'categoryData' => $this->boardsHelper->getCategoryData(),
-            'boardCategory' => !empty($boardConfig) ? $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']) : [],
-            'levelData' => $this->membersHelper->getLevelData(),
-            'skinData' => $this->boardsHelper->getSkinData(),
-            'boardConfig' => $boardConfig,
+        return [
+            'AdminBoards/boardForm',
+            [
+                'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
+                'content' => '',
+                'config_domain' => $this->configDomain,
+                'groupData' => $this->boardsHelper->getGroupData(),
+                'categoryData' => $this->boardsHelper->getCategoryData(),
+                'boardCategory' => !empty($boardConfig) ? $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']) : [],
+                'levelData' => $this->membersHelper->getLevelData(),
+                'skinData' => $this->boardsHelper->getSkinData(),
+                'boardConfig' => $boardConfig,
+            ]
         ];
-
-        return ['AdminBoards/boardForm', $viewData];
     }
 
-    public function boardUpdate()
+    public function boardUpdate(): array
     {
-        $board_no = CommonHelper::pickNumber($_POST['board_no'], 0) ?? 0;
+        $board_no = (int)($_POST['board_no'] ?? 0);
         $formData = $_POST['formData'] ?? null;
 
         if (empty($formData)) {
-            return CommonHelper::jsonResponse([
-                'result' => 'failure',
-                'message' => '입력정보가 비어 있습니다.'
-            ]);
+            return $this->jsonFailureResponse('입력정보가 비어 있습니다.');
         }
 
         if ($board_no) {
-            $board_id = CommonHelper::validateParam('board_id', 'string', '', null, INPUT_POST);
+            $board_id = $_POST['board_id'] ?? '';
             $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
 
             if(empty($boardConfig)) {
-                return CommonHelper::jsonResponse([
-                    'result' => 'failure',
-                    'message' => '게시판 정보가 없습니다.'
-                ]);
+                return $this->jsonFailureResponse('게시판 정보가 없습니다.');
             }
         }
 
@@ -222,9 +164,22 @@ class BoardadminController
             $this->adminBoardsService->insertBoardsConfig($data);
         }
 
+        return $this->jsonSuccessResponse('처리하였습니다.');
+    }
+
+    private function jsonSuccessResponse(string $message): array
+    {
         return CommonHelper::jsonResponse([
             'result' => 'success',
-            'message' => '처리하였습니다.'
+            'message' => $message
+        ]);
+    }
+
+    private function jsonFailureResponse(string $message): array
+    {
+        return CommonHelper::jsonResponse([
+            'result' => 'failure',
+            'message' => $message
         ]);
     }
 }

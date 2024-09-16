@@ -336,8 +336,6 @@ class CommonHelper
             }
         }
 
-        error_log("Params::".print_r($params, true));
-
         return $params;
     }
 
@@ -384,7 +382,7 @@ class CommonHelper
                 }
             }
         }
-        error_log("processed:::".print_r($processed, true));
+
         return $processed;
     }
     
@@ -654,12 +652,16 @@ class CommonHelper
     }
 
     // 관리자 페이지에서 이루어진 요청인지 확인
-    
     public static function isAdminRequest()
     {
         $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
 
         return $isAdmin;
+    }
+
+    public static function getUserIp()
+    {
+        return isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
     }
 
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음

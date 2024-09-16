@@ -11,7 +11,7 @@ class AdminSettingsModel
     use DatabaseHelperTrait;
 
     private $db;
-    private $config;
+    //private $config;
 
     /**
      * 생성자: 의존성 주입을 통해 데이터베이스 연결을 설정합니다.
@@ -19,7 +19,7 @@ class AdminSettingsModel
     public function __construct(DependencyContainer $container)
     {
         $this->db = $container->get('db');
-        $this->config = $container->get('config');
+        //$this->config = $container->get('config');
     }
 
     /**

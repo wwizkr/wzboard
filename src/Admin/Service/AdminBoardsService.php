@@ -3,15 +3,18 @@
 
 namespace Web\Admin\Service;
 
+use Web\PublicHtml\Helper\DependencyContainer;
 use  Web\Admin\Model\AdminBoardsModel;
 
 class AdminBoardsService
 {
+    protected $container;
     protected $adminBoardsModel;
 
-    public function __construct(AdminBoardsModel $adminBoardsModel)
+    public function __construct(DependencyContainer $container)
     {
-        $this->adminBoardsModel = $adminBoardsModel;
+        $this->container = $container;
+        $this->adminBoardsModel = $this->container->get('AdminBoardsModel');
     }
     
     // ---------------------------

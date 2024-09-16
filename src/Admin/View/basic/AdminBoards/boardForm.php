@@ -128,6 +128,23 @@
                 </select>
             </div>
         </div>
+        <div class="table-row row mb-3">
+            <div class="table-th col-md-2">
+                <span>게시판 목록 형식</span>
+            </div>
+            <div class="table-td col-md-10">
+            <?php
+            foreach (array('페이지 이동','더보기 출력') as $key=>$val) {
+                echo '<div class="form-check form-check-inline">';
+                    echo '<input class="form-check-input" type="radio" name="formData[board_list_type]" id="board_list_type_'.$key.'" value="'.$key.'">';
+                    echo '<label class="form-check-label" for="board_list_type_'.$key.'">';
+                    echo $val;
+                    echo '</label>';
+                echo '</div>';
+            }
+            ?>
+            </div>
+        </div>
     </div>
 </div>
 </form>
@@ -135,10 +152,10 @@
 var boardConfig = <?php echo json_encode($boardConfig); ?>;
 var boardCategory = <?php echo json_encode($boardCategory); ?>;
 document.addEventListener('DOMContentLoaded', function() {
-    fillFormData(boardConfig, 'formData', checkCategory);
+    fillFormData(boardConfig, 'formData', checkBoardConfig);
 });
 
-function checkCategory() {
+function checkBoardConfig() {
     // boardCategory의 모든 'no' 값을 배열로 추출
     var boardCategoryNos = boardCategory.map(function(item) {
         return item.no;

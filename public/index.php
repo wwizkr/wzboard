@@ -124,3 +124,16 @@ switch ($routeInfo[0]) {
         }
         break;
 }
+
+// 현재 메모리 사용량 출력
+echo "현재 메모리 사용량: " . memory_get_usage() . " bytes\n";
+// 최대 메모리 사용량 출력
+echo "최대 메모리 사용량: " . memory_get_peak_usage() . " bytes\n";
+// 사람이 읽기 좋은 형식으로 변환하여 출력
+function formatMemoryUsage($size)
+{
+    $unit = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    return @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2) . ' ' . $unit[$i];
+}
+echo "현재 메모리 사용량: " . formatMemoryUsage(memory_get_usage()) . "\n";
+echo "최대 메모리 사용량: " . formatMemoryUsage(memory_get_peak_usage()) . "\n";

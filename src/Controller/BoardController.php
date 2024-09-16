@@ -5,15 +5,17 @@ namespace Web\PublicHtml\Controller;
 
 use Web\Admin\Model\AdminBoardsModel;
 use Web\Admin\Service\AdminBoardsService;
+use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
-use Web\PublicHtml\Model\MembersModel;
-use Web\PublicHtml\Service\MembersService;
-use Web\PublicHtml\Service\BoardsService;
-use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
+use Web\PublicHtml\Model\MembersModel;
+use Web\PublicHtml\Model\BoardsModel;
+use Web\PublicHtml\Service\MembersService;
+use Web\PublicHtml\Service\BoardsService;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
@@ -31,72 +33,80 @@ class BoardController
     protected $boardsModel;
     protected $config_domain;
     protected $formDataMiddleware;
-
+    
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
+        $this->initializeServices();
+    }
+
+    protected function initializeServices()
+    {
+        $this->sessionManager = $this->container->get('SessionManager');
+        $this->adminBoardsService = $this->container->get('AdminBoardsService');
+        $this->boardsHelper = $this->container->get('BoardsHelper');
+        $this->membersService = $this->container->get('MembersService');
+        $this->membersHelper = $this->container->get('MembersHelper');
+        $this->boardsService = $this->container->get('BoardsService');
+        $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+
+        /*
         $this->sessionManager = new SessionManager();
-        $this->adminBoardsModel = new AdminBoardsModel($container);
-        $this->adminBoardsService = new AdminBoardsService($this->adminBoardsModel);
-        $this->membersModel = new MembersModel($container);
-        $this->membersService = new MembersService($this->membersModel);
-        $this->boardsModel = new BoardsModel($container);
+        $adminBoardsModel = new AdminBoardsModel($this->container);
+        $this->adminBoardsService = new AdminBoardsService($adminBoardsModel);
 
-        // BoardsHelper 인스턴스를 먼저 생성합니다.
-        $this->boardsHelper = new BoardsHelper($this->adminBoardsService);
+        $membersModel = new MembersModel($this->container);
+        $this->membersService = new MembersService($membersModel);
 
-        // MembersHelper 인스턴스를 생성할 때 MembersModel과 SessionManager를 전달합니다.
-        $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
-        
-        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
+        $boardsModel = new BoardsModel($this->container);
+        $this->boardsHelper = new BoardsHelper($this->adminBoardsService, $boardsModel);
+        $this->membersHelper = new MembersHelper($this->container, $membersModel);
+
+        $csrfTokenHandler = new CsrfTokenHandler($this->sessionManager);
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
 
-        // boardsService를 초기화할 때 BoardsHelper 인스턴스를 전달합니다.
         $this->boardsService = new BoardsService(
-            $this->boardsModel,
+            $boardsModel,
             $this->boardsHelper,
             $this->membersHelper,
             $this->formDataMiddleware
         );
 
-        // BoardsHelper에 boardsService를 설정합니다.
         $this->boardsHelper->setBoardsService($this->boardsService);
-        $this->config_domain = $container->get('config_domain');
+        */
     }
 
-    public function list($vars) // 게시글 목록 작업
+    /**
+     * 게시글 목록을 표시합니다.
+     * 
+     * @param array $vars 라우팅에서 전달된 변수들
+     * @return array 뷰 경로와 뷰 데이터를 포함한 배열
+     */
+    public function list($vars)
     {
+        // 게시판 ID 유효성 검사 및 설정 로드
         $boardId = CommonHelper::validateParam('boardId', 'string', $vars['boardId']) ?? null;
-        // 게시판 설정 데이터 가져오기
         $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
         $viewPath = 'Board/'.$boardConfig['board_skin'].'/list';
 
+        // 게시판 정보가 없으면 리다이렉트
         if (empty($boardConfig)) {
             $message = '게시판 정보를 찾을 수 없습니다.';
             $url = '/';
             CommonHelper::alertAndRedirect($message, $url);
         }
 
-        // 게시판의 카테고리 데이터
+        // 게시판 카테고리 데이터 로드
         $categoryData = $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']);
         
-        // 게시판 목록 가져오기 => [totalItems, params, articleList]
+        // 게시글 목록 데이터 가져오기
         $articleData = $this->getArticleList($boardConfig);
-
-        // 쿼리 문자열 생성
-        $queryString = CommonHelper::getQueryString($articleData['params']);
-
-        // 페이징 데이터 계산
-        $paginationData = CommonHelper::getPaginationData(
-            $articleData['totalItems'],
-            $articleData['params']['page'],
-            $articleData['params']['page_rows'],
-            $articleData['params']['page_nums'],
-            $queryString
-        );
         
-        // 실제 출력할 LIST HTML을 가져옴
+        // 페이지네이션 데이터 계산
+        $paginationData = $this->calculatePagination($articleData);
+        
+        // 게시글 목록 HTML 생성
         $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData['articleList'], $paginationData);
 
         // 뷰에 전달할 데이터 구성
@@ -115,44 +125,36 @@ class BoardController
         ];
     }
     
-    /*
-     * 게시글을 불러오는 메소드
-     *
-     * 메소드를 분리해서 api에서 재사용하거나, ajax로 전환 시 사용 가능하게 함.
-     * @param $boardConfig
-     * return array
+    /**
+     * 게시글 목록 데이터를 가져옵니다.
+     * 
+     * @param array $boardConfig 게시판 설정 데이터
+     * @return array 게시글 목록 데이터 (파라미터, 총 아이템 수, 게시글 목록)
      */
-    public function getArticleList($boardConfig = [])
+    protected function getArticleList($boardConfig = [])
     {
+        // 기본 설정 로드
         $config = [
             'cf_page_rows' => $this->config_domain['cf_page_rows'],
             'cf_page_nums' => $this->config_domain['cf_page_nums']
         ];
 
-        $allowedFilters = ['nickName','title','content']; // 검색어와 매칭시킬 필드
-        $allowedSortFields = ['no', 'create_at']; // 정렬에 사용할 필드
+        // 허용된 필터와 정렬 필드 정의
+        $allowedFilters = ['nickName','title','content'];
+        $allowedSortFields = ['no', 'create_at'];
         
-        // 추가 검색에 사용할 필드 및 값
-        // array 사용의 경우 OR 검색으로 여러개의 검색 결과
-        // string 사용의 경우 단일 검색
+        // 추가 파라미터 설정 (예: 카테고리)
         $additionalParams = [
             'category[]' => ['array', [], isset($_GET['category']) ? $_GET['category'] : []],
-            //'status' => ['string', 'all', ['all', 'active', 'inactive']] // 단일 검색 추가 예시
         ];
 
-        /* 
-         * $params => array
-         * $params['page'];
-         * $params['search'];
-         * $params['filter'];
-         * $params['sort']['order'];
-         * $params['sort']['field'];
-         * $params['additionalQueries'];
-         */
+        // 목록 파라미터 가져오기
         $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
 
-        // 총 게시물 수 $additionalParams 가 있을 경우 해당 배열을 인수에 추가해야 함.
+        // 총 게시글 수 조회
         $totalItems = $this->boardsService->getTotalArticleCount($boardConfig['no'], $params['search'], $params['filter'], $params['additionalQueries']);
+        
+        // 게시글 목록 데이터 조회
         $articleList = $this->boardsService->getArticleListData(
             $boardConfig['no'],
             $params['page'],
@@ -168,6 +170,27 @@ class BoardController
             'totalItems' => $totalItems,
             'articleList' => $articleList,
         ];
+    }
+
+    /**
+     * 페이지네이션 데이터를 계산합니다.
+     * 
+     * @param array $articleData getArticleList()에서 반환된 데이터
+     * @return array 페이지네이션 데이터
+     */
+    protected function calculatePagination($articleData)
+    {
+        // 쿼리 문자열 생성
+        $queryString = CommonHelper::getQueryString($articleData['params']);
+        
+        // 페이지네이션 데이터 계산 및 반환
+        return CommonHelper::getPaginationData(
+            $articleData['totalItems'],
+            $articleData['params']['page'],
+            $articleData['params']['page_rows'],
+            $articleData['params']['page_nums'],
+            $queryString
+        );
     }
 
     public function view($vars)
@@ -186,22 +209,6 @@ class BoardController
             ]);
         }
 
-        // 현재 인증된 회원 ID 가져오기
-        $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
-        /*
-         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
-         * 관리자는 필요없음.
-         */
-
-        /*
-         * 조회수 증가 -> service -> model
-         */
-
-        // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
-        $editorScript = CommonHelper::getEditorScript($editor);
-
         // 글 정보
         $articleData = [];
         if($article_no) {
@@ -213,6 +220,35 @@ class BoardController
                 'message' => '게시글 정보가 없습니다.'
             ]);
         }
+
+        // 현재 인증된 회원 ID 가져오기
+        $memberData = $this->membersHelper->getMemberDataByNo();
+        /*
+         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
+         * 관리자는 필요없음.
+         */
+
+        /*
+         * 권한 체크
+         */
+        //$result = $this->boardsHelper->boardPermissionCheck('view', $boardConfig, $articleData, $memberData);
+        if (!$this->sessionManager->get('auth') || $this->sessionManager->get('auth')['is_super'] === 0) {
+            $ss_no = 'board_view_'.$boardConfig['board_id'].'_'.$article_no;
+            if (!$this->sessionManager->get($ss_no)) {
+                $result = $this->boardsHelper->boardPermissionCheck('view', $boardConfig, $articleData, $memberData);
+                if ($result === false) {
+                    CommonHelper::alertAndBack('글읽기 권한이 없거나 포인트가 부족합니다.');
+                }
+                $this->sessionManager->set($ss_no, 1);
+            }
+        }
+
+
+        // 에디터 스크립트
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
+        $editorScript = CommonHelper::getEditorScript($editor);
+
+        
 
         // 뷰에 전달할 데이터 구성
         $viewData = [

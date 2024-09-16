@@ -23,47 +23,22 @@ class BoardController
     protected $container;
     protected $sessionManager;
     protected $boardsHelper;
-    protected $adminBoardsModel;
     protected $adminBoardsService;
-    protected $membersModel;
-    protected $membersService;
     protected $membersHelper;
     protected $boardsService;
-    protected $boardsModel;
     protected $configDomain;
     protected $formDataMiddleware;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        //$this->sessionManager = new SessionManager();
-        $this->adminBoardsModel = new AdminBoardsModel($container);
-        $this->adminBoardsService = new AdminBoardsService($this->adminBoardsModel);
-        $this->membersModel = new MembersModel($container);
-        $this->membersService = new MembersService($this->membersModel);
-        $this->boardsModel = new BoardsModel($container);
-
-        // BoardsHelper 인스턴스를 먼저 생성합니다.
-        $this->boardsHelper = new BoardsHelper($this->adminBoardsService);
-
-        // MembersHelper 인스턴스를 생성할 때 MembersService를 전달합니다.
-        $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
-        
-        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
-        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
-
-        // boardsService를 초기화할 때 BoardsHelper 인스턴스를 전달합니다.
-        $this->boardsService = new BoardsService(
-            $this->boardsModel,
-            $this->boardsHelper,
-            $this->membersHelper,
-            $this->formDataMiddleware
-        );
-
-        // BoardsHelper에 boardsService를 설정합니다.
-        $this->boardsHelper->setBoardsService($this->boardsService);
-        $this->configDomain = $container->get('config_domain');
+        $this->sessionManager = $this->container->get('session_manager');
+        $this->adminBoardsService = $this->container->get('AdminBoardsService');
+        $this->boardsHelper = $this->container->get('BoardsHelper');
+        $this->membersHelper = $this->container->get('MembersHelper');
+        $this->boardsService = $this->container->get('BoardsService');
+        $this->configDomain = $this->container->get('config_domain');
+        $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
     public function list($vars) // 게시글 목록 작업
