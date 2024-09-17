@@ -7,7 +7,7 @@ use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\MembersHelper;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CryptoHelper;
 
 class AuthController
@@ -21,10 +21,10 @@ class AuthController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->membersModel = new MembersModel($container);
-        $this->membersService = new MembersService($this->membersModel);
-        $this->sessionManager = $this->container->get('session_manager');
-        $this->membersHelper = new MembersHelper($this->container, $this->membersModel);
+        $this->membersModel = $this->container->get('MembersModel');
+        $this->membersService = $this->container->get('MembersService');
+        $this->sessionManager = $this->container->get('SessionManager');
+        $this->membersHelper = $this->container->get('MembersHelper');
     }
 
     // 로그인

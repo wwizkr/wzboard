@@ -3,6 +3,7 @@
 
 namespace Web\PublicHtml\Helper;
 
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Model\MembersModel;
 
 class MembersHelper
@@ -11,17 +12,11 @@ class MembersHelper
     protected $membersModel; // 회원 관련 모델 인스턴스
     protected $sessionManager; // 세션 관리자 인스턴스
 
-    /**
-     * 생성자: MembersHelper 인스턴스를 생성합니다.
-     *
-     * @param MembersModel $membersModel 회원 모델 인스턴스
-     * @param SessionManager $sessionManager 세션 관리자 인스턴스
-     */
-    public function __construct(DependencyContainer $container, MembersModel $membersModel)
+    public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->membersModel = $membersModel;
-        $this->sessionManager = $this->container->get('session_manager');
+        $this->membersModel = $this->container->get('MembersModel');
+        $this->sessionManager = $this->container->get('SessionManager');
     }
 
     /**

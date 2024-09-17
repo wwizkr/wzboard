@@ -1,7 +1,5 @@
 <?php
-// /src/Helper/DependencyContainer.php
-
-namespace Web\PublicHtml\Helper;
+namespace Web\PublicHtml\Core;
 
 use Psr\Container\ContainerInterface;
 
@@ -11,7 +9,7 @@ class DependencyContainer implements ContainerInterface
     private array $container = [];
     private array $resolved = [];
     private array $factories = [];
-    private array $prototypes = []; // 프로토타입을 위한 배열 추가
+    private array $prototypes = [];
 
     private function __construct() {}
 
@@ -35,7 +33,6 @@ class DependencyContainer implements ContainerInterface
         unset($this->resolved[$id]);
     }
 
-    // 항상 새로운 인스턴스를 생성하는 프로토타입 방식 등록 메서드
     public function addPrototype(string $id, callable $prototype): void
     {
         $this->prototypes[$id] = $prototype;
@@ -43,11 +40,12 @@ class DependencyContainer implements ContainerInterface
 
     public function get($id)
     {
+        //$id = $this->resolveNamespace($id); // 자동 등록시 사용
+
         if (!$this->has($id)) {
             throw new \Exception("No entry or class found for '$id'");
         }
 
-        // 프로토타입이면 항상 새로운 인스턴스를 생성하여 반환
         if (isset($this->prototypes[$id])) {
             return $this->prototypes[$id]($this);
         }
@@ -105,19 +103,48 @@ class DependencyContainer implements ContainerInterface
         $dependencies = [];
 
         foreach ($parameters as $parameter) {
-            $dependency = $parameter->getClass();
-            if ($dependency === null) {
-                if ($parameter->isDefaultValueAvailable()) {
-                    $dependencies[] = $parameter->getDefaultValue();
-                } else {
-                    throw new \Exception("Cannot resolve dependency for parameter '{$parameter->getName()}'");
-                }
+            $type = $parameter->getType();
+            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                $dependencies[] = $this->get($type->getName());
+            } elseif ($parameter->isDefaultValueAvailable()) {
+                $dependencies[] = $parameter->getDefaultValue();
             } else {
-                $dependencies[] = $this->get($dependency->name);
+                throw new \Exception("Cannot resolve dependency for parameter '{$parameter->getName()}'");
             }
         }
 
         return $dependencies;
+    }
+
+    /**
+ * 문자열을 조건에 따라 네임스페이스로 변환하는 메서드
+ */
+    private function resolveNamespace(string $id): string
+    {
+        // 기본 네임스페이스
+        $namespace = '';
+
+        // 조건에 따라 네임스페이스 설정
+        if (strpos($id, 'Admin') !== false) {
+            if (strpos($id, 'Helper') !== false) {
+                $namespace = 'Web\\Admin\\Helper\\';
+            } elseif (strpos($id, 'Service') !== false) {
+                $namespace = 'Web\\Admin\\Service\\';
+            } elseif (strpos($id, 'Model') !== false) {
+                $namespace = 'Web\\Admin\\Model\\';
+            }
+        } else {
+            if (strpos($id, 'Service') !== false) {
+                $namespace = 'Web\\PublicHtml\\Service\\';
+            } elseif (strpos($id, 'Model') !== false) {
+                $namespace = 'Web\\PublicHtml\\Model\\';
+            } elseif (strpos($id, 'Helper') !== false || strpos($id, 'Manager') !== false) {
+                $namespace = 'Web\\PublicHtml\\Helper\\';
+            }
+        }
+
+        // 네임스페이스와 ID 결합하여 반환
+        return $namespace . $id;
     }
 
     private function __clone() {}

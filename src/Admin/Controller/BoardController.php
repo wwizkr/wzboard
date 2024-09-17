@@ -13,7 +13,7 @@ use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Service\BoardsService;
 use Web\PublicHtml\Model\BoardsModel;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
@@ -32,12 +32,12 @@ class BoardController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->sessionManager = $this->container->get('session_manager');
+        $this->sessionManager = $this->container->get('SessionManager');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
         $this->boardsHelper = $this->container->get('BoardsHelper');
         $this->membersHelper = $this->container->get('MembersHelper');
         $this->boardsService = $this->container->get('BoardsService');
-        $this->configDomain = $this->container->get('config_domain');
+        $this-config_domain = $this->container->get('config_domain');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
@@ -46,8 +46,8 @@ class BoardController
         $boardId = $vars['boardId'] ?? null;
     
         $config = [
-            'cf_page_rows' => $this->configDomain['cf_page_rows'],
-            'cf_page_nums' => $this->configDomain['cf_page_nums']
+            'cf_page_rows' => $this-config_domain['cf_page_rows'],
+            'cf_page_nums' => $this-config_domain['cf_page_nums']
         ];
 
         $allowedFilters = ['nickName']; // 검색어와 매칭시킬 필드
@@ -136,7 +136,7 @@ class BoardController
          */
 
         // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->configDomain['cf_editor'];
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this-config_domain['cf_editor'];
         $editor = 'tinymce';
         $editorScript = CommonHelper::getEditorScript($editor);
 
@@ -188,7 +188,7 @@ class BoardController
 
 
         // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->configDomain['cf_editor'];
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this-config_domain['cf_editor'];
         $editor = 'tinymce';
         $editorScript = CommonHelper::getEditorScript($editor);
 

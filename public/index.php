@@ -6,13 +6,16 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// 실행 시간 측정 시작
+$startTime = microtime(true);
+
 // Composer의 autoloader 및 기본 환경 설정 파일 로드
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../bootstrap.php';
 
 use FastRoute\RouteCollector;
 use function FastRoute\simpleDispatcher;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\View\ViewRenderer;
 use Web\Admin\View\AdminViewRenderer;
 use Web\PublicHtml\Helper\RouteHelper;
@@ -125,15 +128,20 @@ switch ($routeInfo[0]) {
         break;
 }
 
-// 현재 메모리 사용량 출력
-echo "현재 메모리 사용량: " . memory_get_usage() . " bytes\n";
-// 최대 메모리 사용량 출력
-echo "최대 메모리 사용량: " . memory_get_peak_usage() . " bytes\n";
-// 사람이 읽기 좋은 형식으로 변환하여 출력
+// 실행 시간 측정 종료
+$endTime = microtime(true);
+$executionTime = $endTime - $startTime;
+
+// 메모리 사용량 계산 함수
 function formatMemoryUsage($size)
 {
     $unit = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
     return @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2) . ' ' . $unit[$i];
 }
-echo "현재 메모리 사용량: " . formatMemoryUsage(memory_get_usage()) . "\n";
-echo "최대 메모리 사용량: " . formatMemoryUsage(memory_get_peak_usage()) . "\n";
+
+// 메모리 사용량 출력
+echo "현재 메모리 사용량: " . memory_get_usage() . " bytes (" . formatMemoryUsage(memory_get_usage()) . ")<br>";
+echo "최대 메모리 사용량: " . memory_get_peak_usage() . " bytes (" . formatMemoryUsage(memory_get_peak_usage()) . ")<br>";
+
+// 실행 시간 출력
+echo "실행 시간: " . round($executionTime, 4) . " 초";

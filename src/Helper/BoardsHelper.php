@@ -2,7 +2,7 @@
 // 파일 위치: /src/Helper/BoardsHelper.php
 namespace Web\PublicHtml\Helper;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\Admin\Service\AdminBoardsService;
 use Web\Admin\Helper\AdminBoardsHelper;
 use Web\PublicHtml\Service\BoardsService;

@@ -8,7 +8,7 @@ use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class BoardsService
 {

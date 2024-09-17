@@ -6,7 +6,7 @@ namespace Web\PublicHtml\Model;
 use Web\PublicHtml\Helper\CacheHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class MenuModel
 {

@@ -4,7 +4,7 @@
 namespace Web\PublicHtml\Model;
 
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 
 class BoardsModel

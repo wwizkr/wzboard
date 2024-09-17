@@ -3,6 +3,8 @@
 
 namespace Web\PublicHtml\Controller;
 
+use Web\PublicHtml\Core\DependencyContainer;
+
 use Web\Admin\Model\AdminBoardsModel;
 use Web\Admin\Service\AdminBoardsService;
 use Web\PublicHtml\Helper\ConfigHelper;
@@ -10,7 +12,7 @@ use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
-use Web\PublicHtml\Helper\DependencyContainer;
+
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Model\BoardsModel;
@@ -42,6 +44,9 @@ class BoardController
 
     protected function initializeServices()
     {
+        //echo '<pre>';
+        //var_dump($this->container);
+        //echo '</pre>';
         $this->sessionManager = $this->container->get('SessionManager');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
         $this->boardsHelper = $this->container->get('BoardsHelper');
@@ -50,31 +55,6 @@ class BoardController
         $this->boardsService = $this->container->get('BoardsService');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
-
-        /*
-        $this->sessionManager = new SessionManager();
-        $adminBoardsModel = new AdminBoardsModel($this->container);
-        $this->adminBoardsService = new AdminBoardsService($adminBoardsModel);
-
-        $membersModel = new MembersModel($this->container);
-        $this->membersService = new MembersService($membersModel);
-
-        $boardsModel = new BoardsModel($this->container);
-        $this->boardsHelper = new BoardsHelper($this->adminBoardsService, $boardsModel);
-        $this->membersHelper = new MembersHelper($this->container, $membersModel);
-
-        $csrfTokenHandler = new CsrfTokenHandler($this->sessionManager);
-        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
-
-        $this->boardsService = new BoardsService(
-            $boardsModel,
-            $this->boardsHelper,
-            $this->membersHelper,
-            $this->formDataMiddleware
-        );
-
-        $this->boardsHelper->setBoardsService($this->boardsService);
-        */
     }
 
     /**

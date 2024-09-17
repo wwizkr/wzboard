@@ -1,10 +1,10 @@
 <?php
-// 파일 위치: /src/Admin/Model/AdminBoardModel.php
+// 파일 위치: /src/Admin/Model/AdminBoardsModel.php
 
 namespace Web\Admin\Model;
 
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class AdminBoardsModel
 {

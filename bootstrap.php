@@ -4,15 +4,17 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
-use Web\PublicHtml\Helper\DatabaseQuery;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Core\DatabaseQuery;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CacheHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
+use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Helper\MenuHelper;
+use Web\PublicHtml\Controller\SocialController;
 
 // 환경 변수 로드
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -84,13 +86,24 @@ $menuTree = MenuHelper::getMenuTree();
 // 트리화된 메뉴 데이터를 컨테이너에 등록
 $container->set('menu_datas', $menuTree);
 
-// SessionManager 인스턴스 생성 및 컨테이너에 등록
+// SessionManager
 $sessionManager = new SessionManager();
-$container->set('session_manager', $sessionManager);
+$container->set('SessionManager', $sessionManager);
 
-// CsrfTokenHandler 인스턴스 생성 및 컨테이너에 등록
-$csrfTokenHandler = new CsrfTokenHandler($sessionManager);
-$container->set('csrf_token_handler', $csrfTokenHandler);
+// CsrfTokenHandler
+$container->addFactory('CsrfTokenHandler', function($c) {
+    return new CsrfTokenHandler($c->get('SessionManager'));
+});
+
+// FormDataMiddleware
+$container->addFactory('FormDataMiddleware', function($c) {
+    return new FormDataMiddleware($c->get('CsrfTokenHandler'));
+});
+
+// SocialLogin
+$container->addFactory('SocialController', function ($c) {
+    return new SocialController($c);
+});
 
 // 사용자용 CSRF 토큰이 없는 경우에만 생성
 $userCsrfTokenKey = $_ENV['USER_CSRF_TOKEN_KEY'];

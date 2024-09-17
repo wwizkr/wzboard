@@ -12,7 +12,7 @@ namespace Web\Admin\Controller;
 
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
@@ -35,7 +35,7 @@ class MembersController
         $this->cf_id = $this->configDomain['cf_id'];
 
         // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('session_manager'));
+        $csrfTokenHandler = new CsrfTokenHandler($container->get('SessionManager'));
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
     }
 

@@ -2,7 +2,7 @@
 
 namespace Web\Admin\Controller;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class DashboardController
 {

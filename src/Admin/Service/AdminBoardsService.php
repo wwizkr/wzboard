@@ -1,10 +1,9 @@
 <?php
-//파일위치 src/Admin/Service/AdminBoardsService.php
 
 namespace Web\Admin\Service;
 
-use Web\PublicHtml\Helper\DependencyContainer;
-use  Web\Admin\Model\AdminBoardsModel;
+use Web\PublicHtml\Core\DependencyContainer;
+use Web\Admin\Model\AdminBoardsModel;
 
 class AdminBoardsService
 {

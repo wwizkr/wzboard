@@ -3,7 +3,7 @@
 
 namespace Web\Admin\Helper;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class AdminBoardsHelper
 {

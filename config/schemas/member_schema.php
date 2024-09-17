@@ -37,12 +37,18 @@ $schema = [
                                 agree_alarm ENUM('Y','N') NOT NULL DEFAULT 'Y',
                                 alarm_type VARCHAR(25) DEFAULT NULL,
                                 member_level TINYINT UNSIGNED NOT NULL DEFAULT 1,
+                                social_provider VARCHAR(20) DEFAULT NULL,
+                                social_id VARCHAR(255) DEFAULT NULL,
+                                social_profile JSON DEFAULT NULL,
+                                is_social_login BOOLEAN NOT NULL DEFAULT FALSE,
                                 UNIQUE KEY idx_user_id (mb_id),
                                 UNIQUE KEY idx_email (email),
+                                UNIQUE KEY idx_social_id (social_provider, social_id),
                                 KEY idx_location (loc_lat, loc_lng),
                                 KEY idx_last_login (last_login),
                                 KEY idx_fcm_token (fcm_token),
-                                KEY idx_member_level (member_level)
+                                KEY idx_member_level (member_level),
+                                KEY idx_social_provider (social_provider)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
                         

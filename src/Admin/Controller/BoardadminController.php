@@ -1,7 +1,7 @@
 <?php
 namespace Web\Admin\Controller;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 
@@ -18,7 +18,7 @@ class BoardadminController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->sessionManager = $this->container->get('session_manager');
+        $this->sessionManager = $this->container->get('SessionManager');
         $this->boardsHelper = $this->container->get('BoardsHelper');
         $this->membersHelper = $this->container->get('MembersHelper');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');

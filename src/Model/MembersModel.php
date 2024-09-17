@@ -6,7 +6,7 @@ namespace Web\PublicHtml\Model;
 use PDO;
 use PDOException;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class MembersModel
 {

@@ -3,7 +3,7 @@
 
 namespace Web\Admin\Helper;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\Admin\Model\AdminSettingsModel;
 use Web\Admin\Model\AdminBoardsModel;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;

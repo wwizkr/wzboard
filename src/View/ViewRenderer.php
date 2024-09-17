@@ -1,7 +1,8 @@
 <?php
 namespace Web\PublicHtml\View;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\ComponentsViewHelper;
 
 class ViewRenderer
 {
@@ -14,7 +15,7 @@ class ViewRenderer
     private $headerSkinDirectory;
     private $footerSkinDirectory;
     private $layoutSkinDirectory;
-    private $componentsView;
+    private $componentsViewHelper;
     private $container;
     private $isLogin;
 
@@ -38,10 +39,11 @@ class ViewRenderer
         $this->footerSkinDirectory = __DIR__ . "/Footer/{$this->footerSkin}/";
         $this->layoutSkinDirectory = __DIR__ . "/Layout/{$this->layoutSkin}/";
 
-        $this->componentsView = new ComponentsView($this->headerSkin); // 스킨 이름을 전달
+        //$this->componentsView = new ComponentsView($this->headerSkin); // 스킨 이름을 전달
+        $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
 
         // 로그인 여부를 설정
-        $sessionManager = $this->container->get('session_manager');
+        $sessionManager = $this->container->get('SessionManager');
         $authInfo = $sessionManager->get('auth');
         $this->isLogin = !empty($authInfo);
     }
@@ -56,7 +58,8 @@ class ViewRenderer
         }
 
         // 추출한 변수들을 renderComponent에 배열로 전달
-        echo $this->componentsView->renderComponent('pagination', $data);
+        //echo $this->componentsView->renderComponent('pagination', $data);
+        echo $this->componentsViewHelper->renderComponent('pagination', $data);
     }
 
     // 헤더 스킨을 렌더링하는 메서드
@@ -65,7 +68,7 @@ class ViewRenderer
         // 컨테이너에서 트리화된 메뉴 데이터를 가져옴
         $menuData = $this->container->get('menu_datas');
         // renderMenu 메서드를 사용하여 메뉴를 렌더링
-        $data['menu'] = $this->componentsView->renderMenu($this->config_domain, $menuData);
+        $data['menu'] = $this->componentsViewHelper->renderMenu($this->config_domain, $menuData);
         $data['isLogin'] = $this->isLogin;
 
         $this->render($this->headerSkinDirectory . 'Header', $data);

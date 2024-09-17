@@ -2,15 +2,20 @@
 
 namespace Web\PublicHtml\Controller;
 
+use Web\PublicHtml\Core\DependencyContainer;
 use Hybridauth\Hybridauth;
 use Hybridauth\Exception\Exception;
 
 class SocialLoginController
 {
+    private $container;
+    private $config_domain;
     private $config;
 
-    public function __construct()
+    public function __construct(DependencyContainer $container)
     {
+        $this->container = $container;
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->config = require __DIR__ . '/../../config/social.php';
     }
 
@@ -34,5 +39,23 @@ class SocialLoginController
     public function callback()
     {
         // 콜백 로직은 Hybridauth에 의해 자동 처리됩니다.
+    }
+
+    /**
+     * 제공자 목록을 가져오는 메소드
+     */
+    public function getProviderList()
+    {
+        $providers = $this->config['providers'] ?? [];
+
+        // 활성화된 제공자 목록만 반환
+        $enabledProviders = [];
+        foreach ($providers as $provider => $settings) {
+            if (!empty($settings['enabled'])) {
+                $enabledProviders[] = $provider;
+            }
+        }
+
+        return $enabledProviders;
     }
 }

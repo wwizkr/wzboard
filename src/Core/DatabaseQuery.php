@@ -1,7 +1,7 @@
 <?php
-// 파일 위치: /home/web/public_html/src/Helper/DatabaseQuery.php
+// /src/Core/DatabaseQuery.php
 
-namespace Web\PublicHtml\Helper;
+namespace Web\PublicHtml\Core;
 
 use PDO;
 use PDOException;

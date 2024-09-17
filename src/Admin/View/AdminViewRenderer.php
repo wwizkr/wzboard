@@ -2,7 +2,7 @@
 // 파일 위치 src/Admin/View/AdminViewRenderer.php
 namespace Web\Admin\View;
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\View\ComponentsView;
 use Web\Admin\Helper\AdminMenuHelper;

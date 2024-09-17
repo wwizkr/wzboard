@@ -4,7 +4,7 @@ namespace Web\PublicHtml\Controller;
 use PDO;
 use PDOException;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CryptoHelper;
 
 class DatabaseInstallerController
@@ -12,7 +12,7 @@ class DatabaseInstallerController
     use DatabaseHelperTrait;
 
     private $db;
-    private $config;
+    //private $config;
     private $schema;
 
     /**
@@ -21,7 +21,7 @@ class DatabaseInstallerController
     public function __construct(DependencyContainer $container)
     {
         $this->db = $container->get('db');
-        $this->config = $container->get('config');
+        //$this->config = $container->get('config');
     }
 
     /**

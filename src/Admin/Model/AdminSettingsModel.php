@@ -4,7 +4,7 @@
 namespace Web\Admin\Model;
 
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 class AdminSettingsModel
 {

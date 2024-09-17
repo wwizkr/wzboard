@@ -1,7 +1,7 @@
 <?php
 // 파일 위치: /config/serviceProviders.php
 
-use Web\PublicHtml\Helper\DependencyContainer;
+use Web\PublicHtml\Core\DependencyContainer;
 
 // Board
 use Web\Admin\Model\AdminBoardsModel;
@@ -24,10 +24,13 @@ use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\MembersHelper;
 
-use Web\PublicHtml\Helper\SessionManager;
+// Helper, Middleware ...
+use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\PublicHtml\Helper\ComponentsViewHelper;
+//use Web\PublicHtml\Helper\SessionManager;
+//use Web\PublicHtml\Middleware\CsrfTokenHandler;
+//use Web\PublicHtml\Middleware\FormDataMiddleware;
 
 function registerServices(DependencyContainer $container)
 {
@@ -56,10 +59,10 @@ function registerServices(DependencyContainer $container)
         return new MembersModel($c);
     });
     $container->addFactory('MembersService', function($c) {
-        return new MembersService($c->get('MembersModel'));
+        return new MembersService($c);
     });
     $container->addFactory('MembersHelper', function($c) {
-        return new MembersHelper($c, $c->get('MembersModel'));
+        return new MembersHelper($c);
     });
 
     // Trial
@@ -83,15 +86,21 @@ function registerServices(DependencyContainer $container)
     });
 
     // Helpers
-    $container->addFactory('ConfigHelper', function($c) {
-        return new ConfigHelper();
-    });
-    $container->addFactory('SessionManager', function($c) {
-        return new SessionManager();
-    });
     $container->addFactory('CookieManager', function($c) {
         return new CookieManager();
     });
+    $container->addFactory('ConfigHelper', function($c) {
+        return new ConfigHelper();
+    });
+    $container->addFactory('ComponentsViewHelper', function($c) {
+        return new ComponentsViewHelper();
+    });
+
+
+    //$container->addFactory('SessionManager', function($c) {
+    //    return new SessionManager();
+    //});
+    /*
     $container->addFactory('CsrfTokenHandler', function($c) {
         return new CsrfTokenHandler($c->get('SessionManager'));
     });
@@ -100,4 +109,5 @@ function registerServices(DependencyContainer $container)
     $container->addFactory('FormDataMiddleware', function($c) {
         return new FormDataMiddleware($c->get('CsrfTokenHandler'));
     });
+    */
 }
