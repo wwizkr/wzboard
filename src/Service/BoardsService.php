@@ -3,35 +3,48 @@
 
 namespace Web\PublicHtml\Service;
 
+use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\Helper\CookieManager;
+use Web\PublicHtml\Helper\ImageHelper;
+use Web\Admin\Service\AdminBoardsService;
 
 class BoardsService
 {
     protected DependencyContainer $container;
-    protected BoardsModel $boardsModel;
-    protected BoardsHelper $boardsHelper;
-    protected MembersHelper $membersHelper;
-    protected FormDataMiddleware $formDataMiddleware;
+    protected $config_domain;
+    protected $boardsModel;
+    protected $boardsHelper;
+    protected $adminBoardsService;
+    protected $membersHelper;
+    protected $formDataMiddleware;
+    protected $sessionManager;
+    protected $cookieManager;
     protected array $categoryMapping = [];
     
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->boardsModel = $container->get('BoardsModel');
         $this->boardsHelper = $container->get('BoardsHelper');
+        $this->adminBoardsService = $container->get('AdminBoardsService');
         $this->membersHelper = $container->get('MembersHelper');
+        $this->sessionManager = $container->get('SessionManager');
+        $this->cookieManager = $container->get('CookieManager');
         $this->formDataMiddleware = $container->get('FormDataMiddleware');
     }
 
     private function getCategoryMapping($board_no)
     {
         // 게시판 매핑된 개별 카테고리 가져오기 -> 검색어로 전환
-        $boardCategory = $this->boardsHelper->getBoardsCategoryMapping($board_no);
+        $boardCategory = $this->adminBoardsService->getBoardsCategoryMapping($board_no);
         $mapCategory = [];
         foreach($boardCategory as $key=>$val) {
             $mapCategory[$val['category_name']] = $val['no'];
@@ -81,10 +94,12 @@ class BoardsService
             return '템플릿 파일을 찾을 수 없습니다.';
         }
 
+        $articleList = $this->boardsHelper->processArticleData($boardConfig, $articleData);
+
         $output = ''; // 최종 출력할 HTML
 
         // articleData와 paginationData를 사용하여 $num 계산
-        foreach ($articleData as $index => $article) {
+        foreach ($articleList as $index => $article) {
             // $num 계산식
             $num = $paginationData['totalItems'] - (($paginationData['currentPage'] - 1) * $paginationData['itemsPerPage']) - $index;
 
@@ -94,22 +109,25 @@ class BoardsService
                     '{{num}}',
                     '{{articleNo}}',
                     '{{boardId}}',
+                    '{{thumb}}',
                     '{{title}}',
                     '{{slug}}',
                     '{{nickName}}',
                     '{{hit}}',
                     '{{comment}}',
-                    '{{date}}'],
+                    '{{date}}'
+                ],
                 [
                     $num,
                     $article['no'],
                     $boardConfig['board_id'],
-                    htmlspecialchars($article['title']),
-                    htmlspecialchars($article['slug']),
-                    htmlspecialchars($article['nickName']),
+                    $article['thumb'],
+                    $article['title'],
+                    $article['slug'],
+                    $article['nickName'],
                     number_format($article['view_count']),
-                    number_format($article['comment_count']),
-                    htmlspecialchars($article['created_at'])
+                    $article['comment'],
+                    $article['date1']
                 ],
                 $template
             );
@@ -131,7 +149,7 @@ class BoardsService
     public function writeBoardsUpdate($article_no, $board_id)
     {
         // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
         if (!$board_id  || empty($boardsConfig)) {
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
@@ -190,7 +208,7 @@ class BoardsService
     public function articleDelete($article_no, $board_id)
     {
         // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
         if (!$board_id  || empty($boardsConfig)) {
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
@@ -239,6 +257,295 @@ class BoardsService
         return $articleData;
     }
 
+    /**
+     * 게시판 권한 체크 메서드
+     *
+     * @param string $type 권한 체크 타입 (read, write, download, comment 등)
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 해당 타입의 권한이 있는지 여부
+     */
+    public function boardPermissionCheck($type, $boardConfig, $articleData, $memberData)
+    {
+        switch ($type) {
+            case 'read':
+                return $this->checkViewPermission($boardConfig, $articleData, $memberData);
+            case 'write':
+                return $this->checkWritePermission($boardConfig, $articleData, $memberData);
+            case 'download':
+                return $this->checkDownloadPermission($boardConfig, $articleData, $memberData);
+            case 'comment':
+                return $this->checkCommentPermission($boardConfig, $articleData, $memberData);
+            default:
+                return false; // 기본적으로 권한 없음
+        }
+    }
+
+    /**
+     * 글 읽기 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 읽기 권한이 있는지 여부
+     */
+    protected function checkViewPermission($boardConfig, $articleData, $memberData)
+    {
+        if ($this->isOwnArticle($articleData, $memberData)) {
+            return true; // 자신의 글이면 조회수 증가 없이 return
+        }
+
+        if ($this->isGuestWithReadPermission($boardConfig, $articleData, $memberData)) {
+            return true; // 비회원이 읽기 권한을 가지고 있으면 return
+        }
+
+        if ($this->isPublicArticle($boardConfig, $articleData)) {
+            return $this->processView($articleData); // 공개 글이면 처리
+        }
+
+        if ($this->hasReadLevelPermission($boardConfig, $articleData, $memberData)) {
+            return $this->processView($articleData, $memberData, $boardConfig); // 권한 있는 회원 처리
+        }
+
+        return false;
+    }
+
+    /**
+     * 글 쓰기 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 글 쓰기 권한이 있는지 여부
+     */
+    protected function checkWritePermission($boardConfig, $articleData, $memberData)
+    {
+        if (!empty($articleData) && $this->isOwnArticle($articleData, $memberData)) {
+            return true; // 자신의 글이면 true
+        }
+
+        // 최고관리자가 사용자의 글을 수정할 수 있게 하려면
+        if (!empty($articleData) && $memberData['is_super']) {
+            return true;
+        }
+        
+        // 최고관리자이면 글 쓰기
+        if (empty($articleData) && $memberData['is_super']) {
+            return true;
+        }
+
+        // 글쓰기 권한 체크
+        if (empty($articleData) && $boardConfig['write_level'] === 0) {
+            return true;
+        }
+
+        if (empty($articleData) && $boardConfig['write_level'] > 0) {
+            if (!empty($memberData) && $memberData['member_level'] >= $boardConfig['write_level']) {
+                return true;
+            }
+        }
+
+        // 글 쓰기 권한 체크 로직
+        return false;
+    }
+
+    /**
+     * 파일 다운로드 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 다운로드 권한이 있는지 여부
+     */
+    protected function checkDownloadPermission($boardConfig, $articleData, $memberData)
+    {
+        // 파일 다운로드 권한 체크 로직
+        if ($this->isOwnArticle($articleData, $memberData)) {
+            return true; // 자신의 글이면 다운로드 허용
+        }
+
+        return (!empty($memberData) && $memberData['member_level'] >= $boardConfig['download_level']);
+    }
+
+    /**
+     * 댓글 쓰기 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 댓글 쓰기 권한이 있는지 여부
+     */
+    protected function checkCommentPermission($boardConfig, $articleData, $memberData)
+    {
+        // 댓글 쓰기 권한 체크 로직
+        return (!empty($memberData) && $memberData['member_level'] >= $boardConfig['comment_level']);
+    }
+
+    /**
+     * 사용자가 자신의 글인지 확인하는 메서드
+     *
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 사용자가 자신의 글인지 여부
+     */
+    protected function isOwnArticle($articleData, $memberData)
+    {
+        // 자신의 글인지 확인
+        return !empty($memberData) && $articleData['mb_id'] === $memberData['mb_id'];
+    }
+
+    /**
+     * 비회원의 읽기 권한을 확인하는 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 비회원이 읽기 권한이 있는지 여부
+     */
+    protected function isGuestWithReadPermission($boardConfig, $articleData, $memberData)
+    {
+        // 비회원의 읽기 권한 체크
+        return empty($memberData) && $articleData['mb_id'] === '' && 
+               $boardConfig['read_level'] === 0 && 
+               $articleData['user_ip'] === CommonHelper::getUserIp();
+    }
+
+    /**
+     * 게시글이 공개된 상태인지 확인하는 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @return bool 게시글이 공개된 상태인지 여부
+     */
+    protected function isPublicArticle($boardConfig, $articleData)
+    {
+        // 공개된 글인지 확인
+        return $boardConfig['read_level'] === 0 && 
+               $articleData['read_level'] === 0 && 
+               $articleData['user_ip'] !== CommonHelper::getUserIp();
+    }
+
+    /**
+     * 회원이 읽기 권한을 가지고 있는지 확인하는 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 회원이 읽기 권한이 있는지 여부
+     */
+    protected function hasReadLevelPermission($boardConfig, $articleData, $memberData)
+    {
+        // 회원이 읽기 권한을 가지고 있는지 확인
+        return !empty($memberData) && (
+            ($articleData['read_level'] > 0 && $memberData['member_level'] >= $articleData['read_level']) ||
+            ($boardConfig['read_level'] > 0 && $memberData['member_level'] >= $boardConfig['read_level'])
+        );
+    }
+
+    /**
+     * 조회수 업데이트 및 포인트 처리 메서드
+     *
+     * @param array $articleData 게시글 데이터 배열
+     * @param array|null $memberData 회원 데이터 배열 (옵션)
+     * @param array|null $boardConfig 게시판 설정 배열 (옵션)
+     * @return bool 조회수 업데이트 및 포인트 처리 성공 여부
+     */
+    protected function processView($articleData, $memberData = null, $boardConfig = null)
+    {
+        // 조회수 업데이트 및 포인트 처리 로직
+        if ($memberData !== null && $boardConfig !== null) {
+            if ($this->updateArticleMemberPoint($memberData, $boardConfig, $articleData, 'read') === false) {
+                return false;
+            }
+        }
+        $this->articleViewCountUpdate($articleData);
+        return true;
+    }
+
+    /**
+     * 게시글 조회수 업데이트 메서드
+     *
+     * @param array $articleData 게시글 데이터 배열
+     * @return bool 조회수 업데이트 성공 여부
+     */
+    public function articleViewCountUpdate($articleData)
+    {
+        return $this->boardsModel->articleViewCountUpdate($articleData);
+    }
+
+    /**
+     * 회원 포인트 업데이트 메서드 (예시)
+     *
+     * @param array $articleData 게시글 데이터 배열
+     * @return bool 포인트 업데이트 성공 여부
+     */
+    public function updateArticleMemberPoint($memberData, $boardConfig, $articleData, $type = null)
+    {
+        if ($type === null || !in_array($type, ['read', 'write', 'comment', 'download'])) {
+            return true;
+        }
+        
+        $board_point_field = $type.'_point';
+        $cf_point_field = 'cf_board_'.$type.'_point';
+        /*
+         * 게시글 자체에 포인트가 있는 경우 차후 로직 추가 =>
+         */
+        $point = 0;
+        $board_point = $boardConfig[$board_point_field] ?? 0;
+        $cf_point = $this->config_domain[$cf_point_field] ?? 0;
+        if ($board_point !== 0) {
+            if ($board_point < 0 && $memberData['point'] < ($board_point * -1)) {
+                return false;
+            }
+            $point = $board_point;
+        }
+        if ($point === 0 && $cf_point !== 0) {
+            if ($cf_point < 0 && $memberData['point'] < ($cf_point * -1)) {
+                return false;
+            }
+            $point = $cf_point;
+        }
+
+        if ($point !== 0) { // 실제 포인트 업데이트 로직은 아래 주석을 사용하여 구현
+            $point_type = $point > 0 ? '적립' : '사용';
+            $point_rel_type = '@board';
+            $point_rel_id = $boardConfig['board_id'].'-'.$type.'-'.$articleData['no'];
+            $data = [
+                'cf_id' => ['i', $this->config_domain['cf_id']],
+                'mb_id' => ['s', $memberData['mb_id']],
+                'point_rel_type' => ['s', $point_rel_type],
+                'point_rel_id' => ['s', $point_rel_id],
+            ];
+
+            // 먼저 해당 내용에 대한 적립금 내역이 등록되어 있는지 확인
+            if ($this->boardsModel->checkArticleMemberPoint($data) === true) {
+                return true;
+            }
+            
+            $msg = '';
+            if ($type === 'read') {
+                $msg = '글 읽기';
+            }
+            if ($type === 'write') {
+                $msg = '글 쓰기';
+            }
+            if ($type === 'download') {
+                $msg = '다운로드';
+            }
+            if ($type === 'comment') {
+                $msg = '댓글 쓰기';
+            }
+            $point_content = $boardConfig['board_name'].'-'.$articleData['title'].'-'.$msg;
+            $data['point'] = $point;
+            $data['point_type'] = ['s', $point_type];
+            $data['point_content'] = ['s', $point_content];
+
+            return $this->boardsModel->updateArticleMemberPoint($memberData['mb_id'], $memberData['point'], $point, $data);
+        }
+
+        return true;
+    }
+
     /*
      * 게시판 카테고리
      *
@@ -256,7 +563,7 @@ class BoardsService
     public function commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no)
     {
         // 게시판 설정 가져오기
-        $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
         if (!$board_id  || empty($boardsConfig)) {
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];

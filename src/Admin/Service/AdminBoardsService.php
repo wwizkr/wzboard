@@ -37,7 +37,7 @@ class AdminBoardsService
     // ---------------------------
     // 전체 카테고리 OR 개별 카테고리 정보
     // ---------------------------
-    public function getCategoryData($category_no)
+    public function getCategoryData($category_no='')
     {
         return $this->adminBoardsModel->getCategoryData($category_no);
     }

@@ -96,17 +96,17 @@ class BoardsModel
 
     public function articleViewCountUpdate(array $articleData): void
     {
-        $articleNo = (int)$articleData['no'];
+        $article_no = (int)$articleData['no'];
         $viewCount = (int)$articleData['view_count'] + 1;
 
-        if ($articleNo <= 0) {
+        if ($article_no <= 0) {
             return;
         }
 
         $tableName = $this->getTableName('board_articles');
         $sql = "UPDATE $tableName SET view_count = :viewCount WHERE no = :articleNo";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':viewCount' => $viewCount, ':articleNo' => $articleNo]);
+        $stmt->execute([':viewCount' => $viewCount, ':articleNo' => $article_no]);
     }
 
     public function commentWriteUpdate(?int $comment_no, string $board_id, array $data): array
@@ -120,9 +120,17 @@ class BoardsModel
                 : ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
         } else {
             $result = $this->db->sqlBindQuery('insert', 'board_comments', $data, []);
+            
             if ($result['ins_id']) {
-                $new_path = !empty($data['path']) ? $data['path'] . '/' . $result['ins_id'] : $result['ins_id'];
+                $new_path = !empty($data['path']) && $data['path'][1] ? $data['path'][1] . '/' . $result['ins_id'] : $result['ins_id'];
                 $this->updateCommentPath($result['ins_id'], $new_path);
+                
+                // 게시글 댓글 수 업데이트
+                $article_no = is_array($data['article_no']) ? $data['article_no'][1] : $data['article_no'];
+                $tableName = $this->getTableName('board_articles');
+                $sql = "UPDATE $tableName SET comment_count = comment_count + 1 WHERE no = :articleNo";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':articleNo' => $article_no]);
                 return ['result' => 'success', 'message' => '댓글을 등록하였습니다.', 'action' => empty($data['path']) ? 'insert' : 'reply'];
             } else {
                 return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
@@ -168,5 +176,40 @@ class BoardsModel
     private function updateCommentPath(int $commentId, string $newPath): void
     {
         $this->db->sqlBindQuery('update', 'board_comments', ['path' => ['s', $newPath]], ['no' => ['i', $commentId]]);
+    }
+
+    public function checkArticleMemberPoint(array $data)
+    {
+        $param = [];
+        $where = $data;
+        $options = [
+            'field' => 'COUNT(*) AS cnt',
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'points', $param, $where, $options);
+
+        return $result[0]['cnt'] > 0 ? true : false;
+    }
+
+    public function updateArticleMemberPoint($mb_id, $mb_point, $point, array $data)
+    {
+        if (!$mb_id) {
+            return false;
+        }
+
+        $param = $data;
+        $where = [];
+        $options = [];
+        $result = $this->db->sqlBindQuery('insert', 'points', $param, $where, $options);
+
+        if ($result['ins_id'] > 0) {
+            $update_point = $mb_point + $point;
+            $mb_param['point'] = ['i', $update_point];
+            $mb_where['mb_id'] = ['s', $mb_id];
+            $updated = $this->db->sqlBindQuery('update', 'members', $mb_param, $mb_where);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

@@ -4,153 +4,106 @@ namespace Web\PublicHtml\Controller;
 
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\CryptoHelper;
+use Web\PublicHtml\Helper\MembersHelper;
 use Hybridauth\Hybridauth;
 use Hybridauth\Exception\Exception;
 use Web\PublicHtml\Model\MembersModel;
+use Web\PublicHtml\Service\AuthService;
 
 class SocialController
 {
     private $container;
-    private $config_domain;
-    private $config;
+    private $configDomain;
     private $sessionManager;
     private $membersModel;
+    private $membersHelper;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+        $this->configDomain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->sessionManager = $this->container->get('SessionManager');
         $this->membersModel = $this->container->get('MembersModel');
+        $this->membersHelper = $this->container->get('MembersHelper');
     }
 
-    public function getSocialConfig()
+    public function getSocialConfig(): array
     {
-        $callbackUrl = $_ENV['APP_URL'].'/social/callback?provider=';
-        $providers = $this->config_domain['cf_social_servicelist'] ? explode(",",$this->config_domain['cf_social_servicelist']) : [];
-        $providers = ['naver']; // 임시
-        $socialConfig = [];
+        $callbackUrl = $_ENV['APP_URL'] . '/social/callback?provider=';
+        $providers = $this->configDomain['cf_social_servicelist'] ? explode(",", $this->configDomain['cf_social_servicelist']) : [];
         
-        $provider = [];
-        foreach($providers as $key=>$val) {
-            if ($val === 'naver') {
-                $provider[ucfirst(strtolower($val))] = [
-                    'enabled' => true,
-                    'keys' => [
-                        'id' => $this->config_domain['cf_'.$val.'_clientid'],
-                        'secret' => $this->config_domain['cf_'.$val.'_secret'],
-                    ],
-                    'callback' => $callbackUrl.ucfirst(strtolower($val)),
-                    'wrapper' => [
-                        'path' => '/home/web/public_html/vendor/hybridauth/hybridauth/src/Provider/Naver.php',
-                        'class' => 'Hybridauth\\Provider\\Naver',
-                    ],
-                ];
-            } else if($val !== 'kakao') {
-                $provider[ucfirst(strtolower($val))] = [
-                    'enabled' => true,
-                    'keys' => [
-                        'id' => $this->config_domain['cf_'.$val.'_clientid'],
-                        'secret' => $this->config_domain['cf_'.$val.'_secret'],
-                    ],
-                    'callback' => $callbackUrl.ucfirst(strtolower($val)),
-                ];
-            } else {
-                $provider[ucfirst(strtolower($val))] = [
-                    'enabled' => true,
-                    'keys' => [
-                        'id' => $this->config_domain['cf_'.$val.'_clientid'],
-                        'secret' => $this->config_domain['cf_'.$val.'_secret'],
-                    ],
-                    'callback' => $callbackUrl.ucfirst(strtolower($val)),
-                ];
-            }
+        $socialConfig = [
+            'callback' => '',
+            'debug_mode' => false,
+            'debug_file' => dirname(__DIR__, 2) . '/storage/social_log.log',
+            'providers' => [],
+        ];
+
+        foreach ($providers as $provider) {
+            $providerName = ucfirst(strtolower($provider));
+            $socialConfig['providers'][$providerName] = $this->getProviderConfig($provider, $callbackUrl);
         }
-        $socialConfig['callback'] = '';
-        $socialConfig['debug_mode'] = true;
-        $socialConfig['debug_file'] = '/home/web/public_html/storage/social_log.log';
-        $socialConfig['providers'] = $provider;
 
         return $socialConfig;
-        
     }
 
-    public function login($vars)
+    private function getProviderConfig(string $provider, string $callbackUrl): array
+    {
+        $baseConfig = [
+            'enabled' => true,
+            'keys' => [
+                'id' => $this->configDomain["cf_{$provider}_clientid"],
+                'secret' => $this->configDomain["cf_{$provider}_secret"],
+            ],
+            'callback' => $callbackUrl . ucfirst(strtolower($provider)),
+        ];
+
+        if ($provider === 'naver') {
+            $baseConfig['wrapper'] = [
+                'path' => '/home/web/public_html/vendor/hybridauth/hybridauth/src/Provider/Naver.php',
+                'class' => 'Hybridauth\\Provider\\Naver',
+            ];
+        }
+
+        return $baseConfig;
+    }
+
+    public function login(array $vars): void
     {
         try {
-            $providerName = $vars['param'] ?? 'Naver';
-            $providerName = ucfirst(strtolower($providerName));
-            if (empty($this->getSocialConfig()['providers'][$providerName])) {
-                throw new Exception('Unknown Provider: ' . $providerName);
-            }
+            $providerName = ucfirst(strtolower($vars['param'] ?? 'Naver'));
+            $this->validateProvider($providerName);
+
             $hybridauth = new Hybridauth($this->getSocialConfig());
-            $hybridauth->authenticate($providerName); // CallBack 리다이렉트
+            $adapter = $hybridauth->authenticate($providerName);
+
+            if ($adapter->isConnected()) {
+                $userProfile = $adapter->getUserProfile();
+                $this->handleUserLogin($providerName, $userProfile);
+                $adapter->disconnect();
+            } else {
+                echo '사용자가 연결되지 않았습니다.';
+            }
         } catch (Exception $e) {
             echo 'Error: ' . $e->getMessage();
             exit;
         }
     }
-    
-    /*
-    object(Hybridauth\User\Profile)#69 (23) {
-      ["identifier"]=> string(43) "ApgKT-t5Nlr2ZPTrki4raAj5jk0QgQzeyQ1t07ndPzk"
-      ["webSiteURL"]=> NULL
-      ["profileURL"]=> NULL
-      ["photoURL"]=> NULL
-      ["displayName"]=> string(9) "류지현"
-      ["description"]=> NULL
-      ["firstName"]=> NULL
-      ["lastName"]=> NULL
-      ["gender"]=> NULL
-      ["language"]=> NULL
-      ["age"]=> string(5) "40-49"
-      ["birthDay"]=> NULL
-      ["birthMonth"]=> NULL
-      ["birthYear"]=> NULL
-      ["email"]=> string(22) "made_in_king@naver.com"
-      ["emailVerified"]=> NULL
-      ["phone"]=> string(13) "010-8655-9999"
-      ["address"]=> NULL
-      ["country"]=> NULL
-      ["region"]=> NULL
-      ["city"]=> NULL
-      ["zip"]=> NULL
-      ["data"]=> array(0) { }
-    */
 
-    public function callback()
+    public function callback(): void
     {
         try {
+            $providerName = $_GET['provider'] ?? '';
+            $this->validateProvider($providerName);
+
             $hybridauth = new Hybridauth($this->getSocialConfig());
-            
-            $providerName = $_GET['provider'] ?? 'Naver';
-            
-            if (empty($providerName)) {
-                throw new Exception('콜백 요청에 provider 이름이 누락되었습니다.');
-            }
             $adapter = $hybridauth->authenticate($providerName);
-            
+
             if ($adapter->isConnected()) {
                 $userProfile = $adapter->getUserProfile();
-                /*
-                // 사용자가 이미 가입되어 있는지 확인
-                $existingMember = $memberModel->findBySocialId($providerName, $userProfile->identifier);
-                
-                if ($existingMember) {
-                    // 이미 가입된 회원이라면 로그인 처리
-                    // ... 로그인 로직 ...
-                    echo "로그인 성공: " . $userProfile->displayName;
-                } else {
-                    // 새 회원이라면 회원가입 페이지로 리다이렉트
-                    $encryptedProfile = CryptoHelper::encryptJson((array)$userProfile);
-                    $this->sessionManager->set('encrypted_social_profile', $encryptedProfile);
-                    $this->sessionManager->set('social_provider', $providerName);
-                    //header('Location: /member/register/join');
-                    exit;
-                }
-                */
-                
+                $this->handleUserLogin($providerName, $userProfile);
                 $adapter->disconnect();
             } else {
                 echo '사용자가 연결되지 않았습니다.';
@@ -160,21 +113,36 @@ class SocialController
         }
     }
 
-    /**
-     * 제공자 목록을 가져오는 메소드
-     */
-    public function getProviderList()
+    private function validateProvider(string $providerName): void
     {
-        $providers = $this->getSocialConfig()['providers'] ?? [];
-
-        // 활성화된 제공자 목록만 반환
-        $enabledProviders = [];
-        foreach ($providers as $provider => $settings) {
-            if (!empty($settings['enabled'])) {
-                $enabledProviders[] = $provider;
-            }
+        if (empty($this->getSocialConfig()['providers'][$providerName])) {
+            throw new Exception('Unknown Provider: ' . $providerName);
         }
+    }
 
-        return $enabledProviders;
+    private function handleUserLogin(string $providerName, $userProfile): void
+    {
+        $isMember = $this->membersModel->findBySocialId($providerName, $userProfile->identifier);
+
+        if (!empty($isMember)) {
+            $level = $this->membersHelper->getMemberLevelData($isMember['member_level']) ?? [];
+            $authService = $this->container->get('AuthService');
+            $authService->login($isMember, $level);
+        } else {
+            $encryptedProfile = CryptoHelper::encryptJson((array)$userProfile);
+            
+            // 회원 가입 완료 후 세션 삭제
+            $this->sessionManager->set('encrypted_social_profile', $encryptedProfile);
+            $this->sessionManager->set('social_provider', $providerName);
+            header('Location: /member/register/join');
+            exit;
+        }
+    }
+
+    public function getProviderList(): array
+    {
+        return array_keys(array_filter($this->getSocialConfig()['providers'], function($settings) {
+            return !empty($settings['enabled']);
+        }));
     }
 }

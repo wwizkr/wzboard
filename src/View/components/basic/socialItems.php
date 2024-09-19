@@ -1,4 +1,5 @@
 <!-- components/skinname/socialItems.php -->
+
 <div class="social-login-buttons">
     <?php foreach ($data as $provider): ?>
         <?php 

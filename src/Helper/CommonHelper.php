@@ -6,75 +6,93 @@ namespace Web\PublicHtml\Helper;
 class CommonHelper
 {
     /*
-     * Alert
+     * 경고 메시지와 함께 특정 동작을 실행하는 메서드
      */
     public static function alertAndBack($message)
     {
-        self::alert($message, 'history.back();');
+        self::alert($message, 'history.back();'); // 경고 메시지를 출력한 후, 브라우저 뒤로가기 실행
     }
 
     public static function alertAndClose($message)
     {
-        self::alert($message, 'window.close();');
+        self::alert($message, 'window.close();'); // 경고 메시지를 출력한 후, 브라우저 창 닫기 실행
     }
 
     public static function alertAndRedirect($message, $url)
     {
-        self::alert($message, 'window.location.href="' . addslashes($url) . '";');
+        self::alert($message, 'window.location.href="' . addslashes($url) . '";'); // 경고 메시지를 출력한 후, 주어진 URL로 리다이렉트
     }
 
+    /*
+     * 경고 메시지를 출력하는 기본 메서드 (내부에서 사용)
+     */
     private static function alert($message, $action)
     {
         echo '<script type="text/javascript">
                 alert("' . addslashes($message) . '");
                 ' . $action . '
               </script>';
-        exit;
+        exit; // 스크립트 실행 후 종료
     }
-    
-    // 문자열에서 숫자만 가져옴. "."도 포함하여 소수점 반영
-    public static function pickNumber($string,$default=0)
+
+    /*
+     * 문자열에서 숫자만 추출 (소수점 포함)
+     * @param string $string 입력 문자열
+     * @param int $default 기본값 (문자열이 비어있을 경우 반환할 값)
+     * @return float 추출된 숫자
+     */
+    public static function pickNumber($string, $default = 0)
     {
         $number = $default;
 
-        if(!$string) {
-            return $number;
+        if (!$string) {
+            return $number; // 문자열이 비어있다면 기본값 반환
         }
-        
-        $number = preg_replace('/[^0-9.]/i','',$string);
+
+        // 정규식을 사용하여 숫자와 소수점만 추출
+        $number = preg_replace('/[^0-9.]/i', '', $string);
 
         return $number;
     }
 
     /**
-     * decode JSON input data
-     *
-     * @return array The decoded JSON data
+     * JSON 데이터를 디코드하여 배열로 반환하는 메서드
+     * 
+     * @return array 디코드된 JSON 데이터 배열
      */
     public static function getJsonInput(): array
     {
+        // 입력된 raw 데이터를 가져옴
         $input = file_get_contents('php://input');
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        
+
+        // Content-Type이 application/json일 경우 JSON으로 디코드
         if (stripos($contentType, 'application/json') !== false) {
             $data = json_decode($input, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                return $data;
+                return $data; // JSON 파싱에 성공하면 배열 반환
             }
         }
-        
-        // JSON 파싱에 실패하거나 Content-Type이 application/json이 아닌 경우
+
+        // JSON 파싱 실패 시 다른 형식으로 처리
         parse_str($input, $data);
         return $data ?: [];
     }
 
+    /**
+     * 폼 데이터를 배열로 추출하는 메서드
+     * 
+     * @param array $data 입력된 폼 데이터 배열
+     * @return array 정리된 폼 데이터 배열
+     */
     public static function extractFormData(array $data): array
     {
         $formData = [];
         foreach ($data as $key => $value) {
+            // 'formData['로 시작하는 키를 찾아서 처리
             if (strpos($key, 'formData[') === 0) {
                 $formKey = str_replace(['formData[', ']'], '', $key);
-                $formData[$formKey] = $value;
+                $formData[$formKey] = $value; // 'formData[]'를 제거하고 키-값 쌍 저장
             }
         }
         return $formData;
@@ -632,7 +650,12 @@ class CommonHelper
         return $content;
     }
 
-    // Slug 생성 함수
+    /**
+     * Slug 생성 함수.
+     * 문자열(제목)을 기반으로 슬러그를 생성. 한글 및 영문, 숫자만 남기고, 나머지는 제거 후 슬러그를 생성.
+     * @param string $title 입력 문자열
+     * @return string 생성된 슬러그
+     */
     public static function generateSlug($title)
     {
         // 한글과 영어, 숫자만 남기고, 나머지 문자는 모두 제거
@@ -651,17 +674,110 @@ class CommonHelper
         return $slug;
     }
 
-    // 관리자 페이지에서 이루어진 요청인지 확인
+    /**
+     * 관리자 페이지에서 이루어진 요청인지 확인.
+     * URL을 기준으로 관리자 페이지인지 판단.
+     * @return bool 관리자 요청 여부
+     */
     public static function isAdminRequest()
     {
         $isAdmin = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
 
         return $isAdmin;
     }
-
+    
+    /**
+     * 사용자의 IP 주소를 반환.
+     * 클라이언트의 IP를 확인하여 반환.
+     * @return string 사용자의 IP 주소
+     */
     public static function getUserIp()
     {
         return isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+    }
+    
+    /**
+     * 주어진 날짜와 현재 시간의 차이를 계산하여 "n년", "n개월", "n일", "n시간", "n분", "n초"와 같은 형식으로 반환하는 메소드.
+     * 
+     * @param DateTime $date 비교할 대상 날짜
+     * @return string 시간 차이를 나타내는 문자열 (ex: "5분 전", "2일 전")
+     */
+    public static function formatTimeAgo($date): string
+    {
+        // 만약 $date가 문자열이라면 DateTime 객체로 변환
+        if (is_string($date)) {
+            try {
+                $date = new \DateTime($date);
+            } catch (\Exception $e) {
+                return "Invalid date";
+            }
+        }
+
+        $now = new \DateTime();
+        $seconds = $now->getTimestamp() - $date->getTimestamp();
+
+        $interval = $seconds / 31536000; // 1년 = 31536000초
+        if ($interval > 1) {
+            return floor($interval) . "년전";
+        }
+
+        $interval = $seconds / 2592000; // 1개월 = 2592000초
+        if ($interval > 1) {
+            return floor($interval) . "개월전";
+        }
+
+        $interval = $seconds / 86400; // 1일 = 86400초
+        if ($interval > 1) {
+            return floor($interval) . "일전";
+        }
+
+        $interval = $seconds / 3600; // 1시간 = 3600초
+        if ($interval > 1) {
+            return floor($interval) . "시간전";
+        }
+
+        $interval = $seconds / 60; // 1분 = 60초
+        if ($interval > 1) {
+            return floor($interval) . "분";
+        }
+
+        return floor($seconds) . "초";
+    }
+
+    public static function createThumbnailFromContent(string $content, int $width = 200, int $height = 200): ?string
+    {
+        // 콘텐츠에서 첫 번째 이미지 URL을 추출
+        if (preg_match('/<img.+src=[\'"](?P<src>.+?)[\'"].*>/i', $content, $imageMatch)) {
+            $imageUrl = $imageMatch['src'];  // 첫 번째 이미지의 경로
+            
+            // 이미지 경로에서 디렉토리와 파일명을 추출
+            $imageDirectory = dirname($imageUrl);  // 동적으로 경로 추출 (예: /storage/board/free/20240906)
+            $imageFilename = basename($imageUrl);  // 파일명만 추출 (예: img_4b385ad572.png)
+            
+            // 썸네일 파일명 생성: 파일명에 가로/세로 크기 추가
+            $thumbnailFilename = 'thumb_' . pathinfo($imageFilename, PATHINFO_FILENAME) . "_{$width}_{$height}." . pathinfo($imageFilename, PATHINFO_EXTENSION);
+
+            // 썸네일 경로 설정 (동적으로 디렉토리 경로 반영)
+            $thumbnailPath = $imageDirectory . '/' . $thumbnailFilename;
+            $fullThumbnailPath = $_SERVER['DOCUMENT_ROOT'] . $thumbnailPath;
+
+            // 썸네일이 이미 존재하는지 확인
+            if (!file_exists($fullThumbnailPath)) {
+                // 썸네일이 없을 경우 새로 생성
+                ImageHelper::initialize(str_replace('/storage/', '', $imageDirectory));  // 동적 하위 디렉토리 설정
+                $thumbnailCreated = ImageHelper::createThumbnail($_SERVER['DOCUMENT_ROOT'] . $imageUrl, $thumbnailFilename, $width, $height);
+
+                if ($thumbnailCreated) {
+                    return $thumbnailPath;  // 생성된 썸네일 경로 반환
+                } else {
+                    return null;  // 썸네일 생성 실패 시 null 반환
+                }
+            } else {
+                return $thumbnailPath;  // 썸네일이 이미 존재하면 경로 반환
+            }
+        }
+
+        return null;  // 이미지가 없으면 null 반환
     }
 
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음

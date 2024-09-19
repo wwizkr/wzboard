@@ -63,26 +63,29 @@ class MemberController
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if ($param === 'clause') {
                 $socialProvider = $this->socialController->getProviderList();
-                $socialItems = !empty($socialProvider) ? $this->componentsViewHelper->renderComponent('socialItems', $socialProvider) : '';
+                $socialItems = !empty($socialProvider) ? $this->componentsViewHelper->renderComponent('socialItems', $socialProvider, 'join') : '';
                 $viewData['socialProvider'] = $socialItems;
             }
 
             if ($param === 'join') {
-                /*
-                 * sns 가입 여부
-                $sessionManager = $this->container->get('SessionManager');
-                $encryptedProfile = $sessionManager->get('encrypted_social_profile');
+                $encryptedProfile = $this->sessionManager->get('encrypted_social_profile');
+                $socialProvider = $this->sessionManager->get('social_provider') ?? null;
 
-                if ($encryptedProfile) {
-                    $userProfile = CryptoHelper::decryptJson($encryptedProfile);
-                    
-                    // $userProfile을 사용하여 회원가입 폼 미리 채우기 등의 작업 수행
-                    
-                    // 사용 후 세션에서 삭제
-                    $sessionManager->set('encrypted_social_profile', null);
-                    $sessionManager->set('social_provider', null);
+                /*
+                 * social 가입일 경우 바로 회원 가입 후 로그인
+                 */
+                if ($encryptedProfile && $socialProvider) {
+                    $isSocial = true;
+                    $decryptData = CryptoHelper::decryptJson($encryptedProfile) ?? null;
+                    $decryptData['data']['social_provider'] = $socialProvider;
+                    $decryptData['data']['social_id'] = $decryptData['identifier'];
+                    $decryptData['data']['is_social_login'] = 1;
+                    $memberData = $decryptData['data'];
+
+                    $result = $this->membersService->insertMemberData($memberData);
                 }
-                */
+
+                // social이 아닌 경우에만 회원가입 폼 출력.
             }
 
             return [

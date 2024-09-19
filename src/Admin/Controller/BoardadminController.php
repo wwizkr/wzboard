@@ -2,27 +2,31 @@
 namespace Web\Admin\Controller;
 
 use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\Admin\Helper\AdminBoardsHelper;
+use Web\PublicHtml\Helper\MembersHelper;
 
 class BoardadminController
 {
     protected DependencyContainer $container;
     protected $sessionManager;
-    protected $boardsHelper;
-    protected $membersHelper;
+    protected $adminBoardsHelper;
     protected $adminBoardsService;
-    protected $configDomain;
+    protected $membersHelper;
+    protected $config_domain;
     protected $formDataMiddleware;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
+
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->sessionManager = $this->container->get('SessionManager');
-        $this->boardsHelper = $this->container->get('BoardsHelper');
+        $this->adminBoardsHelper = $this->container->get('AdminBoardsHelper');
         $this->membersHelper = $this->container->get('MembersHelper');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
-        $this->configDomain = $this->container->get('config_domain');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
@@ -33,8 +37,8 @@ class BoardadminController
             [
                 'title' => '게시판 그룹 관리',
                 'content' => '',
-                'config_domain' => $this->configDomain,
-                'groupData' => $this->boardsHelper->getGroupData(),
+                'config_domain' => $this->config_domain,
+                'groupData' => $this->adminBoardsService->getBoardsGroup(),
                 'levelData' => $this->membersHelper->getLevelData(),
             ]
         ];
@@ -70,8 +74,8 @@ class BoardadminController
             [
                 'title' => '게시판 카테고리 관리',
                 'content' => '',
-                'config_domain' => $this->configDomain,
-                'categoryData' => $this->boardsHelper->getCategoryData(),
+                'config_domain' => $this->config_domain,
+                'categoryData' => $this->adminBoardsService->getCategoryData(),
                 'levelData' => $this->membersHelper->getLevelData(),
             ]
         ];
@@ -106,8 +110,8 @@ class BoardadminController
             [
                 'title' => '게시판 관리',
                 'content' => '',
-                'config_domain' => $this->configDomain,
-                'boardsConfig' => $this->boardsHelper->getBoardsConfig(),
+                'config_domain' => $this->config_domain,
+                'boardsConfig' => $this->adminBoardsService->getBoardsConfig(),
                 'levelData' => $this->membersHelper->getLevelData(),
             ]
         ];
@@ -116,19 +120,19 @@ class BoardadminController
     public function boardform(array $vars): array
     {
         $board_id = $vars['param'] ?? '';
-        $boardConfig = $board_id ? $this->boardsHelper->getBoardsConfig($board_id) : [];
+        $boardConfig = $board_id ? $this->adminBoardsService->getBoardsConfig($board_id) : [];
 
         return [
             'AdminBoards/boardForm',
             [
                 'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
                 'content' => '',
-                'config_domain' => $this->configDomain,
-                'groupData' => $this->boardsHelper->getGroupData(),
-                'categoryData' => $this->boardsHelper->getCategoryData(),
-                'boardCategory' => !empty($boardConfig) ? $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']) : [],
+                'config_domain' => $this->config_domain,
+                'groupData' => $this->adminBoardsService->getBoardsGroup(),
+                'categoryData' => $this->adminBoardsService->getCategoryData(),
+                'boardCategory' => !empty($boardConfig) ? $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']) : [],
                 'levelData' => $this->membersHelper->getLevelData(),
-                'skinData' => $this->boardsHelper->getSkinData(),
+                'skinData' => $this->adminBoardsHelper->getBoardSkinDir(),
                 'boardConfig' => $boardConfig,
             ]
         ];
@@ -145,7 +149,7 @@ class BoardadminController
 
         if ($board_no) {
             $board_id = $_POST['board_id'] ?? '';
-            $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+            $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
             if(empty($boardConfig)) {
                 return $this->jsonFailureResponse('게시판 정보가 없습니다.');
@@ -153,7 +157,9 @@ class BoardadminController
         }
 
         $numericFields = [
-            'group_no', 'read_level', 'write_level', 'download_level',
+            'group_no', 'read_level', 'write_level', 'download_level', 'comment_level',
+            'read_point', 'write_point', 'download_point', 'comment_point',
+            'is_use_comment',
             'is_use_file', 'file_size_limit', 'use_separate_table'
         ];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);

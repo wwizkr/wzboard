@@ -154,4 +154,48 @@ class MembersModel
         $result = $this->db->sqlBindQuery('select', 'members', [], $where, $options);
         return $result[0]['totalCount'] ?? 0;
     }
+
+    public function findBySocialId($providerName, $identifier)
+    {
+        $where = [
+            'social_provider' => ['s', $providerName],
+            'social_id' => ['s', $identifier],
+        ];
+
+        $options = [
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'members', [], $where, $options);
+        return $result[0] ?? [];
+    }
+
+    public function insertMemberData($isSocial, $data)
+    {
+        $result = $this->db->sqlBindQuery('insert', 'members', $data, []);
+
+        if (!$result['ins_id']) {
+            return [
+                'result' => 'failure',
+                'message' => '오류가 발생하였습니다.'
+            ];
+        }
+        
+        // social 가입일 경우 아이디를 생성해 줌.
+        if ($result['ins_id'] && $isSocial) {
+            $provider = $data['social_provider'][1];
+            $formattedNumber = sprintf("%08d", $result['ins_id']);
+            $mb_id = $provider.'_'.$formattedNumber;
+            $param['mb_id'] = ['s', $mb_id];
+            $where['mb_no'] = ['i', $result['ins_id']];
+            $updated = $this->db->sqlBindQuery('update', 'members', $param, $where);
+            unset($param);
+            unset($where);
+        }
+        
+        $param = [];
+        $where['mb_no'] = ['i', $result['ins_id']];
+        $memberData = $this->db->sqlBindQuery('select', 'members', $param, $where);
+        
+        return $memberData[0] ?? null;
+    }
 }

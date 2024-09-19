@@ -398,7 +398,7 @@ class DatabaseInstallerController
 
                 if ($result['result'] === 'success') {
                     $insertedCount++;
-                    error_log("테이블 {$prefixedTableName}의 {$index}번째 행 삽입 성공. Insert ID: " . $result['insertId']);
+                    error_log("테이블 {$prefixedTableName}의 {$index}번째 행 삽입 성공. Insert ID: " . $result['ins_id']);
                 } else {
                     $errorCount++;
                     error_log("테이블 {$prefixedTableName}의 {$index}번째 행 삽입 실패: " . $result['message']);

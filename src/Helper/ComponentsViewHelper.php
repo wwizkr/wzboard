@@ -22,7 +22,7 @@ class ComponentsViewHelper
         return $this->renderComponent('pagination', ['paginationData' => $paginationData]);
     }
 
-    public function renderComponent($componentName, $data)
+    public function renderComponent($componentName, $data, $page = '')
     {
         $templatePath = $this->skinDirectory . "{$componentName}.php";
 

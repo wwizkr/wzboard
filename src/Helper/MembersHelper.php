@@ -28,15 +28,19 @@ class MembersHelper
     public function getMemberDataByNo($mb_no = null)
     {
         if (!$mb_no) {
-            $mb = $this->sessionManager->get('auth');
-            $mb_no = $mb['mb_no'] ?? null;
+            $ss_mb = $this->sessionManager->get('auth');
+            $mb_no = $ss_mb['mb_no'] ?? null;
         }
         
         if (!$mb_no) {
             return null;
         }
-
-        return $this->membersModel->getMemberDataByNo($mb_no);
+        
+        // 결과값에 is_super, is_admin 추가
+        $result = $this->membersModel->getMemberDataByNo($mb_no);
+        $result['is_admin'] = $ss_mb['is_admin'];
+        $result['is_super'] = $ss_mb['is_super'];
+        return $result;
     }
 
     public function getMemberDataById($email=null)

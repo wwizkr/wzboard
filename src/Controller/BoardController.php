@@ -21,6 +21,8 @@ use Web\PublicHtml\Service\BoardsService;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
+use Web\PublicHtml\Helper\ImageHelper;
+
 class BoardController
 {
     protected $container;
@@ -44,9 +46,6 @@ class BoardController
 
     protected function initializeServices()
     {
-        //echo '<pre>';
-        //var_dump($this->container);
-        //echo '</pre>';
         $this->sessionManager = $this->container->get('SessionManager');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
         $this->boardsHelper = $this->container->get('BoardsHelper');
@@ -67,7 +66,7 @@ class BoardController
     {
         // 게시판 ID 유효성 검사 및 설정 로드
         $boardId = CommonHelper::validateParam('boardId', 'string', $vars['boardId']) ?? null;
-        $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($boardId);
         $viewPath = 'Board/'.$boardConfig['board_skin'].'/list';
 
         // 게시판 정보가 없으면 리다이렉트
@@ -77,8 +76,10 @@ class BoardController
             CommonHelper::alertAndRedirect($message, $url);
         }
 
+        echo ImageHelper::initialize();
+
         // 게시판 카테고리 데이터 로드
-        $categoryData = $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']);
+        $categoryData = $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']);
         
         // 게시글 목록 데이터 가져오기
         $articleData = $this->getArticleList($boardConfig);
@@ -179,7 +180,7 @@ class BoardController
         $article_no = isset($vars['param']) ? $vars['param'] : 0;
 
         // 게시판 설정 가져오기
-        $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
         $viewPath = 'Board/'.$boardConfig['board_skin'].'/view';
 
         if (!$board_id  || empty($boardConfig)) {
@@ -203,19 +204,15 @@ class BoardController
 
         // 현재 인증된 회원 ID 가져오기
         $memberData = $this->membersHelper->getMemberDataByNo();
-        /*
-         * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
-         * 관리자는 필요없음.
-         */
 
         /*
          * 권한 체크
          */
-        //$result = $this->boardsHelper->boardPermissionCheck('view', $boardConfig, $articleData, $memberData);
+        //$result = $this->boardsService->boardPermissionCheck('read', $boardConfig, $articleData, $memberData); 테스트용
         if (!$this->sessionManager->get('auth') || $this->sessionManager->get('auth')['is_super'] === 0) {
             $ss_no = 'board_view_'.$boardConfig['board_id'].'_'.$article_no;
             if (!$this->sessionManager->get($ss_no)) {
-                $result = $this->boardsHelper->boardPermissionCheck('view', $boardConfig, $articleData, $memberData);
+                $result = $this->boardsService->boardPermissionCheck('read', $boardConfig, $articleData, $memberData);
                 if ($result === false) {
                     CommonHelper::alertAndBack('글읽기 권한이 없거나 포인트가 부족합니다.');
                 }
@@ -223,12 +220,9 @@ class BoardController
             }
         }
 
-
         // 에디터 스크립트
         $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
         $editorScript = CommonHelper::getEditorScript($editor);
-
-        
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
@@ -251,7 +245,7 @@ class BoardController
         $article_no = isset($vars['param']) ? $vars['param'] : 0;
 
         // 게시판 설정 가져오기
-        $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
         $viewPath = 'Board/'.$boardConfig['board_skin'].'/write';
 
         if (!$board_id  || empty($boardConfig)) {
@@ -261,13 +255,22 @@ class BoardController
             ]);
         }
 
-        // 현재 인증된 회원 ID 가져오기
-        //$mb_no = $_SESSION['auth']['mb_no'] ?? null;
         $memberData = $this->membersHelper->getMemberDataByNo();
+
+        // 글 정보
+        $articleData = [];
+        if($article_no) {
+            $articleData = $this->boardsService->getArticleDataByNo($boardConfig['group_no'], $article_no);
+        }
+
         /*
          * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
          */
-
+        
+        $result = $this->boardsService->boardPermissionCheck('write', $boardConfig, $articleData, $memberData);
+        if ($result === false) {
+            CommonHelper::alertAndBack('글쓰기 권한이 없거나 포인트가 부족합니다.');
+        }
 
         // 에디터 스크립트
         $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
@@ -275,13 +278,9 @@ class BoardController
         $editorScript = CommonHelper::getEditorScript($editor);
 
         // 게시판 개별 카테고리 가져오기
-        $boardsCategory = $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']);
+        $boardsCategory = $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']);
 
-        // 글 정보
-        $articleData = [];
-        if($article_no) {
-            $articleData = $this->boardsService->getArticleDataByNo($boardConfig['group_no'], $article_no);
-        }
+        
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
@@ -373,7 +372,7 @@ class BoardController
 
         if ($board_id) {
             // 게시판 설정 가져오기
-            $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+            $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
             if (empty($boardsConfig)) {
                 return CommonHelper::jsonResponse([

@@ -3,6 +3,9 @@
 
 use Web\PublicHtml\Core\DependencyContainer;
 
+// Auth
+use Web\PublicHtml\Service\AuthService;
+
 // Board
 use Web\Admin\Model\AdminBoardsModel;
 use Web\Admin\Service\AdminBoardsService;
@@ -34,6 +37,10 @@ use Web\PublicHtml\Helper\ComponentsViewHelper;
 
 function registerServices(DependencyContainer $container)
 {
+    $container->addFactory('AuthService', function($c) {
+        return new AuthService($c);
+    });
+
     // Boards
     $container->addFactory('AdminBoardsModel', function($c) {
         return new AdminBoardsModel($c);

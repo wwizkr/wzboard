@@ -73,7 +73,7 @@ class BoardController
          */
 
         // 게시판 설정 데이터 가져오기
-        $boardConfig = $this->boardsHelper->getBoardsConfig($boardId);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($boardId);
 
         // 게시판의 카테고리 데이터
         $categoryData = [];
@@ -118,7 +118,7 @@ class BoardController
         $article_no = isset($vars['param']) ? $vars['param'] : 0;
 
         // 게시판 설정 가져오기
-        $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
         if (!$board_id  || empty($boardConfig)) {
             return CommonHelper::jsonResponse([
@@ -170,7 +170,7 @@ class BoardController
         $article_no = isset($vars['param']) ? $vars['param'] : 0;
 
         // 게시판 설정 가져오기
-        $boardConfig = $this->boardsHelper->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
         if (!$board_id  || empty($boardConfig)) {
             return CommonHelper::jsonResponse([
@@ -193,7 +193,7 @@ class BoardController
         $editorScript = CommonHelper::getEditorScript($editor);
 
         // 게시판 개별 카테고리 가져오기
-        $boardsCategory = $this->boardsHelper->getBoardsCategoryMapping($boardConfig['no']);
+        $boardsCategory = $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']);
 
         // 글 정보
         $articleData = [];
@@ -263,7 +263,7 @@ class BoardController
 
         if ($board_id) {
             // 게시판 설정 가져오기
-            $boardsConfig = $this->boardsHelper->getBoardsConfig($board_id);
+            $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
             if (empty($boardsConfig)) {
                 return CommonHelper::jsonResponse([
