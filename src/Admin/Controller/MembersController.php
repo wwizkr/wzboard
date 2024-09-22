@@ -22,21 +22,20 @@ class MembersController
     protected $container;
     protected $membersModel;
     protected $membersService;
-    protected $configDomain;
+    protected $config_domain;
     protected $cf_id;
     protected $formDataMiddleware;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->membersModel = new MembersModel($container);
-        $this->membersService = new MembersService($this->membersModel);
-        $this->configDomain = $this->container->get('config_domain');
-        $this->cf_id = $this->configDomain['cf_id'];
+        $this->config_domain = $this->container->get('config_domain');
+        $this->cf_id = $this->config_domain['cf_id'];
 
-        // CsrfTokenHandler와 FormDataMiddleware 인스턴스 생성
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('SessionManager'));
-        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
+        $this->membersModel = $this->container->get('MembersModel');
+        $this->membersService = $this->container->get('MembersService');
+
+        $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
     protected function getLevelData()
@@ -46,8 +45,8 @@ class MembersController
 
     public function list($vars)
     {
-        $page_rows = $this->configDomain['cf_page_rows'];
-        $page_nums = $this->configDomain['cf_page_nums'];
+        $page_rows = $this->config_domain['cf_page_rows'];
+        $page_nums = $this->config_domain['cf_page_nums'];
 
         // 현재 페이지 받아오기
         $currentPage = isset($_GET['page']) ? CommonHelper::pickNumber($_GET['page'],1) : 1;

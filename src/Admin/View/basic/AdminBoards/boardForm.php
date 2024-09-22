@@ -116,7 +116,7 @@
                 <label for="comment_level" class="form-label">게시판 댓글쓰기</label>
             </div>
             <div class="table-td col-md-4">
-                <select name="formData[comment_level]" id="write_level" class="form-select">
+                <select name="formData[comment_level]" id="comment_level" class="form-select">
                     <option value="0">비회원</option>
                     <?php
                     foreach($levelData as $key=>$val) {

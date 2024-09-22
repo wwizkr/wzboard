@@ -91,7 +91,9 @@ function loaderData(button) {
     document.getElementById('group_no').value = data.no;
     fillFormData(data, 'formData');
 }
-function updateProcess() {
+
+App.registerCallback('updateProcess', function(data) {
+    console.log(data);
     location.reload();
-}
+});
 </script>

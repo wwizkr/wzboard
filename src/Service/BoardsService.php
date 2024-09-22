@@ -9,6 +9,7 @@ use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\CommonHelper;
+use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\CookieManager;
@@ -93,8 +94,9 @@ class BoardsService
         if ($template === false) {
             return '템플릿 파일을 찾을 수 없습니다.';
         }
-
-        $articleList = $this->boardsHelper->processArticleData($boardConfig, $articleData);
+        
+        $queryString = CommonHelper::getQueryString($articleData['params']);
+        $articleList = $this->boardsHelper->processArticleData($boardConfig, $articleData['articleList']);
 
         $output = ''; // 최종 출력할 HTML
 
@@ -102,11 +104,13 @@ class BoardsService
         foreach ($articleList as $index => $article) {
             // $num 계산식
             $num = $paginationData['totalItems'] - (($paginationData['currentPage'] - 1) * $paginationData['itemsPerPage']) - $index;
+            $href = '/board/'.$boardConfig['board_id'].'/view/'.$article['no'].'/'.$article['slug'].'?page='.$paginationData['currentPage'].$queryString;
 
             // 템플릿 파일의 내용을 기사 데이터로 대체
             $articleHtml = str_replace(
                 [
                     '{{num}}',
+                    '{{href}}',
                     '{{articleNo}}',
                     '{{boardId}}',
                     '{{thumb}}',
@@ -119,6 +123,7 @@ class BoardsService
                 ],
                 [
                     $num,
+                    $href,
                     $article['no'],
                     $boardConfig['board_id'],
                     $article['thumb'],
@@ -139,6 +144,20 @@ class BoardsService
         return $output;
     }
 
+    /*
+     * 이전글, 다음글
+     * getAdjacentData($boardConfig, $articleData, $params['search'], $params['filter'], $params['additionalQueries']);
+     */
+    public function getAdjacentData($boardConfig, $articleData, $params)
+    {
+        $this->categoryMapping = $this->getCategoryMapping($boardConfig['no']);
+        $processedQueries = CommonHelper::additionalServiceQueries($params['additionalQueries'], 'category', 'category_no', $this->categoryMapping);
+        
+        $data = $this->boardsModel->getAdjacentData($boardConfig['no'], $articleData['no'], $params['search'], $params['filter'], $params['sort'], $processedQueries);
+
+        return $data;
+    }
+
     /**
      * 게시판 글을 업데이트합니다.
      *
@@ -149,15 +168,15 @@ class BoardsService
     public function writeBoardsUpdate($article_no, $board_id)
     {
         // 게시판 설정 가져오기
-        $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
-        if (!$board_id  || empty($boardsConfig)) {
+        if (!$board_id  || empty($boardConfig)) {
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
         }
         
         // $article_no 가 있다면 실제 게시글이 있는 지 확인
         if ($article_no) {
-            $articleData = $this->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+            $articleData = $this->getArticleDataByNo($boardConfig['group_no'], $article_no);
             if(empty($articleData)) {
                 return ['result' => 'failure', 'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'];
             }
@@ -175,6 +194,23 @@ class BoardsService
             ]);
         }
 
+        // 글쓴이 및 비밀번호 설정
+        if (!empty($memberData)) {
+            $writeName = $memberData['nickName'];
+            $writePass = '';
+        } else {
+            $writeName = $formData['nickName'] ?? '';
+            $writePass = $formData['password'] ? CryptoHelper::hashPassword($formData['password']) : '';
+        }
+
+        if (empty($memberData) && (!$writeName || !$writePass)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력 정보가 비어 있습니다. 잘못된 접속입니다.'
+            ]);
+        }
+
+
         // 이미지 저장 디렉토리
         $storagePath = "/storage/board/$board_id/";
         
@@ -185,9 +221,11 @@ class BoardsService
         $slug = CommonHelper::generateSlug($formData['title']);
         
         // formData에 추가
-        $formData['group_no'] = $boardsConfig['group_no'];
-        $formData['board_no'] = $boardsConfig['no'];
-        $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
+        $formData['mb_id']    = $memberData['mb_id'] ?? null;
+        $formData['group_no'] = $boardConfig['group_no'];
+        $formData['board_no'] = $boardConfig['no'];
+        $formData['nickName'] = $writeName;
+        $formData['password'] = $writePass;
         $formData['content'] = $content;
         $formData['slug'] = $slug;
         $formData['user_ip'] = CommonHelper::getUserIp();
@@ -208,16 +246,16 @@ class BoardsService
     public function articleDelete($article_no, $board_id)
     {
         // 게시판 설정 가져오기
-        $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
-        if (!$board_id  || empty($boardsConfig)) {
+        if (!$board_id  || empty($boardConfig)) {
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
         }
         
         // $article_no 가 있다면 실제 게시글이 있는 지 확인
         $articleData = [];
         if ($article_no) {
-            $articleData = $this->getArticleDataByNo($boardsConfig['group_no'], $article_no);
+            $articleData = $this->getArticleDataByNo($boardConfig['group_no'], $article_no);
             if(empty($articleData)) {
                 return ['result' => 'failure', 'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'];
             }
@@ -231,8 +269,7 @@ class BoardsService
          * 글 삭제 로직은 차후 추가.
          */
 
-
-        if (!empty($this->getComments($boardsConfig['no'], $article_no))) {
+        if (!empty($this->getComments($boardConfig['no'], $article_no))) {
             return ['result' => 'failure', 'message' => '댓글이 있는 게시글을 삭제할 수 없습니다.'];
         }
 
@@ -320,17 +357,17 @@ class BoardsService
      */
     protected function checkWritePermission($boardConfig, $articleData, $memberData)
     {
-        if (!empty($articleData) && $this->isOwnArticle($articleData, $memberData)) {
+        if (!empty($articleData) && !empty($memberData) && $this->isOwnArticle($articleData, $memberData)) {
             return true; // 자신의 글이면 true
         }
 
         // 최고관리자가 사용자의 글을 수정할 수 있게 하려면
-        if (!empty($articleData) && $memberData['is_super']) {
+        if (!empty($articleData) && !empty($memberData) && $memberData['is_super']) {
             return true;
         }
         
         // 최고관리자이면 글 쓰기
-        if (empty($articleData) && $memberData['is_super']) {
+        if (empty($articleData) && !empty($memberData) && $memberData['is_super']) {
             return true;
         }
 
@@ -420,9 +457,7 @@ class BoardsService
     protected function isPublicArticle($boardConfig, $articleData)
     {
         // 공개된 글인지 확인
-        return $boardConfig['read_level'] === 0 && 
-               $articleData['read_level'] === 0 && 
-               $articleData['user_ip'] !== CommonHelper::getUserIp();
+        return $boardConfig['read_level'] === 0 && $articleData['read_level'] === 0;
     }
 
     /**
@@ -563,16 +598,16 @@ class BoardsService
     public function commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no)
     {
         // 게시판 설정 가져오기
-        $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
+        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
-        if (!$board_id  || empty($boardsConfig)) {
+        if (!$board_id  || empty($boardConfig)) {
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
         }
 
         // comment_no 가 있다면. 실제 댓글이 있는지 확인.
         $comment = [];
         if ($comment_no) {
-            $result = $this->getComments($boardsConfig['no'], $article_no, $comment_no);
+            $result = $this->getComments($boardConfig['no'], $article_no, $comment_no);
             if ($result['result'] === 'failure') {
                 return ['result' => 'failure', 'message' => '댓글 정보가 없습니다.'];
             }
@@ -582,7 +617,7 @@ class BoardsService
         // parent_no 가 있다면 부모 글 정보를 가져옴.
         $parent = [];
         if ($parent_no) {
-            $result = $this->getComments($boardsConfig['no'], $article_no, $parent_no);
+            $result = $this->getComments($boardConfig['no'], $article_no, $parent_no);
             if ($result['result'] === 'failure') {
                 return ['result' => 'failure', 'message' => '댓글 정보가 없습니다.'];
             }
@@ -611,7 +646,7 @@ class BoardsService
         $content = CommonHelper::updateStorageImages($content, $storagePath);
 
         // formData에 추가
-        $formData['board_no'] = $boardsConfig['no'];
+        $formData['board_no'] = $boardConfig['no'];
         $formData['article_no'] = $article_no;
         $formData['parent_no']  = $parent_no;
         $formData['nickName'] = $memberData['nickName'] ?? "GUEST";
@@ -622,7 +657,14 @@ class BoardsService
         $data = $this->formDataMiddleware->processFormData($formData, $numericFields);
 
         // 실제 게시판 업데이트
-        return $this->boardsModel->commentWriteUpdate($comment_no, $board_id, $data);
+        $commentData = $this->boardsModel->commentWriteUpdate($comment_no, $board_id, $data);
+
+        if ($commentData['result'] === 'success' && isset($commentData['comment'])) {
+            $processedComment = $this->boardsHelper->processCommentData($boardConfig, [$commentData['comment']]);
+            $commentData['comment'] = $processedComment[0];
+        }
+
+        return $commentData;
     }
 
     /**
@@ -641,9 +683,39 @@ class BoardsService
         int $page = 1, 
         int $perPage = 10
     ): array {
+        // 게시판 설정 가져오기
+        $boardConfig = $this->adminBoardsService->getBoardsConfigByNo($board_no);
         $offset = ($page - 1) * $perPage;
         // 특정 게시글 또는 게시판의 모든 댓글을 가져오는 경우
-        return $this->boardsModel->getComments($board_no, $article_no, $comment_no, $offset, $perPage);
+        $commentData = $this->boardsModel->getComments($board_no, $article_no, $comment_no, $offset, $perPage);
+        
+        // 댓글 데이터가 없는 경우 바로 빈 배열 반환
+        if ($commentData['result'] === 'failure') {
+            return $commentData;
+        }
+        
+        $commentList = $this->boardsHelper->processCommentData($boardConfig, $commentData['data']);
+        
+        // processCommentData가 null을 반환하거나 빈 배열을 반환할 경우를 처리
+        if (empty($commentList)) {
+            return [
+                'result' => 'success',
+                'data' => [],
+                'message' => '처리된 댓글 데이터가 없습니다.'
+            ];
+        }
+        
+        return [
+            'result' => 'success',
+            'data' => $commentList,
+        ];
+    }
+
+    public function processedLikeAction($mb_id, $table, $action, $no)
+    {
+        $result = $this->boardsModel->processedLikeAction($mb_id, $table, $action, $no);
+
+        return $result;
     }
     
     // 사용안함.

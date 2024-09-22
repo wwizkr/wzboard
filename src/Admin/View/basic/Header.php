@@ -1,8 +1,3 @@
-<?php
-//use Web\Admin\Helper\AdminMenuHelper;
-
-//$menu = AdminMenuHelper::getAdminMenu();
-?>
 <!-- Navbar (상단) -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark w-100">
     <div class="container-fluid">
@@ -25,7 +20,7 @@
             <!-- 추가 메뉴들 -->
             <ul class="navbar-nav d-none d-lg-flex">
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Extra Menu 1</a>
+                    <a class="nav-link" href="/" target="_blank">Home</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">Extra Menu 2</a>

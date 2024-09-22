@@ -147,6 +147,7 @@ class AdminBoardsModel
 
     /*
      * 생성된 게시판 목록을 가져옴
+     * @param ?$board_id
      * @return array
      */
     public function getBoardsConfig($board_id = null)
@@ -179,6 +180,39 @@ class AdminBoardsModel
         } else {
             $boardData = $result;
         }
+
+        return $boardData;
+    }
+
+    /*
+     * 생성된 게시판 설정을 가져옴
+     * @param int $board_no
+     * @return array
+     */
+    public function getBoardsConfigByNo($board_no)
+    {
+        $param = [];
+        $where = [];
+        $where[$this->getTableName('board_configs') . '.no'] = ['i', $board_no];
+        
+        $options = [
+            'field' => $this->getTableName('board_configs') . '.*, ' . 
+                       $this->getTableName('board_groups') . '.group_name, ' . 
+                       $this->getTableName('board_groups') . '.group_id',
+            'joins' => [
+                [
+                    'type' => 'LEFT',
+                    'table' => $this->getTableName('board_groups'),
+                    'on' => $this->getTableName('board_configs') . '.group_no = ' . $this->getTableName('board_groups') . '.no'
+                ]
+            ],
+            'order' => $this->getTableName('board_groups') . '.order_num ASC, ' . 
+                       $this->getTableName('board_configs') . '.board_name ASC'
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'board_configs', $param, $where, $options);
+
+        $boardData = $result[0] ?? null;
 
         return $boardData;
     }
@@ -278,7 +312,7 @@ class AdminBoardsModel
                 ]
             ],
             'field' => $this->getTableName('board_categories') . '.*, '. $this->getTableName('board_category_mapping') .'.board_no',
-            'order' => $this->getTableName('board_categories') . '.order_num ASC' // 정렬 옵션
+            'order' => $this->getTableName('board_categories') . '.order_num ASC, ' . $this->getTableName('board_categories') . '.no ASC' // 정렬 옵션
         ];
 
         $result = $this->db->sqlBindQuery('select', 'board_category_mapping', $param, $where, $options);

@@ -1,7 +1,9 @@
 /home/web/public_html
 ├── /public               # 공개 디렉토리 (웹 서버의 Document Root)
 │   ├── index.php         # 사용자 애플리케이션의 진입점
-│   └── .htaccess         # URL 라우팅을 위한 설정 (Apache 서버일 경우)
+│   ├── .htaccess         # URL 라우팅을 위한 설정 (Apache 서버일 경우)
+│   ├── /storage          # 게시판 업로드, 사용자 파일 업로드 
+│   └── /assets           # css, js
 │
 ├── /src                  # 애플리케이션 소스 코드 디렉토리
 │   ├── /Admin            # 관리자 페이지 관련 소스 코드
@@ -18,15 +20,15 @@
 │   ├── /Model            # 데이터베이스 모델 (공통)
 │   ├── /Service          # 비즈니스 로직 처리 클래스 (공통)
 │   ├── /View             # 사용자 페이지 뷰 템플릿
-│   └── /Middleware       # 인증 등 미들웨어
+│   ├── /Middleware       # 인증 등 미들웨어
+│   └── /Core             # 컨테이너, DB쿼리...
 │
 ├── /config               # 환경 설정 파일
 │   └── database.php      # 데이터베이스 설정
 │
 ├── /storage              # 파일 저장, 로그, 캐시 관리
 │   ├── /logs             # 로그 파일 저장
-│   ├── /cache            # 캐시 파일 저장
-│   └── /uploads          # 사용자 업로드 파일 저장
+│   └── /cache            # 캐시 파일 저장
 │
 ├── /vendor               # Composer로 설치된 외부 패키지 (자동 생성)
 ├── bootstrap.php         # 시작시 환경 설정 등 파일

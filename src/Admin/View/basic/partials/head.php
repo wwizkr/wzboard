@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<?php if ($sessionManager->getCsrfToken('admin_secure_key')): ?>
-<meta name="admin-token" content="<?php echo htmlspecialchars($sessionManager->getCsrfToken('admin_secure_key')); ?>">
+<?php if ($csrfToken): ?>
+<meta name="admin-token" content="<?= htmlspecialchars($csrfToken); ?>">
 <?php endif; ?>
 <title><?= isset($title) ? $title : 'Default Title'; ?></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">

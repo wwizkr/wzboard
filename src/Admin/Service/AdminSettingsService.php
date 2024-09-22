@@ -4,6 +4,8 @@
 namespace Web\Admin\Service;
 
 use Web\Admin\Model\AdminSettingsModel;
+use Web\PublicHtml\Helper\CacheHelper;
+use Web\PublicHtml\Helper\CryptoHelper;
 
 class AdminSettingsService
 {
@@ -39,7 +41,14 @@ class AdminSettingsService
          */
         $result = $this->adminSettingsModel->updateConfigByCfId($cf_id, $data);
 
-        return $this->adminSettingsModel->getConfigByCfId($cf_id);
+        $updated = $this->adminSettingsModel->getConfigByCfId($cf_id);
+
+        $configCacheKey = 'config_domain_' . $updated['cf_domain'];
+
+        $encryptedData = CryptoHelper::encryptJson($updated);
+        CacheHelper::setCache($configCacheKey, $encryptedData);
+
+        return $updated;
     }
 
     /**

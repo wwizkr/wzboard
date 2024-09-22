@@ -71,6 +71,11 @@ class AdminBoardsService
         return $this->adminBoardsModel->getBoardsConfig($board_id);
     }
 
+    public function getBoardsConfigByNo(int $board_no)
+    {
+        return $this->adminBoardsModel->getBoardsConfigByNo($board_no);
+    }
+
     public function insertBoardsConfig($data)
     {
         $category = explode("-",$data['categories'][1]) ?? null;

@@ -50,13 +50,17 @@ class AuthService
         $this->redirect($isAdmin);
     }
 
-    public function logout(): void
+    public function logout($url = ''): void
     {
         $this->sessionManager->destroy();
         $this->cookieManager->delete('jwtToken');
         $this->cookieManager->delete('refreshToken');
-        header('Location: /');
-        exit();
+        if ($url) {
+            header('Location: '.$url);
+        } else {
+            header('Location: /');
+            exit();
+        }
     }
 
     private function redirect(bool $isAdmin): void

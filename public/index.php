@@ -66,9 +66,9 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     });
     
     // API 라우트 그룹
-    $apiBaseUrl = $_ENV['API_BASE_URL'] ?? '/api/v1';
+    $apiBaseUrl = $_ENV['API_FULL_BASE_URL'] ?? '/api/v1';
     $r->addGroup($apiBaseUrl, function (RouteCollector $r) use ($httpMethods) {
-        $r->addRoute($httpMethods, '/{controller}/{method}[/{param}]', 'ApiController');
+        $r->addRoute($httpMethods, '/{controller}[/{method}[/{param}]]', 'ApiController');
     });
     
     // DB 설치 라우트
@@ -110,6 +110,9 @@ switch ($routeInfo[0]) {
         $handler = $routeInfo[1];
         $vars = $routeInfo[2];
         
+        // 전체 API 기본 URL을 환경 변수에서 가져옴
+        $apiFullBaseUrl = $_ENV['API_FULL_BASE_URL'] ?? '/api/v1';
+        
         if (strpos($uri, '/admin') === 0) {
             // 관리자 페이지 처리
             $adminViewRenderer = new AdminViewRenderer($container);
@@ -117,7 +120,7 @@ switch ($routeInfo[0]) {
         } elseif (strpos($uri, '/template') === 0) {
             // 템플릿 요청 처리
             RouteHelper::handleTemplateRoute($handler, $vars, $container);
-        } elseif (strpos($uri, $_ENV['API_BASE_URL'] ?? '/api/v1') === 0) {
+        } elseif (strpos($uri, $apiFullBaseUrl) === 0) {
             // API 처리
             RouteHelper::handleApiRoute($handler, $vars, $container);
         } else {

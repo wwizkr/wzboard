@@ -62,6 +62,58 @@ class BoardsModel
         return (int)($result[0]['totalCount'] ?? 0);
     }
 
+    /*
+     * 이전글, 다음글
+     */
+    public function getAdjacentData(int $board_no, int $article_no, ?string $searchQuery = null, array $filters = [], array $sort = [], array $additionalQueries = []): array
+    {
+        $where = ['cf_id' => ['i', $this->config_domain['cf_id']]];
+        if ($board_no) {
+            $where['board_no'] = ['i', $board_no];
+        }
+
+        // 이전글
+        $prevWhere = $where;
+        $prevWhere['no'] = ['i', $article_no, 'and', '<'];
+
+        // 다음글
+        $nextWhere = $where;
+        $nextWhere['no'] = ['i', $article_no, 'and', '>'];
+
+        [$addWhere, $bindValues] = $this->buildSearchConditions($searchQuery ?? '', $filters);
+
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
+
+        $baseOrder = isset($params['sort']['order']) && strtolower($params['sort']['order']) == 'asc' ? "DESC" : "ASC";
+        $prevOrder = $baseOrder == "ASC" ? "DESC" : "ASC";
+        $nextOrder = $baseOrder;
+
+        $prevOptions = [
+            'order' => !empty($sort) ? "{$sort['field']} {$prevOrder}" : "no {$prevOrder}",
+            'limit' => "1",
+            'addWhere' => !empty($addWhere) ? implode(' AND ', $addWhere) : '',
+            'values' => $bindValues
+        ];
+
+        $nextOptions = [
+            'order' => !empty($sort) ? "{$sort['field']} {$nextOrder}" : "no {$nextOrder}",
+            'limit' => "1",
+            'addWhere' => !empty($addWhere) ? implode(' AND ', $addWhere) : '',
+            'values' => $bindValues
+        ];
+
+        $prevData = $this->db->sqlBindQuery('select', 'board_articles', [], $prevWhere, $prevOptions);
+        $nextData = $this->db->sqlBindQuery('select', 'board_articles', [], $nextWhere, $nextOptions);
+
+        $prev = isset($prevData[0]) && $prevData[0] ? $prevData[0] : null;
+        $next = isset($nextData[0]) && $nextData[0] ? $nextData[0] : null;
+
+        return [
+            'prevData' => $prev,
+            'nextData' => $next
+        ];
+    }
+
     public function writeBoardsUpdate(?int $article_no, string $board_id, array $data): array
     {
         if ($article_no) {
@@ -115,9 +167,18 @@ class BoardsModel
             $param = ['content' => $data['content']];
             $where = ['no' => ['i', $comment_no]];
             $result = $this->db->sqlBindQuery('update', 'board_comments', $param, $where);
-            return $result['result'] === 'success'
-                ? ['result' => 'success', 'message' => '댓글을 수정하였습니다.', 'action' => 'modify']
-                : ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+
+            if ($result['result'] === 'success') {
+                $commentData = $this->getCommentData($comment_no);
+                return [
+                    'result' => 'success', 
+                    'message' => '댓글을 수정하였습니다.', 
+                    'action' => 'modify',
+                    'comment' => $commentData
+                ];
+            } else {
+                return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+            }
         } else {
             $result = $this->db->sqlBindQuery('insert', 'board_comments', $data, []);
             
@@ -131,7 +192,14 @@ class BoardsModel
                 $sql = "UPDATE $tableName SET comment_count = comment_count + 1 WHERE no = :articleNo";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([':articleNo' => $article_no]);
-                return ['result' => 'success', 'message' => '댓글을 등록하였습니다.', 'action' => empty($data['path']) ? 'insert' : 'reply'];
+
+                $commentData = $this->getCommentData($result['ins_id']);
+                return [
+                    'result' => 'success', 
+                    'message' => '댓글을 등록하였습니다.', 
+                    'action' => empty($data['path'][1]) ? 'insert' : 'reply',
+                    'comment' => $commentData
+                ];
             } else {
                 return ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
             }
@@ -153,9 +221,18 @@ class BoardsModel
 
         $result = $this->db->sqlBindQuery('select', 'board_comments', [], $where, $options);
 
-        return is_array($result)
+        return is_array($result) && !empty($result)
             ? ['result' => 'success', 'data' => $result]
             : ['result' => 'failure', 'message' => '댓글 데이터를 가져오는 데 실패하였습니다.'];
+    }
+
+    private function getCommentData($commentNo): array
+    {
+        $param = [];
+        $where['no'] = ['i', $commentNo];
+        $result = $this->db->sqlBindQuery('select', 'board_comments', $param, $where);
+
+        return $result[0] ?? [];
     }
 
     private function buildSearchConditions(?string $searchQuery, array $filters): array
@@ -211,5 +288,97 @@ class BoardsModel
         } else {
             return false;
         }
+    }
+
+    public function processedLikeAction($mb_id, $table, $action, $no)
+    {
+        $data = [];
+
+        /*
+         * 기본 액션은 like, dislike
+         * 기본 액션이 아닐 경우 테이블에 $action.'_count' 필드를 추가해 줍니다.
+         */
+
+        $reaction_table = 'board_'.$table.'_reactions';
+        $update_table = 'board_'.$table;
+        $reaction_field = $table === 'articles' ? 'article_no' : 'comment_no';
+        $update_field = $action.'_count';
+        $tableName = $this->getTableName($update_table);
+        
+        $param = [];
+        $where['mb_id'] = ['s', $mb_id];
+        $where[$reaction_field] = ['i', $no];
+        $options = [
+        ];
+
+        $reaction = $this->db->sqlBindQuery('select', $reaction_table, $param, $where, $options);
+        
+        $mode = 'insert';
+        if (isset($reaction[0])) {
+            if ($reaction['0']['reaction_type'] !== $action) {
+                $data = [
+                    'result' => 'failure',
+                    'message' => '',
+                    'data' => [],
+                ];
+                return $data;
+            }
+
+            $mode = 'delete';
+        }
+
+        if ($mode == 'insert') {
+            $insert_param = [
+                $reaction_field => ['i', $no],
+                'mb_id' => ['s', $mb_id],
+                'reaction_type' => ['s', $action],
+            ];
+
+            $result = $this->db->sqlBindQuery('insert', $reaction_table, $insert_param);
+
+            if ($result['ins_id']) {
+                $sql = "UPDATE $tableName SET $update_field = $update_field + 1 WHERE no = :No";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':No' => $no]);
+
+                $data = [
+                    'result' => 'success',
+                    'message' => 'insert',
+                    'data' => [
+                                'reaction' => $action,
+                                'mode' => $mode,
+                              ],
+                ];
+            } else {
+                $data = [
+                    'result' => 'failure',
+                    'message' => '',
+                    'data' => null,
+                ];
+            }
+        }
+
+        if ($mode == 'delete') {
+            $delete_where = [
+                $reaction_field => ['i', $no],
+                'mb_id' => ['s', $mb_id],
+            ];
+
+            $result = $this->db->sqlBindQuery('delete', $reaction_table, [], $delete_where);
+            $sql = "UPDATE $tableName SET $update_field = $update_field - 1 WHERE no = :No";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':No' => $no]);
+
+            $data = [
+                'result' => 'success',
+                'message' => 'delete',
+                'data' => [
+                            'reaction' => $action,
+                            'mode' => $mode,
+                          ],
+            ];
+        }
+
+        return $data;
     }
 }

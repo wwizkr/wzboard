@@ -1,20 +1,21 @@
 <?php
-
 namespace Web\PublicHtml\Helper;
 
 class SessionManager
 {
+    private $csrfTokenTtl;
+
     public function __construct()
     {
         if (session_status() == PHP_SESSION_NONE) {
-            // 세션 옵션 설정 (예: secure, httpOnly 속성)
             session_start([
-                'cookie_lifetime' => 0, // 브라우저가 닫힐 때까지 유지
-                'cookie_secure' => false, // HTTPS에서만 전송
-                'cookie_httponly' => true, // JS에서 쿠키 접근 금지
-                'use_strict_mode' => true, // 세션 탈취를 방지
+                'cookie_lifetime' => 0,
+                'cookie_secure' => false, // 프로덕션에서는 true로 설정
+                'cookie_httponly' => true,
+                'use_strict_mode' => true,
             ]);
         }
+        $this->csrfTokenTtl = (int)($_ENV['CSRF_TOKEN_TTL'] ?? 3600); // 기본값 1시간
     }
 
     public function set(string $key, $value): void
@@ -29,7 +30,6 @@ class SessionManager
 
     public function destroy(): void
     {
-        // 세션 데이터와 쿠키를 삭제하고 세션 종료
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
@@ -43,18 +43,40 @@ class SessionManager
 
     public function regenerateSessionId(): void
     {
-        session_regenerate_id(true); // true는 세션 데이터를 유지하면서 ID를 재생성
+        session_regenerate_id(true);
     }
 
-    public function generateCsrfToken(string $key): string
+    public function generateCsrfToken(string $key): array
     {
         $token = bin2hex(random_bytes(32));
-        $this->set($key, $token);
-        return $token;
+        $expiryTime = time() + $this->csrfTokenTtl;
+        $tokenData = [
+            'token' => $token,
+            'expiry' => $expiryTime
+        ];
+        $this->set($key, $tokenData);
+        return $tokenData;
     }
 
-    public function getCsrfToken(string $key): ?string
+    public function getCsrfToken(string $key): ?array
     {
-        return $this->get($key);
+        $tokenData = $this->get($key);
+        if (!is_array($tokenData) || !isset($tokenData['token']) || !isset($tokenData['expiry'])) {
+            return null;
+        }
+        if (time() > $tokenData['expiry']) {
+            $this->set($key, null); // 만료된 토큰 제거
+            return null;
+        }
+        return $tokenData;
+    }
+
+    public function validateCsrfToken(string $token, string $key): bool
+    {
+        $storedTokenData = $this->getCsrfToken($key);
+        if (!$storedTokenData) {
+            return false;
+        }
+        return hash_equals($storedTokenData['token'], $token);
     }
 }

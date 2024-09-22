@@ -659,7 +659,7 @@ class CommonHelper
     public static function generateSlug($title)
     {
         // 한글과 영어, 숫자만 남기고, 나머지 문자는 모두 제거
-        $title = preg_replace('/[^a-zA-Z가-힣0-9\s-]/u', '', $title);
+        $title = preg_replace('/[^a-zA-Z가-힣ㄱ-ㅎㅏ-ㅣ0-9\s-]/u', '', $title);
 
         // 공백이나 '-' 문자를 기준으로 문자열을 나누고 다시 '-'로 결합
         $slug = preg_replace('/\s+/', '-', trim($title));
@@ -669,7 +669,10 @@ class CommonHelper
 
         // 타임스탬프 추가 (년월일시분초 형식)
         $timestamp = date('YmdHis');
-        $slug .= '-' . $timestamp;
+        
+        if ($slug) {
+            $slug .= '-' . $timestamp;
+        }
 
         return $slug;
     }
@@ -704,44 +707,56 @@ class CommonHelper
      */
     public static function formatTimeAgo($date): string
     {
-        // 만약 $date가 문자열이라면 DateTime 객체로 변환
-        if (is_string($date)) {
+        static $SECONDS_PER_MINUTE = 60;
+        static $SECONDS_PER_HOUR = 3600;
+        static $SECONDS_PER_DAY = 86400;
+        static $SECONDS_PER_MONTH = 2592000;
+        static $SECONDS_PER_YEAR = 31536000;
+        static $JUST_NOW_THRESHOLD = 60; // 1분(60초) 미만을 "방금 전"으로 표시
+
+        $inputTz = new \DateTimeZone('Asia/Seoul');
+        $utc = new \DateTimeZone('UTC');
+
+        if (!($date instanceof \DateTime)) {
             try {
-                $date = new \DateTime($date);
+                $date = new \DateTime($date, $inputTz);
             } catch (\Exception $e) {
+                error_log("Date parsing error: " . $e->getMessage());
                 return "Invalid date";
+            }
+        } else {
+            $date->setTimezone($inputTz);
+        }
+
+        $now = new \DateTime('now', $inputTz);
+        $date->setTimezone($utc);
+        $now->setTimezone($utc);
+
+        $seconds = max(0, $now->getTimestamp() - $date->getTimestamp());
+
+        // 120초 미만인 경우 "방금 전" 반환
+        if ($seconds < $JUST_NOW_THRESHOLD) {
+            return "방금 전";
+        }
+
+        $intervals = [
+            [$seconds / $SECONDS_PER_YEAR, '년'],
+            [$seconds / $SECONDS_PER_MONTH, '개월'],
+            [$seconds / $SECONDS_PER_DAY, '일'],
+            [$seconds / $SECONDS_PER_HOUR, '시간'],
+            [$seconds / $SECONDS_PER_MINUTE, '분'],
+            [$seconds, '초']
+        ];
+
+        foreach ($intervals as [$interval, $unit]) {
+            if ($interval >= 1) {
+                $count = floor($interval);
+                return "{$count}{$unit} 전";
             }
         }
 
-        $now = new \DateTime();
-        $seconds = $now->getTimestamp() - $date->getTimestamp();
-
-        $interval = $seconds / 31536000; // 1년 = 31536000초
-        if ($interval > 1) {
-            return floor($interval) . "년전";
-        }
-
-        $interval = $seconds / 2592000; // 1개월 = 2592000초
-        if ($interval > 1) {
-            return floor($interval) . "개월전";
-        }
-
-        $interval = $seconds / 86400; // 1일 = 86400초
-        if ($interval > 1) {
-            return floor($interval) . "일전";
-        }
-
-        $interval = $seconds / 3600; // 1시간 = 3600초
-        if ($interval > 1) {
-            return floor($interval) . "시간전";
-        }
-
-        $interval = $seconds / 60; // 1분 = 60초
-        if ($interval > 1) {
-            return floor($interval) . "분";
-        }
-
-        return floor($seconds) . "초";
+        // 이 부분에 도달할 일은 없지만, 안전을 위해 남겨둠
+        return "방금 전";
     }
 
     public static function createThumbnailFromContent(string $content, int $width = 200, int $height = 200): ?string

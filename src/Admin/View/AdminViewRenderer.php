@@ -5,7 +5,9 @@ namespace Web\Admin\View;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\View\ComponentsView;
+use Web\PublicHtml\Service\AuthService;
 use Web\Admin\Helper\AdminMenuHelper;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class AdminViewRenderer
 {
@@ -14,29 +16,34 @@ class AdminViewRenderer
     private $sessionManager;
     private $componentsView;
     private $adminMenuHelper;
+    private $csrfTokenHandler;
+    private $authService;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $configDomain = $container->get('config_domain');
-        $adminSkin = $configDomain['cf_skin_admin'] ?? 'basic';
-        $layoutSkin = $configDomain['cf_layout_skin'] ?? 'basic';
+        $config_domain = $container->get('config_domain');
+        $adminSkin = $config_domain['cf_skin_admin'] ?? 'basic';
+        $layoutSkin = $config_domain['cf_layout_skin'] ?? 'basic';
         
         $this->skinDirectory = __DIR__ . "/{$adminSkin}/";
         $this->sessionManager = new SessionManager();
         $this->componentsView = new ComponentsView($layoutSkin);
+        $this->csrfTokenHandler = new CsrfTokenHandler($this->sessionManager);
         $this->adminMenuHelper = new AdminMenuHelper($this->container);
+        $this->authService = $this->container->get('AuthService');
 
         // CSRF 토큰 세션 검증
         $this->checkCsrfToken();
     }
 
     /**
-     * CSRF 토큰이 세션에 없으면 로그아웃 후 로그인 페이지로 리다이렉트
+     * CSRF 토큰이 세션에 없거나 만료되었으면 로그아웃 후 로그인 페이지로 리다이렉트
      */
     private function checkCsrfToken()
     {
-        $csrfToken = $this->sessionManager->get($_ENV['ADMIN_CSRF_TOKEN_KEY']);
+        $csrfTokenKey = $_ENV['ADMIN_CSRF_TOKEN_KEY'] ?? 'admin_secure_key';
+        $csrfToken = $this->sessionManager->getCsrfToken($csrfTokenKey);
         if (empty($csrfToken)) {
             $this->logoutAndRedirect();
         }
@@ -47,15 +54,7 @@ class AdminViewRenderer
      */
     private function logoutAndRedirect()
     {
-        // 세션 파기
-        $this->sessionManager->destroy();
-
-        // 쿠키 삭제
-        setcookie('jwtToken', '', time() - 3600, '/');
-        setcookie('refreshToken', '', time() - 3600, '/');
-        // 로그아웃 후 로그인 페이지로 리다이렉트
-        header('Location: /auth/login');
-        exit();
+        $this->authService->logout('/auth/login');
     }
 
     public function renderPagination($paginationData)
@@ -99,8 +98,16 @@ class AdminViewRenderer
     // 특정 뷰 파일을 렌더링하는 메서드
     public function render($viewFilePath, array $data = [])
     {
-        // SessionManager를 데이터에 추가
-        $data['sessionManager'] = $this->sessionManager; //head에 추가
+        // SessionManager와 CsrfTokenHandler를 데이터에 추가
+        $data['sessionManager'] = $this->sessionManager;
+        $data['csrfTokenHandler'] = $this->csrfTokenHandler;
+        
+        // CSRF 토큰 추가
+        $csrfTokenKey = $_ENV['ADMIN_CSRF_TOKEN_KEY'] ?? 'admin_secure_key';
+        $csrfToken = $this->sessionManager->getCsrfToken($csrfTokenKey);
+        if ($csrfToken) {
+            $data['csrfToken'] = $csrfToken['token'];
+        }
 
         extract($data);
 

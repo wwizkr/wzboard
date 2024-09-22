@@ -101,10 +101,6 @@ class RouteHelper
                 echo 'Method not found';
             }
         } else {
-            
-            echo '<pre>';
-            var_dump($controller);
-            echo '</pre>';
             echo 'Controller not found';
         }
     }
@@ -118,8 +114,10 @@ class RouteHelper
      */
     public static function handleApiRoute($handler, $vars, $container)
     {
+        $apiVersion = $_ENV['API_VERSION'] ?? 'v1'; // 'V1'에서 'v1'로 변경
+
         // API 컨트롤러와 메서드 설정
-        $controller = 'Web\\PublicHtml\\Api\\v1\\' . ucfirst($vars['controller']) . 'Controller';
+        $controller = 'Web\\PublicHtml\\Api\\' . $apiVersion . '\\' . ucfirst($vars['controller']) . 'Controller';
         $method = $vars['method'] ?? 'index';
         
         // 컨트롤러 및 메서드가 존재하는지 확인하고 호출

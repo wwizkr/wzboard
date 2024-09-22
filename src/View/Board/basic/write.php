@@ -4,7 +4,7 @@
 <div class="page-container container-fluid">
     <div class="col-12 mb-3 table-container">
         <div class="p-3 table-form">
-            <?php if(!empty($boardsCategory)) { ?>
+            <?php if (!empty($boardsCategory)) { ?>
             <div class="table-row row mb-3">
                 <div class="table-td col-12">
                     <select name="formData[category_no]" id="category_no" class="form-select require" data-type="select" data-msg="카테고리를 선택해 주세요!">
@@ -15,6 +15,18 @@
                         }
                         ?>
                     </select>
+                </div>
+            </div>
+            <?php } ?>
+            <?php if (empty($memberData)) { ?>
+            <div class="table-row row mb-3">
+                <div class="table-td col-12">
+                    <input type="text" name="formData[nickName]" value="" id="nickname" class="form-control" placeholder="이름">
+                </div>
+            </div>
+            <div class="table-row row mb-3">
+                <div class="table-td col-12">
+                    <input type="password" name="formData[password]" value="" id="password" class="form-control" placeholder="비밀번호">
                 </div>
             </div>
             <?php } ?>
@@ -29,7 +41,7 @@
                 </div>
             </div>
             <a href="/board/<?= $boardId; ?>/list" class="btn btn-danger me-2">목록</a>
-            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/board/<?= $boardId;?>/update" data-callback="updateWrite">확인</button>
+            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/board/<?= $boardId;?>/update" data-callback="successUpdateWrite">확인</button>
         </div>
     </div>
 </div>
@@ -39,10 +51,13 @@
 const articleData = <?php echo json_encode($articleData); ?>;
 document.addEventListener('DOMContentLoaded', function() {
     fillFormData(articleData, 'formData');
+
+    document.addEventListener('click', function (event) {
+    });
 });
 
-function updateWrite(data) {
+App.registerCallback('successUpdateWrite', function(data) {
     console.log(data);
     alert(data.message);
-}
+});
 </script>

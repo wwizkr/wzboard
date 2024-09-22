@@ -88,7 +88,7 @@ class BoardController
         $paginationData = $this->calculatePagination($articleData);
         
         // 게시글 목록 HTML 생성
-        $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData['articleList'], $paginationData);
+        $articleHtml = $this->boardsService->loadArticleList($boardConfig, $articleData, $paginationData);
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
@@ -190,6 +190,10 @@ class BoardController
             ]);
         }
 
+        // 에디터 스크립트
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
+        $editorScript = CommonHelper::getEditorScript($editor);
+
         // 글 정보
         $articleData = [];
         if($article_no) {
@@ -220,9 +224,28 @@ class BoardController
             }
         }
 
-        // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
-        $editorScript = CommonHelper::getEditorScript($editor);
+        // 기본 설정 로드
+        $config = [
+            'cf_page_rows' => $this->config_domain['cf_page_rows'],
+            'cf_page_nums' => $this->config_domain['cf_page_nums']
+        ];
+
+        // 허용된 필터와 정렬 필드 정의
+        $allowedFilters = ['nickName','title','content'];
+        $allowedSortFields = ['no', 'create_at'];
+        
+        // 추가 파라미터 설정 (예: 카테고리)
+        $additionalParams = [
+            'category[]' => ['array', [], isset($_GET['category']) ? $_GET['category'] : []],
+        ];
+
+        // 목록 파라미터 가져오기
+        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
+        
+        // 이전글, 다음글
+        $adjacentData = $this->boardsService->getAdjacentData($boardConfig, $articleData, $params);
+        $prevData = $adjacentData['prevData'];
+        $nextData = $adjacentData['nextData'];
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
@@ -231,6 +254,8 @@ class BoardController
             'boardConfig' => $boardConfig,
             'editorScript' => $editorScript,
             'articleData' => $articleData,
+            'prevData' => $prevData,
+            'nextData' => $nextData,
         ];
         
         return [
@@ -365,11 +390,9 @@ class BoardController
         $article_no = $vars['articleNo'] ?? null;  // 게시글 번호가 있을 경우
         
         $data = CommonHelper::getJsonInput();
-        $page = CommonHelper::validateParam('page', 'int', 1, $data['page']);
-        $perPage = CommonHelper::validateParam('perPage', 'int', 10, $data['perPage']);
-
+        $page = CommonHelper::pickNumber($data['page']);
+        $perPage = CommonHelper::pickNumber($data['perPage']);
         $board_no = 0;
-
         if ($board_id) {
             // 게시판 설정 가져오기
             $boardsConfig = $this->adminBoardsService->getBoardsConfig($board_id);
@@ -414,6 +437,38 @@ class BoardController
         $result = $this->boardsService->commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no);
         
         // 결과를 JSON 응답으로 반환
+        return CommonHelper::jsonResponse($result);
+    }
+
+    /*
+     * 좋아요, 싫어요
+     */
+    public function like() {
+        $data = CommonHelper::getJsonInput();
+        
+        $table = CommonHelper::validateParam('table', 'string', '', $data['table'], null);
+        $action = CommonHelper::validateParam('action', 'string', '', $data['action'], null);
+        $no = CommonHelper::validateParam('no', 'int', '', $data['no'], null);
+
+        if (!$table || !$action || !$no || ($table !== 'articles' && $table !== 'comments')) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '잘못된 접속입니다.',
+                'data' => null
+            ]);
+        }
+
+        $memberData = $this->membersHelper->getMemberDataByNo();
+        if (empty($memberData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '로그인 후 이용하실 수 있습니다.',
+                'data' => null
+            ]);
+        }
+
+        $result = $this->boardsService->processedLikeAction($memberData['mb_id'], $table, $action, $no);
+
         return CommonHelper::jsonResponse($result);
     }
 }

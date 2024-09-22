@@ -87,9 +87,6 @@
 var menuData = <?= json_encode($menuDatas); ?>;
 var menuCategory = <?= json_encode($menuCategory); ?>;
 
-console.log(menuData);
-console.log(menuCategory);
-
 function addDisplayNameToNodes(nodes) {
     return nodes.map(function(node) {
         let prefix = '';
@@ -300,7 +297,7 @@ function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
     });
 }
 
-function categoryLoader(event, treeId, treeNode) {
+async function categoryLoader(event, treeId, treeNode) {
     var zTree = $.fn.zTree.getZTreeObj(treeId);
     var nodes = zTree.getSelectedNodes();
     
@@ -309,24 +306,22 @@ function categoryLoader(event, treeId, treeNode) {
             no: treeNode.no,
             me_code: treeNode.me_code,
         };
-        sendCustomAjaxRequest('POST', '/admin/settings/menuLoader', requestData, function(responseText) {
-            var data = JSON.parse(responseText);
+        
+        try {
+            const data = await sendCustomAjaxRequest('POST', '/admin/settings/menuLoader', requestData, false);
             console.log(data);
             if (data.result === "success" && data.data) {
                 var selectNode = data.data;
                 if (selectNode.me_cate1) {
                     document.getElementById('me_cate1').value = selectNode.me_cate1;
-
                     // 방금 만든 change 이벤트를 수동으로 트리거하여 me_cate2의 옵션을 로드
                     var event = new Event('change');
                     document.getElementById('me_cate1').dispatchEvent(event);
                 }
-
                 document.getElementById('no').value = selectNode.no;
                 document.getElementById('me_code').value = selectNode.me_code;
                 document.getElementById('me_name').value = selectNode.me_name;
                 document.getElementById('me_link').value = selectNode.me_link;
-
                 // me_cate2 값 설정
                 if (selectNode.me_cate2) {
                     setTimeout(function() {
@@ -334,9 +329,9 @@ function categoryLoader(event, treeId, treeNode) {
                     }, 100);
                 }
             }
-        }, function(errorMessage) {
-            console.error("Error:", errorMessage);
-        });
+        } catch (error) {
+            console.error("Error:", error.message);
+        }
     }
 }
 

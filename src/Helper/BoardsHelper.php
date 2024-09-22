@@ -55,4 +55,25 @@ class BoardsHelper
 
         return $data;
     }
+
+    public function processCommentData(array $boardConfig, array $commentData) : array
+    {
+        $data = [];
+        foreach($commentData as $key=>$val) {
+            $data[$key] = $val;
+            
+            $data[$key]['nickName'] = strip_tags($val['nickName']);
+
+            // 날짜 포맷
+            $data[$key]['date1'] = CommonHelper::formatTimeAgo($val['created_at']); //몇초전, 몇시간전...
+            $data[$key]['date2'] = substr($val['created_at'],0,10); // 2024-09-01
+            $data[$key]['date3'] = substr($val['created_at'],2,8); // 23-09-01
+            $data[$key]['date4'] = substr($val['created_at'],0,16); // 23-09-01 12:19
+
+            // 비밀번호 삭제
+            unset($data[$key]['password']);
+        }
+
+        return $data;
+    }
 }

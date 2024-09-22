@@ -159,7 +159,7 @@ class BoardadminController
         $numericFields = [
             'group_no', 'read_level', 'write_level', 'download_level', 'comment_level',
             'read_point', 'write_point', 'download_point', 'comment_point',
-            'is_use_comment',
+            'is_use_comment', 'board_list_type',
             'is_use_file', 'file_size_limit', 'use_separate_table'
         ];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);

@@ -2,9 +2,18 @@
     <div class="common-list-header row">
         <div class="row">
             <div class="">{{nickName}}</div>
-            <div class="">{{created_at}}</div>
+            <div class="">{{date}}</div>
         </div>
-        <div class="like"></div>
+        <div class="reaction-group">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-reaction" data-table="comments" data-action="like" data-comment="{{no}}">
+                <b>좋아요</b>
+                <span class="reaction-count">{{likeCount}}</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-reaction" data-table="comments" data-action="dislike" data-comment="{{no}}">
+                <b>싫어요</b>
+                <span class="reaction-count">{{dislikeCount}}</span>
+            </button>
+        </div>
     </div>
     <div class="comment-content">{{content}}</div>
     <div class="comment-footer row">

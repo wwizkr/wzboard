@@ -123,6 +123,8 @@ $schema = [
                                 nickName VARCHAR(50) NOT NULL DEFAULT '',
                                 password VARCHAR(255) NOT NULL DEFAULT '',
                                 content TEXT NOT NULL,
+                                like_count INT NOT NULL DEFAULT 0,
+                                dislike_count INT NOT NULL DEFAULT 0,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                                 path VARCHAR(255) NOT NULL,
@@ -145,15 +147,27 @@ $schema = [
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
                         
-                        'board_reactions' => "
+                        'board_articles_reactions' => "
                             CREATE TABLE IF NOT EXISTS board_reactions (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
                                 article_no INT NOT NULL,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
-                                reaction_type ENUM('like', 'dislike') NOT NULL,
+                                reaction_type VARCHAR(12) NOT NULL DEFAULT '',
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 UNIQUE KEY idx_article_user_reaction (article_no, mb_id),
                                 INDEX idx_article_no (article_no)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                        ",
+
+                        'board_comments_reactions' => "
+                            CREATE TABLE IF NOT EXISTS board_reactions (
+                                no INT AUTO_INCREMENT PRIMARY KEY,
+                                comment_no INT NOT NULL,
+                                mb_id VARCHAR(50) NOT NULL DEFAULT '',
+                                reaction_type VARCHAR(12) NOT NULL DEFAULT '',
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                UNIQUE KEY idx_comment_user_reaction (comment_no, mb_id),
+                                INDEX idx_comment_no (comment_no)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
 

@@ -7,6 +7,7 @@ use Web\PublicHtml\Helper\ComponentsViewHelper;
 class ViewRenderer
 {
     // 스킨 디렉토리 경로를 저장하는 변수들
+    private $container;
     private $config_domain;
     private $deviceType;
     private $headerSkin;
@@ -16,7 +17,7 @@ class ViewRenderer
     private $footerSkinDirectory;
     private $layoutSkinDirectory;
     private $componentsViewHelper;
-    private $container;
+    private $sessionManager;
     private $isLogin;
 
     // 생성자에서 스킨 디렉토리 설정
@@ -43,8 +44,8 @@ class ViewRenderer
         $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
 
         // 로그인 여부를 설정
-        $sessionManager = $this->container->get('SessionManager');
-        $authInfo = $sessionManager->get('auth');
+        $this->sessionManager = $this->container->get('SessionManager');
+        $authInfo = $this->sessionManager->get('auth');
         $this->isLogin = !empty($authInfo);
     }
     
@@ -58,7 +59,6 @@ class ViewRenderer
         }
 
         // 추출한 변수들을 renderComponent에 배열로 전달
-        //echo $this->componentsView->renderComponent('pagination', $data);
         echo $this->componentsViewHelper->renderComponent('pagination', $data);
     }
 
@@ -69,7 +69,6 @@ class ViewRenderer
         $menuData = $this->container->get('menu_datas');
         // renderMenu 메서드를 사용하여 메뉴를 렌더링
         $data['menu'] = $this->componentsViewHelper->renderMenu($this->config_domain, $menuData);
-        $data['isLogin'] = $this->isLogin;
 
         $this->render($this->headerSkinDirectory . 'Header', $data);
     }

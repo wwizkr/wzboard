@@ -115,12 +115,21 @@
     <div id="anc_cf_layout" class="table-form">
         <div class="table-row row mb-3">
             <div class="table-th col-md-2">
-                <label for="cf_max_width" class="form-label">홈페이지 최대넓이</label>
+                <label for="cf_layout_max_width" class="form-label">레이아웃 최대넓이</label>
             </div>
-            <div class="table-td col-md-10">
+            <div class="table-td col-md-4">
                 <div class="d-flex align-items-center">
-                    <input type="text" name="formData[cf_max_width]" value="" id="cf_max_width" class="form-control me-2" placeholder="1200" style="max-width: 100px;">
-                    <span class="form-control bg-info text-white border-0">홈페이지 최대 넓이입니다. PC에만 적용됩니다.(권장 1,200px)</span>
+                    <input type="text" name="formData[cf_layout_max_width]" value="" id="cf_layout_max_width" class="form-control me-2" placeholder="1200" style="max-width: 100px;">
+                    <span class="form-control bg-info text-white border-0">레이아웃 최대 넓이입니다. PC에만 적용됩니다.(권장 1,200px)</span>
+                </div>
+            </div>
+            <div class="table-th col-md-2">
+                <label for="cf_content_max_width" class="form-label">내용 최대넓이</label>
+            </div>
+            <div class="table-td col-md-4">
+                <div class="d-flex align-items-center">
+                    <input type="text" name="formData[cf_content_max_width]" value="" id="cf_content_max_width" class="form-control me-2" placeholder="1200" style="max-width: 100px;">
+                    <span class="form-control bg-info text-white border-0">내용 최대 넓이입니다. PC에만 적용됩니다.(권장 1,200px)</span>
                 </div>
             </div>
         </div>

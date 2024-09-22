@@ -22,7 +22,7 @@ class SettingsController
     protected adminMenuHelper $adminMenuHelper;
     protected FormDataMiddleware $formDataMiddleware;
     protected menuHelper $menuHelper;
-    protected array $configDomain;
+    protected array $config_domain;
     protected int $cf_id;
 
     public function __construct(DependencyContainer $container)
@@ -36,8 +36,8 @@ class SettingsController
         $csrfTokenHandler = new CsrfTokenHandler($container->get('SessionManager'));
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
 
-        $this->configDomain = $this->container->get('config_domain');
-        $this->cf_id = (int)$this->configDomain['cf_id'];
+        $this->config_domain = $this->container->get('config_domain');
+        $this->cf_id = (int)$this->config_domain['cf_id'];
     }
 
     /**
@@ -63,7 +63,7 @@ class SettingsController
             [
                 'title' => '기본환경 설정',
                 'content' => '',
-                'config_domain' => $this->configDomain,
+                'config_domain' => $this->config_domain,
                 'anchor' => $anchor,
                 'skin' => $skin,
                 'sns_seo' => $sns_seo,
@@ -251,7 +251,7 @@ class SettingsController
      */
     private function updateMenuCache(): void
     {
-        $ownerDomain = $this->configDomain['cf_domain'];
+        $ownerDomain = $this->config_domain['cf_domain'];
         //$menuController = new MenuController($ownerDomain);
 
         $this->menuHelper->clearMenuCache();

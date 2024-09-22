@@ -7,9 +7,10 @@
         */
         if (!empty($categoryData)) {
             echo '<div class="board-category">';
-            foreach($categoryData as $key=>$val) {
-                echo '<a href="/board/'.$boardConfig['board_id'].'/list?category[]='.$val['category_name'].'">'.$val['category_name'].'</a>';
-            }
+                echo '<a href="/board/'.$boardConfig['board_id'].'/list">전체</a>';
+                foreach($categoryData as $key=>$val) {
+                    echo '<a href="/board/'.$boardConfig['board_id'].'/list?category[]='.$val['category_name'].'">'.$val['category_name'].'</a>';
+                }
             echo '</div>';
         }
         ?>

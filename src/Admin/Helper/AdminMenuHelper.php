@@ -31,6 +31,29 @@ class AdminMenuHelper
                 'url' => '/admin',
                 'icon' => 'bi-speedometer2',
             ],
+            'settings' => [
+                'label' => '환경설정',
+                'url' => '/admin/settings/general',
+                'icon' => 'bi-gear',
+                'submenu' => [
+                    'general' => [
+                        'label' => '기본 환경설정',
+                        'url' => '/admin/settings/general',
+                    ],
+                    'menus' => [
+                        'label' => '메뉴 설정',
+                        'url' => '/admin/settings/menus',
+                    ],
+                    'template' => [
+                        'label' => '메인화면/페이지 관리',
+                        'url' => '/admin/template/list',
+                    ],
+                    'clause' => [
+                        'label' => '이용약관 관리',
+                        'url' => '/admin/clause/list',
+                    ],
+                ],
+            ],
             'members' => [
                 'label' => '회원관리',
                 'url' => '/admin/members/all',
@@ -41,7 +64,11 @@ class AdminMenuHelper
                         'url' => '/admin/members/list',
                     ],
                     'add' => [
-                        'label' => '회원등록',
+                        'label' => '회원 등록',
+                        'url' => '/admin/members/add',
+                    ],
+                    'level' => [
+                        'label' => '회원 등급관리',
                         'url' => '/admin/members/add',
                     ],
                 ],
@@ -85,21 +112,6 @@ class AdminMenuHelper
                     'list' => [
                         'label' => '문제 관리',
                         'url' => '/admin/trialadmin/list',
-                    ],
-                ],
-            ],
-            'settings' => [
-                'label' => '환경설정',
-                'url' => '/admin/settings/general',
-                'icon' => 'bi-gear',
-                'submenu' => [
-                    'general' => [
-                        'label' => '기본 환경설정',
-                        'url' => '/admin/settings/general',
-                    ],
-                    'menus' => [
-                        'label' => '메뉴 설정',
-                        'url' => '/admin/settings/menus',
                     ],
                 ],
             ],
