@@ -43,8 +43,23 @@ class RouteHelper
         if (class_exists($controller)) {
             $controllerInstance = new $controller($container);
             if (method_exists($controllerInstance, $method)) {
+                $response = $controllerInstance->$method($vars);
+
+                $viewPath = $response['viewPath'] ?? null;
+                $headData = $response['headData'] ?? [];
+                $headerData = $response['headerData'] ?? [];
+                $layoutData = $response['layoutData'] ?? [];
+                $viewData = $response['viewData'] ?? [];
+                $footerData = $response['footerData'] ?? [];
+                $footData = $response['footData'] ?? [];
+                $fullPage = $response['fullPage'] ?? false;
+
+                $adminViewRenderer->renderPage($viewPath, $headData, $headerData, $layoutData, $viewData, $footerData, $footData, $fullPage);
+                
+                /*
                 list($viewPath, $viewData) = $controllerInstance->$method($vars);
                 $adminViewRenderer->renderPage($viewPath, [], [], [], $viewData, [], []);
+                */
             } else {
                 echo 'Method not found';
             }

@@ -1,6 +1,6 @@
 <!-- components/skinname/menu.php -->
 <?php
-function print_menu_data($config_domain, $menu = array())
+function print_menu_data($config_domain, $menu = array(), $me_code = '')
 {
     if (empty($menu)) {
         echo '<div class="menu_empty"><a href="/admin/settings/menu.php" target="_blank">메뉴가 생성되어 있지 않습니다. 메뉴를 생성하세요</a></div>';
@@ -29,11 +29,31 @@ function print_menu_data($config_domain, $menu = array())
 
         $me_link = $v['me_link'] ?? 'javascript:void(0);';
         $me_name = generate_menu_name($v);
-
+        $active = $me_code && $v['me_code'] === $me_code ? 'active' : '';
+        
         // 메뉴 아이템 템플릿에 데이터 바인딩
         $menuHtml = str_replace(
-            ['{{depth}}', '{{code}}', '{{swiperSlide}}', '{{class}}', '{{link}}', '{{target}}', '{{name}}', '{{children}}'],
-            [$v['me_depth'], $v['me_code'], $swiper_slide, $v['me_class'], $me_link, $v['me_target'] ?? 'self', $me_name, print_sub_menu($v['children'], $v['me_depth'] + 1, $config_domain)],
+            [
+                '{{depth}}',
+                '{{code}}',
+                '{{swiperSlide}}',
+                '{{class}}',
+                '{{link}}',
+                '{{target}}',
+                '{{active}}',
+                '{{name}}',
+                '{{children}}'
+            ],
+            [
+                $v['me_depth'],
+                $v['me_code'],
+                $swiper_slide,
+                $v['me_class'],
+                $me_link,
+                $v['me_target'] ?? 'self',
+                $active, $me_name,
+                print_sub_menu($v['children'], $v['me_depth'] + 1, $config_domain, $me_code)
+            ],
             $template
         );
 
@@ -44,7 +64,7 @@ function print_menu_data($config_domain, $menu = array())
     echo $output;
 }
 
-function print_sub_menu($children, $depth, $config_domain)
+function print_sub_menu($children, $depth, $config_domain, $me_code)
 {
     if (empty($children)) return '';
 
@@ -58,13 +78,33 @@ function print_sub_menu($children, $depth, $config_domain)
             continue;
         }
 
-        $me_link = $v['me_link'] ?? 'javascript:void(0);';
+        $me_link = $menu['me_link'] ?? 'javascript:void(0);';
         $me_name = generate_menu_name($menu);
+        $active = $me_code && $menu['me_code'] === $me_code ? 'active' : '';
 
         // 서브 메뉴 아이템 템플릿에 데이터 바인딩
         $subMenuHtml = str_replace(
-            ['{{depth}}', '{{code}}', '{{swiperSlide}}', '{{class}}', '{{link}}', '{{target}}', '{{name}}', '{{children}}'],
-            [$menu['me_depth'], $menu['me_code'], '', $menu['me_class'], $me_link, $menu['me_target'], $me_name, print_sub_menu($menu['children'], $menu['me_depth'] + 1, $config_domain)],
+            [
+                '{{depth}}',
+                '{{code}}',
+                '{{swiperSlide}}',
+                '{{class}}',
+                '{{link}}',
+                '{{target}}',
+                '{{active}}',
+                '{{name}}',
+                '{{children}}'
+            ],
+            [
+                $menu['me_depth'],
+                $menu['me_code'],
+                '',
+                $menu['me_class'],
+                $me_link,
+                $menu['me_target'],
+                $active, $me_name,
+                print_sub_menu($menu['children'], $menu['me_depth'] + 1, $config_domain, $me_code)
+            ],
             $template
         );
 
@@ -92,7 +132,7 @@ function generate_menu_name($menu)
 }
 
 if (isset($config_domain) && isset($menuData)) {
-    print_menu_data($config_domain, $menuData);
+    print_menu_data($config_domain, $menuData, $me_code);
 } else {
     echo "<p>메뉴 데이터를 찾을 수 없습니다.</p>";
 }

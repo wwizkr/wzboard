@@ -6,33 +6,33 @@ use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\CryptoHelper;
-use Web\PublicHtml\Helper\MembersHelper;
 use Hybridauth\Hybridauth;
 use Hybridauth\Exception\Exception;
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\AuthService;
+use Web\PublicHtml\Service\MembersService;
 
 class SocialController
 {
     private $container;
-    private $configDomain;
+    private $config_domain;
     private $sessionManager;
     private $membersModel;
-    private $membersHelper;
+    private $membersService;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->configDomain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->sessionManager = $this->container->get('SessionManager');
         $this->membersModel = $this->container->get('MembersModel');
-        $this->membersHelper = $this->container->get('MembersHelper');
+        $this->membersService = $this->container->get('MembersService');
     }
 
     public function getSocialConfig(): array
     {
         $callbackUrl = $_ENV['APP_URL'] . '/social/callback?provider=';
-        $providers = $this->configDomain['cf_social_servicelist'] ? explode(",", $this->configDomain['cf_social_servicelist']) : [];
+        $providers = $this->config_domain['cf_social_servicelist'] ? explode(",", $this->config_domain['cf_social_servicelist']) : [];
         
         $socialConfig = [
             'callback' => '',
@@ -54,8 +54,8 @@ class SocialController
         $baseConfig = [
             'enabled' => true,
             'keys' => [
-                'id' => $this->configDomain["cf_{$provider}_clientid"],
-                'secret' => $this->configDomain["cf_{$provider}_secret"],
+                'id' => $this->config_domain["cf_{$provider}_clientid"],
+                'secret' => $this->config_domain["cf_{$provider}_secret"],
             ],
             'callback' => $callbackUrl . ucfirst(strtolower($provider)),
         ];
@@ -125,7 +125,7 @@ class SocialController
         $isMember = $this->membersModel->findBySocialId($providerName, $userProfile->identifier);
 
         if (!empty($isMember)) {
-            $level = $this->membersHelper->getMemberLevelData($isMember['member_level']) ?? [];
+            $level = $this->membersService->getMemberLevelData($isMember['member_level']) ?? [];
             $authService = $this->container->get('AuthService');
             $authService->login($isMember, $level);
         } else {

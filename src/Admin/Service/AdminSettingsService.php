@@ -3,17 +3,27 @@
 
 namespace Web\Admin\Service;
 
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\Admin\Model\AdminSettingsModel;
+use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\PublicHtml\Helper\MenuHelper;
+use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CacheHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 
 class AdminSettingsService
 {
+    protected $container;
+    protected $config_domain;
     protected $adminSettingsModel;
+    protected $formDataMiddleware;
 
-    public function __construct(AdminSettingsModel $adminSettingsModel)
+    public function __construct(DependencyContainer $container)
     {
-        $this->adminSettingsModel = $adminSettingsModel;
+        $this->container = $container;
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+        $this->adminSettingsModel = $this->container->get('AdminSettingsModel');
+        $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
     /**
@@ -137,7 +147,31 @@ class AdminSettingsService
     public function updateMenuData($cf_id, $no, $me_code, $data)
     {
         $result = $this->adminSettingsModel->updateMenuData($cf_id, $no, $me_code, $data);
+        
+        // 메뉴 수정 후 캐시 초기화
+        $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
+        CacheHelper::setCache($cacheKey, null);
 
         return $this->adminSettingsModel->getMenuByCode($cf_id, $me_code);
+    }
+
+    /**
+     * 메뉴 삭제
+     */
+    public function menuDelete($data)
+    {
+        $numericFields = ['cf_id', 'no'];
+        $whereData = $this->formDataMiddleware->processFormData($data, $numericFields);
+
+        $whereData['me_code'] = ['s', $data['me_code'], 'and', 'like_right'];
+
+        $result = $this->adminSettingsModel->menuDelete($whereData);
+
+        if ($result['result'] === 'success') {
+            $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
+            CacheHelper::setCache($cacheKey, null);
+        }
+
+        return $result;
     }
 }

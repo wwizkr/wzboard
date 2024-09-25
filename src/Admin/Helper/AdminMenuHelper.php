@@ -97,10 +97,6 @@ class AdminMenuHelper
                 'url' => '/admin/trialadmin/configs',
                 'icon' => 'bi-people',
                 'submenu' => [
-                    'prompt' => [
-                        'label' => '문제 프롬포트',
-                        'url' => '/admin/trialadmin/prompt',
-                    ],
                     'subject' => [
                         'label' => '문제 과목 관리',
                         'url' => '/admin/trialadmin/subject',
@@ -112,6 +108,10 @@ class AdminMenuHelper
                     'list' => [
                         'label' => '문제 관리',
                         'url' => '/admin/trialadmin/list',
+                    ],
+                    'gichul' => [
+                        'label' => '기출문제 관리',
+                        'url' => '/admin/trialadmin/gichulList',
                     ],
                 ],
             ],

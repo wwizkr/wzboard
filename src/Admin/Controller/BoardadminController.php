@@ -32,15 +32,17 @@ class BoardadminController
 
     public function group(): array
     {
+        $viewData = [
+            'title' => '게시판 그룹 관리',
+            'content' => '',
+            'config_domain' => $this->config_domain,
+            'groupData' => $this->adminBoardsService->getBoardsGroup(),
+            'levelData' => $this->membersHelper->getLevelData(),
+        ];
+
         return [
-            'AdminBoards/group',
-            [
-                'title' => '게시판 그룹 관리',
-                'content' => '',
-                'config_domain' => $this->config_domain,
-                'groupData' => $this->adminBoardsService->getBoardsGroup(),
-                'levelData' => $this->membersHelper->getLevelData(),
-            ]
+            'viewPath' => 'AdminBoards/group',
+            'viewData' => $viewData,
         ];
     }
 
@@ -51,7 +53,10 @@ class BoardadminController
         $formData = $_POST['formData'] ?? null;
 
         if (empty($formData)) {
-            return $this->jsonFailureResponse('입력정보가 비어 있습니다.');
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력정보가 비어 있습니다.',
+            ]);
         }
 
         $numericFields = ['allow_level', 'order_num'];
@@ -64,20 +69,25 @@ class BoardadminController
             $this->adminBoardsService->insertBoardsGroup($data);
         }
 
-        return $this->jsonSuccessResponse('처리하였습니다.');
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '처리하였습니다.',
+        ]);
     }
 
     public function category(): array
     {
+        $viewData = [
+            'title' => '게시판 카테고리 관리',
+            'content' => '',
+            'config_domain' => $this->config_domain,
+            'categoryData' => $this->adminBoardsService->getCategoryData(),
+            'levelData' => $this->membersHelper->getLevelData(),
+        ];
+
         return [
-            'AdminBoards/category',
-            [
-                'title' => '게시판 카테고리 관리',
-                'content' => '',
-                'config_domain' => $this->config_domain,
-                'categoryData' => $this->adminBoardsService->getCategoryData(),
-                'levelData' => $this->membersHelper->getLevelData(),
-            ]
+            'viewPath' => 'AdminBoards/category',
+            'viewData' => $viewData,
         ];
     }
 
@@ -88,7 +98,10 @@ class BoardadminController
         $formData = $_POST['formData'] ?? null;
 
         if (empty($formData)) {
-            return $this->jsonFailureResponse('입력정보가 비어 있습니다.');
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력정보가 비어 있습니다.',
+            ]);
         }
 
         $numericFields = ['allow_level', 'order_num'];
@@ -100,20 +113,25 @@ class BoardadminController
             $this->adminBoardsService->insertBoardsCategory($data);
         }
 
-        return $this->jsonSuccessResponse('처리하였습니다.');
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '처리하였습니다.',
+        ]);
     }
 
     public function boards(): array
     {
+        $viewData = [
+            'title' => '게시판 관리',
+            'content' => '',
+            'config_domain' => $this->config_domain,
+            'boardsConfig' => $this->adminBoardsService->getBoardsConfig(),
+            'levelData' => $this->membersHelper->getLevelData(),
+        ];
+
         return [
-            'AdminBoards/boards',
-            [
-                'title' => '게시판 관리',
-                'content' => '',
-                'config_domain' => $this->config_domain,
-                'boardsConfig' => $this->adminBoardsService->getBoardsConfig(),
-                'levelData' => $this->membersHelper->getLevelData(),
-            ]
+            'viewPath' => 'AdminBoards/boards',
+            'viewData' => $viewData,
         ];
     }
 
@@ -121,20 +139,22 @@ class BoardadminController
     {
         $board_id = $vars['param'] ?? '';
         $boardConfig = $board_id ? $this->adminBoardsService->getBoardsConfig($board_id) : [];
+        
+        $viewData = [
+            'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
+            'content' => '',
+            'config_domain' => $this->config_domain,
+            'groupData' => $this->adminBoardsService->getBoardsGroup(),
+            'categoryData' => $this->adminBoardsService->getCategoryData(),
+            'boardCategory' => !empty($boardConfig) ? $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']) : [],
+            'levelData' => $this->membersHelper->getLevelData(),
+            'skinData' => $this->adminBoardsHelper->getBoardSkinDir(),
+            'boardConfig' => $boardConfig,
+        ];
 
         return [
-            'AdminBoards/boardForm',
-            [
-                'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
-                'content' => '',
-                'config_domain' => $this->config_domain,
-                'groupData' => $this->adminBoardsService->getBoardsGroup(),
-                'categoryData' => $this->adminBoardsService->getCategoryData(),
-                'boardCategory' => !empty($boardConfig) ? $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']) : [],
-                'levelData' => $this->membersHelper->getLevelData(),
-                'skinData' => $this->adminBoardsHelper->getBoardSkinDir(),
-                'boardConfig' => $boardConfig,
-            ]
+            'viewPath' => 'AdminBoards/boardForm',
+            'viewData' => $viewData,
         ];
     }
 
@@ -144,7 +164,10 @@ class BoardadminController
         $formData = $_POST['formData'] ?? null;
 
         if (empty($formData)) {
-            return $this->jsonFailureResponse('입력정보가 비어 있습니다.');
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력정보가 비어 있습니다.',
+            ]);
         }
 
         if ($board_no) {
@@ -152,7 +175,10 @@ class BoardadminController
             $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
 
             if(empty($boardConfig)) {
-                return $this->jsonFailureResponse('게시판 정보가 없습니다.');
+                return CommonHelper::jsonResponse([
+                    'result' => 'failure',
+                    'message' => '게시판 정보가 없습니다.',
+                ]);
             }
         }
 
@@ -170,22 +196,9 @@ class BoardadminController
             $this->adminBoardsService->insertBoardsConfig($data);
         }
 
-        return $this->jsonSuccessResponse('처리하였습니다.');
-    }
-
-    private function jsonSuccessResponse(string $message): array
-    {
         return CommonHelper::jsonResponse([
             'result' => 'success',
-            'message' => $message
-        ]);
-    }
-
-    private function jsonFailureResponse(string $message): array
-    {
-        return CommonHelper::jsonResponse([
-            'result' => 'failure',
-            'message' => $message
+            'message' => '처리하였습니다.',
         ]);
     }
 }

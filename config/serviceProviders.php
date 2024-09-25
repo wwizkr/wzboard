@@ -31,9 +31,14 @@ use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
+use Web\PublicHtml\Middleware\NavigationMiddleware;
+
 //use Web\PublicHtml\Helper\SessionManager;
 //use Web\PublicHtml\Middleware\CsrfTokenHandler;
 //use Web\PublicHtml\Middleware\FormDataMiddleware;
+
+use Web\Admin\Service\AdminSettingsService;
+use Web\Admin\model\AdminSettingsModel;
 
 function registerServices(DependencyContainer $container)
 {
@@ -103,18 +108,16 @@ function registerServices(DependencyContainer $container)
         return new ComponentsViewHelper();
     });
 
-
-    //$container->addFactory('SessionManager', function($c) {
-    //    return new SessionManager();
-    //});
-    /*
-    $container->addFactory('CsrfTokenHandler', function($c) {
-        return new CsrfTokenHandler($c->get('SessionManager'));
-    });
-
     // Middleware
-    $container->addFactory('FormDataMiddleware', function($c) {
-        return new FormDataMiddleware($c->get('CsrfTokenHandler'));
+    $container->addFactory('NavigationMiddleware', function($c) {
+        return new NavigationMiddleware($c);
     });
-    */
+    
+    // Admin
+    $container->addFactory('AdminSettingsService', function($c) {
+        return new AdminSettingsService($c);
+    });
+    $container->addFactory('AdminSettingsModel', function($c) {
+        return new AdminSettingsModel($c);
+    });
 }

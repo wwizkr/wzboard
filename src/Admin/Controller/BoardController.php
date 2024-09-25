@@ -109,7 +109,10 @@ class BoardController
             'paginationData' => $paginationData,
         ];
 
-        return ['Board/list', $viewData];
+        return [
+            'viewPath' => 'Board/list',
+            'viewData' => $viewData,
+        ];
     }
 
     public function view($vars)
@@ -161,7 +164,10 @@ class BoardController
             'articleData' => $articleData,
         ];
 
-        return ['Board/view', $viewData];
+        return [
+            'viewPath' => 'Board/view',
+            'viewData' => $viewData,
+        ];
     }
 
     public function write($vars)
@@ -212,7 +218,10 @@ class BoardController
             'memberData' => $memberData,
         ];
 
-        return ['Board/write', $viewData];
+        return [
+            'viewPath' => 'Board/write',
+            'viewData' => $viewData,
+        ];
     }
     
     /*

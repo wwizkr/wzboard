@@ -7,7 +7,7 @@ use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Helper\BoardsHelper;
-use Web\PublicHtml\Helper\MembersHelper;
+use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
@@ -23,7 +23,7 @@ class BoardsService
     protected $boardsModel;
     protected $boardsHelper;
     protected $adminBoardsService;
-    protected $membersHelper;
+    protected $membersService;
     protected $formDataMiddleware;
     protected $sessionManager;
     protected $cookieManager;
@@ -36,7 +36,7 @@ class BoardsService
         $this->boardsModel = $container->get('BoardsModel');
         $this->boardsHelper = $container->get('BoardsHelper');
         $this->adminBoardsService = $container->get('AdminBoardsService');
-        $this->membersHelper = $container->get('MembersHelper');
+        $this->membersService = $container->get('MembersService');
         $this->sessionManager = $container->get('SessionManager');
         $this->cookieManager = $container->get('CookieManager');
         $this->formDataMiddleware = $container->get('FormDataMiddleware');
@@ -183,7 +183,7 @@ class BoardsService
         }
 
         // 현재 인증된 회원 ID 가져오기
-        $memberData = $this->membersHelper->getMemberDataByNo();
+        $memberData = $this->membersService->getMemberDataByNo();
 
         // POST 데이터는 formData 배열로 전송 됨
         $formData = $_POST['formData'] ?? null;
@@ -631,7 +631,7 @@ class BoardsService
             $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
         }
         */
-        $memberData = $this->membersHelper->getMemberDataByNo();
+        $memberData = $this->membersService->getMemberDataByNo();
 
         // POST 데이터는 formData 배열로 전송 됨
         $formData = $_POST['formData'] ?? null;

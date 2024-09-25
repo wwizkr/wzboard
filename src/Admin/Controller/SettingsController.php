@@ -28,8 +28,8 @@ class SettingsController
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->adminSettingsModel = new AdminSettingsModel($container);
-        $this->adminSettingsService = new AdminSettingsService($this->adminSettingsModel);
+        $this->adminSettingsModel = new AdminSettingsModel($this->container);
+        $this->adminSettingsService = new AdminSettingsService($this->container);
         $this->adminMenuHelper = new AdminMenuHelper($this->container);
         $this->menuHelper = new MenuHelper();
         
@@ -58,16 +58,18 @@ class SettingsController
         $skin = AdminSettingsHelper::getSkin();
         $sns_seo = AdminSettingsHelper::getSnsSeo();
 
+        $viewData = [
+            'title' => '기본환경 설정',
+            'content' => '',
+            'config_domain' => $this->config_domain,
+            'anchor' => $anchor,
+            'skin' => $skin,
+            'sns_seo' => $sns_seo,
+        ];
+
         return [
-            'Settings/general',
-            [
-                'title' => '기본환경 설정',
-                'content' => '',
-                'config_domain' => $this->config_domain,
-                'anchor' => $anchor,
-                'skin' => $skin,
-                'sns_seo' => $sns_seo,
-            ]
+            'viewPath' => 'Settings/general',
+            'viewData' => $viewData,
         ];
     }
     
@@ -110,15 +112,17 @@ class SettingsController
     {
         $menuDatas = $this->container->get('menu_datas') ?? null;
         $menuCategory = $this->adminMenuHelper->setMenuCategory();
+        
+        $viewData = [
+            'title' => '메뉴 설정',
+            'content' => '',
+            'menuDatas' => $menuDatas,
+            'menuCategory' => $menuCategory,
+        ];
 
         return [
-            'Settings/menus',
-            [
-                'title' => '메뉴 설정',
-                'content' => '',
-                'menuDatas' => $menuDatas,
-                'menuCategory' => $menuCategory,
-            ]
+            'viewPath' => 'Settings/menus',
+            'viewData' => $viewData,
         ];
     }
 
@@ -221,8 +225,6 @@ class SettingsController
 
         $updateData = $this->adminSettingsService->updateMenuData($this->cf_id, $no, $me_code, $data);
 
-        error_log("Menu Update Data:".print_r($updateData, true));
-
         if ($updateData) {
             $this->updateMenuCache();
             return CommonHelper::jsonResponse([
@@ -243,7 +245,21 @@ class SettingsController
      */
     public function menuDelete()
     {
-        
+        $data = CommonHelper::getJsonInput();
+
+        if (!$data['cf_id'] || !$data['me_code']) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '잘못된 접속입니다.'
+            ]);
+        }
+
+        $result = $this->adminSettingsService->menuDelete($data);
+
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '메뉴를 삭제하였습니다.'
+        ]);
     }
 
     /**

@@ -13,7 +13,7 @@
         <div class="col-12 col-md-6 order-2 order-md-1 mb-3 mb-md-0 table-container">
             <h2>목록</h2>
             <div class="p-3 table-list table-list-md table-roll">
-                <ul id="menuTree" class="ztree"></ul>
+                <ul id="menuTree" class="ztree" style="max-height:560px;overflow-y:auto;"></ul>
             </div>
             <div class="dtable-button-wrap button-right">
                 <button type="button" class="btn btn_submit" id="add_depth1">
@@ -150,6 +150,7 @@ $(document).ready(function(){
         menuUpdate($('#frm')[0]);
     });
 });
+
 function getTreeSetting() {
     return {
         data: {
@@ -203,11 +204,12 @@ function addHoverDom(treeId, treeNode) {
     sObj.after(addStr);
 
     var btn = $("#addBtn_" + treeNode.tId);
-    if (btn) btn.bind("click", function(){
+    if (btn) btn.bind("click", async function(event){
+        event.stopPropagation();
+
         var zTree = $.fn.zTree.getZTreeObj(treeId);
         
         var newNodeName = treeNode.level === 0 ? "1단계 메뉴명" : "하위메뉴명";
-
         var requestData = {
             type: treeNode.type,
             me_name: newNodeName,
@@ -220,9 +222,8 @@ function addHoverDom(treeId, treeNode) {
             requestData.me_depth = treeNode.me_depth + 1;
         }
 
-        sendCustomAjaxRequest('POST', '/admin/settings/menuInsert', requestData, function(responseText) {
-            var data = JSON.parse(responseText);
-
+        try {
+            const data = await sendCustomAjaxRequest('POST', '/admin/settings/menuInsert', requestData, true);
             if (data.result === "success") {
                 var newNode = data.data;
                 
@@ -241,60 +242,17 @@ function addHoverDom(treeId, treeNode) {
                 categoryLoader(null, treeId, addedNode[0]);
             } else {
                 console.error("Failed to add menu node:", data.message);
+                alert('메뉴 추가에 실패했습니다: ' + data.message);
             }
-            
-        }, function(errorMessage) {
-            console.error("Error:", errorMessage);
-        });
+        } catch (error) {
+            console.error("Error:", error);
+            alert('메뉴 추가 중 오류가 발생했습니다: ' + error.message);
+        }
     });
 }
 
 function removeHoverDom(treeId, treeNode) {
     $("#addBtn_" + treeNode.tId).unbind().remove();
-}
-
-function showRemoveBtn(treeId, treeNode) {
-    return treeNode.level > 0;
-}
-
-function showRenameBtn(treeId, treeNode) {
-    return false;
-}
-
-function beforeDrag(treeId, treeNodes) {
-    for (var i = 0; i < treeNodes.length; i++) {
-        if (treeNodes[i].drag === false) return false;
-    }
-    return true;
-}
-
-function beforeDrop(treeId, treeNodes, targetNode, moveType, isCopy) {
-    return targetNode ? targetNode.drop !== false : true;
-}
-
-function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
-    var zTree = $.fn.zTree.getZTreeObj(treeId);
-    var nodes = zTree.transformToArray(zTree.getNodes());
-
-    var menuData = nodes.map(function(node) {
-        return {
-            type: node.type,
-            no: node.no,
-            me_code: node.code,
-            me_parent: node.parent,
-            me_depth: node.depth,
-            level: node.level
-        };
-    });
-
-    $.ajax({
-        type: "POST",
-        url: "/admin/settings/menuOrder",
-        data: { act: "menuorder", menu: menuData },
-        success: function(response) {
-            //console.log(response);
-        }
-    });
 }
 
 async function categoryLoader(event, treeId, treeNode) {
@@ -309,7 +267,6 @@ async function categoryLoader(event, treeId, treeNode) {
         
         try {
             const data = await sendCustomAjaxRequest('POST', '/admin/settings/menuLoader', requestData, false);
-            console.log(data);
             if (data.result === "success" && data.data) {
                 var selectNode = data.data;
                 if (selectNode.me_cate1) {
@@ -335,51 +292,21 @@ async function categoryLoader(event, treeId, treeNode) {
     }
 }
 
-function categoryRemove(event, treeId, treeNode) {
-    $.ajax({
-        type: "POST",
-        url: "/admin/settings/menuDelete",
-        data: {
-            act: "delete",
-            type: treeNode.type,
-            me_id: treeNode.no
-        },
-        success: function(response) {
-            if (response.result === "success") {
-                var zTree = $.fn.zTree.getZTreeObj(treeId);
-                zTree.updateNode(treeNode.getParentNode());
-            }
-        }
-    });
-}
+async function categoryRemove(event, treeId, treeNode) {
+    var requestData = {
+        cf_id: treeNode.cf_id,
+        me_code: treeNode.me_code,
+    };
 
-function dropPrev(treeId, nodes, targetNode) {
-    return true; 
-}
-
-function dropNext(treeId, nodes, targetNode) {
-    return true; 
-}
-
-function dropInner(treeId, nodes, targetNode) {
-    return true; 
-}
-
-function dblClickExpand(treeId, nodes, targetNode) {
-    return true; 
-}
-
-function beforeEditName(treeId, nodes, targetNode) {
-    return true; 
-}
-
-function beforeRemove(treeId, nodes, targetNode) {
-    return true; 
+    try {
+        const data = await sendCustomAjaxRequest('POST', '/admin/settings/menuDelete', requestData, false, 'deleteMenu');
+    } catch (error) {
+        console.error("Error:", error);
+    }
 }
 
 // 메뉴 업데이트 AJAX CallBack
-function updateMenuTree(data) {
-    alert(data.message);
+App.registerCallback('updateMenuTree', function(data) {
     if (data.result === 'success') {
         var updateNodeMenu = data.data;
         var zTree = $.fn.zTree.getZTreeObj("menuTree");
@@ -389,6 +316,36 @@ function updateMenuTree(data) {
             zTree.updateNode(selectedNode);
         }
     }
+});
+
+App.registerCallback('deleteMenu', function(data) {
+    console.log(data);
+});
+
+
+function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
+    var zTree = $.fn.zTree.getZTreeObj(treeId);
+    var nodes = zTree.transformToArray(zTree.getNodes());
+
+    var menuData = nodes.map(function(node) {
+        return {
+            type: node.type,
+            no: node.no,
+            me_code: node.code,
+            me_parent: node.parent,
+            me_depth: node.depth,
+            level: node.level
+        };
+    });
+
+    $.ajax({
+        type: "POST",
+        url: "/admin/settings/menuOrder",
+        data: { act: "menuorder", menu: menuData },
+        success: function(response) {
+            //console.log(response);
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -433,4 +390,47 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('me_link').value = dataLink || '';
     });
 });
+
+function showRemoveBtn(treeId, treeNode) {
+    return treeNode.level > 0;
+}
+
+function showRenameBtn(treeId, treeNode) {
+    return false;
+}
+
+function beforeDrag(treeId, treeNodes) {
+    for (var i = 0; i < treeNodes.length; i++) {
+        if (treeNodes[i].drag === false) return false;
+    }
+    return true;
+}
+
+function beforeDrop(treeId, treeNodes, targetNode, moveType, isCopy) {
+    return targetNode ? targetNode.drop !== false : true;
+}
+
+function dropPrev(treeId, nodes, targetNode) {
+    return true; 
+}
+
+function dropNext(treeId, nodes, targetNode) {
+    return true; 
+}
+
+function dropInner(treeId, nodes, targetNode) {
+    return true; 
+}
+
+function dblClickExpand(treeId, nodes, targetNode) {
+    return true; 
+}
+
+function beforeEditName(treeId, nodes, targetNode) {
+    return true; 
+}
+
+function beforeRemove(treeId, nodes, targetNode) {
+    return true; 
+}
 </script>

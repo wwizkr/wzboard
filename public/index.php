@@ -47,7 +47,8 @@ if ($uri !== '/' && substr($uri, -1) === '/') {
 }
 
 // AuthMiddleware를 통해 인증 처리
-AuthMiddleware::handle($uri);
+$authMiddleware = new AuthMiddleware($container);
+$authMiddleware->handle($uri);
 
 // FastRoute 설정을 위한 디스패처 생성
 $dispatcher = simpleDispatcher(function (RouteCollector $r) {
@@ -143,8 +144,10 @@ function formatMemoryUsage($size)
 }
 
 // 메모리 사용량 출력
+echo '<!---';
 echo "현재 메모리 사용량: " . memory_get_usage() . " bytes (" . formatMemoryUsage(memory_get_usage()) . ")<br>";
 echo "최대 메모리 사용량: " . memory_get_peak_usage() . " bytes (" . formatMemoryUsage(memory_get_peak_usage()) . ")<br>";
 
 // 실행 시간 출력
 echo "실행 시간: " . round($executionTime, 4) . " 초";
+echo '--->';

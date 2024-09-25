@@ -207,7 +207,7 @@ class BoardController
         }
 
         // 현재 인증된 회원 ID 가져오기
-        $memberData = $this->membersHelper->getMemberDataByNo();
+        $memberData = $this->membersService->getMemberDataByNo();
 
         /*
          * 권한 체크
@@ -280,7 +280,7 @@ class BoardController
             ]);
         }
 
-        $memberData = $this->membersHelper->getMemberDataByNo();
+        $memberData = $this->membersService->getMemberDataByNo();
 
         // 글 정보
         $articleData = [];
@@ -458,7 +458,7 @@ class BoardController
             ]);
         }
 
-        $memberData = $this->membersHelper->getMemberDataByNo();
+        $memberData = $this->membersService->getMemberDataByNo();
         if (empty($memberData)) {
             return CommonHelper::jsonResponse([
                 'result' => 'failure',

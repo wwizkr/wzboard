@@ -3,6 +3,7 @@ namespace Web\PublicHtml\View;
 
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
+//use Web\PublicHtml\Middleware\NavigationMiddleware;
 
 class ViewRenderer
 {
@@ -19,6 +20,7 @@ class ViewRenderer
     private $componentsViewHelper;
     private $sessionManager;
     private $isLogin;
+    private $navigation;
 
     // 생성자에서 스킨 디렉토리 설정
     public function __construct(DependencyContainer $container)
@@ -47,6 +49,9 @@ class ViewRenderer
         $this->sessionManager = $this->container->get('SessionManager');
         $authInfo = $this->sessionManager->get('auth');
         $this->isLogin = !empty($authInfo);
+        
+        // Navigation
+        $this->navigation = $this->container->get('NavigationMiddleware');
     }
     
     public function renderPagination($paginationData)
@@ -67,8 +72,10 @@ class ViewRenderer
     {
         // 컨테이너에서 트리화된 메뉴 데이터를 가져옴
         $menuData = $this->container->get('menu_datas');
+        $me_code = isset($this->navigation->buildNavigation()['me_code']) ? $this->navigation->buildNavigation()['me_code'] : '';
+        
         // renderMenu 메서드를 사용하여 메뉴를 렌더링
-        $data['menu'] = $this->componentsViewHelper->renderMenu($this->config_domain, $menuData);
+        $data['menu'] = $this->componentsViewHelper->renderMenu($this->config_domain, $menuData, $me_code);
 
         $this->render($this->headerSkinDirectory . 'Header', $data);
     }

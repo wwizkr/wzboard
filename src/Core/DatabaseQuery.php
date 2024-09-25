@@ -239,6 +239,9 @@ class DatabaseQuery
                 throw new Exception('유효하지 않은 쿼리 모드');
         }
 
+        //error_log("SQL QUERY::::".print_r($sql,true));
+        //error_log("SQL VALUE::::".print_r($values,true));
+
         // 쿼리 실행
         try {
             $stmt = $this->pdo->prepare($sql);

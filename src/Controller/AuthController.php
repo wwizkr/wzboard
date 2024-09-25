@@ -40,8 +40,8 @@ class AuthController
     // 로그인
     public function login($vars)
     {
-        $configDomain = $this->container->get('config_domain');
-        $contentSkin = $configDomain['cf_skin_content'] ?? 'basic';
+        $config_domain = $this->container->get('config_domain');
+        $contentSkin = $config_domain['cf_skin_content'] ?? 'basic';
         $viewPath = 'Content/'.$contentSkin.'/Auth/login_form';
 
         $jwtToken = CookieManager::get('jwtToken');
@@ -58,8 +58,8 @@ class AuthController
             exit();
         } elseif ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken)) {
             // 리프레시 토큰이 유효한 경우 새로운 JWT 토큰 생성
-            $member = $this->membersHelper->getMemberDataById($decodedRefreshToken['mb_id']);
-            $level  = $this->membersHelper->getMemberLevelData($member['member_level']) ?? 0;
+            $member = $this->membersService->getMemberDataById($decodedRefreshToken['mb_id']);
+            $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
 
             // 새로운 인증 토큰 생성
             $payload = [
@@ -98,11 +98,11 @@ class AuthController
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            $member = $this->membersHelper->getMemberDataById($email);
+            $member = $this->membersService->getMemberDataById($email);
 
             // 비밀번호 검증
             if ($member && CryptoHelper::verifyPassword($password, $member['password'])) {
-                $level = $this->membersHelper->getMemberLevelData($member['member_level']) ?? [];
+                $level = $this->membersService->getMemberLevelData($member['member_level']) ?? [];
                 $authService = $this->container->get('AuthService');
                 $authService->login($member, $level);
             } else { // 로그인 실패

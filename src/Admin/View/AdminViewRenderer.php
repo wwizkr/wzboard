@@ -127,14 +127,14 @@ class AdminViewRenderer
     }
 
     // 전체 페이지를 렌더링하는 메서드
-    public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null)
+    public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null, ?bool $fullPage = false)
     {
         $this->render('partials/head', $headData ?? []);
-        $this->renderHeader($headerData ?? []);
+        if($fullPage === false) { $this->renderHeader($headerData ?? []); }
         $this->renderLayoutOpen($layoutData ?? []);
         $this->render($view, $viewData ?? []);
         $this->renderLayoutClose($layoutData ?? []);
-        $this->renderFooter($footerData ?? []);
+        if($fullPage === false) { $this->renderFooter($footerData ?? []); }
         $this->render('partials/foot', $footData ?? []);
     }
 }

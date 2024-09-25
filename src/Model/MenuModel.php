@@ -11,18 +11,18 @@ use Web\PublicHtml\Core\DependencyContainer;
 class MenuModel
 {
     protected $db;
-    protected $configDomain;
+    protected $config_domain;
 
     public function __construct()
     {
         $container = DependencyContainer::getInstance();
         $this->db = $container->get('db');
-        $this->configDomain = $container->get('config_domain');
+        $this->config_domain = $container->get('config_domain');
     }
 
     public function getMenuData($useCache = true)
     {
-        $cacheKey = 'menu_cache_' . $this->configDomain['cf_domain'];
+        $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
         $menuData = $useCache ? CacheHelper::getCache($cacheKey) : null;
 
         if ($menuData === null) {
@@ -30,7 +30,7 @@ class MenuModel
             $query = "SELECT * FROM " . (new class {
                 use DatabaseHelperTrait;
             })->getTableName('menus') . " WHERE cf_id = :cf_id";
-            $stmt = $this->db->query($query, ['cf_id' => $this->configDomain['cf_id']]);
+            $stmt = $this->db->query($query, ['cf_id' => $this->config_domain['cf_id']]);
             $menuData = $this->db->fetchAll($stmt);
 
             if ($menuData) {
@@ -50,7 +50,7 @@ class MenuModel
 
     public function clearCache()
     {
-        $cacheKey = 'menu_cache_' . $this->configDomain['cf_domain'];
+        $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
         CacheHelper::clearCache($cacheKey);
     }
 }

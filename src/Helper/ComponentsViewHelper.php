@@ -12,9 +12,9 @@ class ComponentsViewHelper
         $this->skinDirectory = __DIR__ . "/../View/components/{$skinName}/"; // components 디렉토리로 경로 설정
     }
 
-    public function renderMenu($deviceType, $menuData)
+    public function renderMenu($config_domain, $menuData, $me_code = '')
     {
-        return $this->renderComponent('menu', ['config_domain' => ['device_type' => $deviceType], 'menuData' => $menuData]);
+        return $this->renderComponent('menu', ['config_domain' => $config_domain, 'menuData' => $menuData, 'me_code' => $me_code]);
     }
 
     public function renderPagination($paginationData)

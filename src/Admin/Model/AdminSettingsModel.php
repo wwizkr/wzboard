@@ -197,4 +197,13 @@ class AdminSettingsModel
 
         return $this->db->sqlBindQuery('update', 'menus', $param, $where, $options);
     }
+
+    /**
+     * 카테고리 삭제
+     */
+    public function menuDelete($whereData)
+    {
+        $param = [];
+        return $this->db->sqlBindQuery('delete', 'menus', $param, $whereData);
+    }
 }
