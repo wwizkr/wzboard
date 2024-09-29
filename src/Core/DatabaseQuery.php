@@ -440,10 +440,56 @@ class DatabaseQuery
         $errorMessage .= "\nError Code: " . $e->getCode();
         $errorMessage .= "\nError Info: " . json_encode($errorInfo, JSON_PARTIAL_OUTPUT_ON_ERROR);
 
-        error_log($errorMessage);
-
         // 올바른 정수형 오류 코드를 전달하도록 수정
         throw new Exception($errorMessage, (int)$e->getCode());
+    }
+
+    /**
+    * 필드를 체크하고 없을 경우 해당 필드를 생성
+    */
+    private function checkedDbField(string $field, string $table, string $option, ?string $key = null): void
+    {
+        $table = $this->getTableName($table);
+
+        try {
+            // 테이블에 해당 필드가 존재하는지 확인
+            $sql = "SHOW COLUMNS FROM $table LIKE :field";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':field' => $field]);
+            $columnExists = $stmt->fetch();
+
+            // 필드가 존재하지 않으면 추가
+            if (!$columnExists) {
+                $sql = "ALTER TABLE $table ADD COLUMN $field $option";
+                $this->pdo->exec($sql);
+                error_log("필드 $field가 $table 테이블에 추가되었습니다.");
+            }
+
+            // 키 추가 (필드가 추가된 후 실행)
+            if ($key) {
+                switch (strtoupper($key)) {
+                    case 'UNIQUE':
+                        $sql = "ALTER TABLE $table ADD UNIQUE KEY idx_$field ($field)";
+                        $this->pdo->exec($sql);
+                        error_log("UNIQUE KEY가 $field 필드에 추가되었습니다.");
+                        break;
+                    case 'INDEX':
+                        $sql = "ALTER TABLE $table ADD INDEX idx_$field ($field)";
+                        $this->pdo->exec($sql);
+                        error_log("INDEX가 $field 필드에 추가되었습니다.");
+                        break;
+                    case 'PRIMARY':
+                        $sql = "ALTER TABLE $table ADD PRIMARY KEY ($field)";
+                        $this->pdo->exec($sql);
+                        error_log("PRIMARY KEY가 $field 필드에 추가되었습니다.");
+                        break;
+                    default:
+                        error_log("알 수 없는 키 타입: $key");
+                }
+            }
+        } catch (PDOException $e) {
+            $this->handleQueryError($e, $sql);
+        }
     }
 
     // 싱글톤 패턴을 위한 매직 메서드

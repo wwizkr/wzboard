@@ -15,6 +15,8 @@ use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Helper\MenuHelper;
 use Web\PublicHtml\Controller\SocialController;
+use Web\PublicHtml\View\ViewRenderer;
+use Web\Admin\View\AdminViewRenderer;
 
 // 환경 변수 로드
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -116,6 +118,15 @@ if ($userCsrfToken === null) {
 
 // 사용자용 CSRF 토큰을 컨테이너에 등록
 $container->set('user_csrf_token', $userCsrfToken);
+
+// ViewRenderer 및 AdminViewRenderer 등록
+$container->set('ViewRenderer', function($c) {
+    return new ViewRenderer($c);
+});
+
+$container->set('AdminViewRenderer', function($c) {
+    return new AdminViewRenderer($c);
+});
 
 // 서비스 프로바이더 파일 포함
 require_once __DIR__ . '/config/serviceProviders.php';

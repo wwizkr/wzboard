@@ -1,8 +1,17 @@
-<div class="page-container container-fluid">
-    <div class="col-12 mb-3 table-container">
-        <div class="p-3 table-form table-content">
+<div class="page-container">
+    <h2 class="page-title board-title"><?= $boardConfig['board_name'];?></h2>
+    <div class="table-container board-container">
+        <div class="table-content board-content">
             <div class="content-header">
-                <p><?= $articleData['title']; ?></p>
+                <h2><?= $articleData['title']; ?></h2>
+                <div class="article-info">
+                    <span class="info-item name"><?= $articleData['nickName']; ?></span>
+                    <span class="info-item date"><?= $articleData['date4']; ?></span>
+                    <span class="info-item hit"><?= $articleData['view_count']; ?></span>
+                    <?php if($boardConfig['is_use_comment']) { ?>
+                    <span class="info-item comment"><?= $articleData['comment_count']; ?></span>
+                    <?php } ?>
+                </div>
             </div>
             <div class="content-body">
                 <div class="content">
@@ -10,41 +19,31 @@
                 </div>
             </div>
             <div class="content-foot">
-                <?php if ($boardConfig['is_use_like'] || $boardConfig['is_use_dislike']) { ?>
-                <div class="content-reaction-zone">
-                    <?php if ($boardConfig['is_use_like']) { ?>
-                    <div class="reaction-zone use-like">
-                        <button type="button" class="btn btn-reaction like" data-table="articles" data-action="like">
-                            <b>좋아요</b>
-                            <span class="reaction-count"><?= $articleData['like_count']; ?></span>
+                <?php if (!empty($articleReaction)) { ?>
+                    <div class="reaction-group">
+                        <?php foreach($articleReaction as $key=>$val) { ?>
+                        <button type="button" class="btn btn-reaction <?= $val['field']; ?>" data-table="articles" data-action="<?= $val['field']; ?>">
+                            <span><?= $val['text']; ?></span>
+                            <span class="reaction-count"><?= $articleData[$val['field'].'_count']; ?></span>
                         </button>
+                        <?php } ?>
                     </div>
-                    <?php } ?>
-                    <?php if ($boardConfig['is_use_dislike']) { ?>
-                    <div class="reaction-zone use-dislike">
-                        <button type="button" class="btn btn-reaction dislike" data-table="articles" data-action="dislike">
-                            <b>싫어요</b>
-                            <span class="reaction-count"><?= $articleData['dislike_count']; ?></span>
-                        </button>
-                    </div>
-                    <?php } ?>
-                </div>
                 <?php } ?>
             </div>
         </div>
-        <div class="table-button table-button-between">
+        <div class="table-button space-between">
             <div class="table-button-s"></div>
             <div class="table-button-e">
-                <ul class="d-flex">
-                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/write/<?= $articleData['no']; ?>" class="btn btn-sm btn-primary me-2">글수정</a></li>
-                    <li><a href="javascript:void(0);" class="btn btn-sm btn-primary me-2" data-target="/board/<?= $boardConfig['board_id']; ?>/delete/<?= $articleData['no']; ?>" data-callback="articleDeleteAfter" data-message="해당 게시물을 삭제하시겠습니까?" onclick="confirmDeleteBefore(this);">글삭제</a></li>
-                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/list" class="btn btn-sm btn-primary me-2">글목록</a></li>
+                <ul class="board-button-group">
+                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/write/<?= $articleData['no']; ?>" class="btn btn-outline-hover-gray-accent">수정</a></li>
+                    <li><a href="javascript:void(0);" class="btn btn-outline-hover-gray-accent" data-target="/board/<?= $boardConfig['board_id']; ?>/delete/<?= $articleData['no']; ?>" data-callback="articleDeleteAfter" data-message="해당 게시물을 삭제하시겠습니까?" onclick="confirmDeleteBefore(this);">삭제</a></li>
+                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/list" class="btn btn-fill-accent">목록</a></li>
                 </ul>
             </div>
         </div>
     </div>
     <?php if($boardConfig['is_use_comment']) { ?>
-    <div class="col-12 mb-3 table-container">
+    <div class="table-container">
         <div class="comment-container">
             <div id="comment-write-form">
                 <form name="frm" id="frm">
@@ -59,11 +58,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="table-button table-button-between">
+                <div class="table-button justify-between">
                     <div class="table-button-s"></div>
                     <div class="table-button-e">
                         <ul>
-                            <li><button type="button" class="btn btn-sm btn-primary btn-form-submit-ajax me-2" data-target="/board/commentWriteUpdate" data-callback="successCommentUpdate">댓글쓰기</button></li>
+                            <li><button type="button" class="btn btn-fill-accent btn-form-submit-ajax me-2" data-target="/board/<?= $boardConfig['board_id']; ?>/commentWriteUpdate" data-callback="successCommentUpdate">댓글쓰기</button></li>
                         </ul>
                     </div>
                 </div>
@@ -171,7 +170,7 @@ function addNewCommentToTop(comment) {
 }
 
 function updateModifiedComment(comment) {
-    var commentElement = document.querySelector(`[data-comment-id="${comment.no}"]`);
+    var commentElement = document.querySelector(`[data-no="${comment.no}"]`);
     if (commentElement) {
         loadTemplate('getCommentTemplate')
             .then(template => {
@@ -187,7 +186,7 @@ function addReplyComment(comment) {
             var commentHtml = createCommentHtml(template, comment);
             var div = document.createElement('div');
             div.innerHTML = commentHtml;
-            var parentComment = document.querySelector(`[data-comment-id="${comment.parent_no}"]`);
+            var parentComment = document.querySelector(`[data-no="${comment.parent_no}"]`);
             if (parentComment) {
                 parentComment.parentNode.insertBefore(div, parentComment.nextSibling);
             } else {
@@ -207,8 +206,7 @@ function createCommentHtml(template, comment) {
         .replace(/{{no}}/g, comment.no)
         .replace(/{{content}}/g, comment.content)
         .replace(/{{nickName}}/g, comment.nickName)
-        .replace(/{{likeCount}}/g, comment.like_count)
-        .replace(/{{dislikeCount}}/g, comment.dislike_count)
+        .replace(/{{reaction}}/g, comment.reaction)
         .replace(/{{date}}/g, comment.date1);
 }
 
@@ -228,7 +226,7 @@ function loadComment(page) {
                             var commentHtml = createCommentHtml(template, comment);
                             var div = document.createElement('div');
                             div.innerHTML = commentHtml;
-                            div.firstChild.setAttribute('data-comment-id', comment.no);
+                            div.firstChild.setAttribute('data-no', comment.no);
                             fragment.appendChild(div.firstChild);
                         });
 
@@ -257,7 +255,7 @@ function loadComment(page) {
 // 댓글 수정, 삭제, 답글 기능을 처리하는 함수
 function commentAction(button) {
     var action = button.dataset.action;
-    var commentElement = button.closest('.common-list');
+    var commentElement = button.closest('.comment-list');
     var commentNo = commentElement.dataset.no;
 
     if (tinymce.get('comment_content')) {
@@ -269,6 +267,7 @@ function commentAction(button) {
 
     if (action === 'modify') {
         var commentContent = commentElement.querySelector('.comment-content').innerHTML;
+            commentContent = commentContent.replace(/<span class="parent-name">.*?<\/span>/g, '');
         document.getElementById('comment_no').value = commentNo;
         document.getElementById('parent_no').value = '';
 

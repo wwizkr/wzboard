@@ -118,6 +118,7 @@ class CommonHelper
         if ($editor === 'tinymce') {
             $script .= '<script src="/assets/js/lib/editor/tinymce/tinymce.min.js" referrerpolicy="origin"></script>'.PHP_EOL;
             $script .= '<script src="/assets/js/lib/editor/tinymce/tinymce.editor.js"></script>'.PHP_EOL;
+            $script .= '<link href="/assets/js/lib/editor/tinymce/tinymce.custom.css" rel="stylesheet">'.PHP_EOL;
         }
 
         return $script;

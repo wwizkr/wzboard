@@ -54,6 +54,53 @@ class BoardsService
         return $mapCategory;
     }
 
+    /**
+     * 게시글 목록 데이터를 가져옵니다.
+     * 
+     * @param array $boardConfig 게시판 설정 데이터
+     * @return array 게시글 목록 데이터 (파라미터, 총 아이템 수, 게시글 목록)
+     */
+    public function getArticleList($boardConfig = [])
+    {
+        // 기본 설정 로드
+        $config = [
+            'cf_page_rows' => $this->config_domain['cf_page_rows'],
+            'cf_page_nums' => $this->config_domain['cf_page_nums']
+        ];
+
+        // 허용된 필터와 정렬 필드 정의
+        $allowedFilters = ['nickName','title','content'];
+        $allowedSortFields = ['no', 'create_at'];
+        
+        // 추가 파라미터 설정 (예: 카테고리)
+        $additionalParams = [
+            'category[]' => ['array', [], isset($_GET['category']) ? $_GET['category'] : []],
+        ];
+
+        // 목록 파라미터 가져오기
+        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
+
+        // 총 게시글 수 조회
+        $totalItems = $this->getTotalArticleCount($boardConfig['no'], $params['search'], $params['filter'], $params['additionalQueries']);
+        
+        // 게시글 목록 데이터 조회
+        $articleList = $this->getArticleListData(
+            $boardConfig['no'],
+            $params['page'],
+            $params['page_rows'],
+            $params['search'],
+            $params['filter'],
+            $params['sort'],
+            $params['additionalQueries']
+        );
+
+        return [
+            'params' => $params,
+            'totalItems' => $totalItems,
+            'articleList' => $articleList,
+        ];
+    }
+
     public function getTotalArticleCount($board_no, $searchQuery, $filters, $additionalQueries)
     {   
         $this->categoryMapping = $this->getCategoryMapping($board_no);
@@ -142,6 +189,27 @@ class BoardsService
         }
 
         return $output;
+    }
+
+    /**
+     * 페이지네이션 데이터를 계산합니다.
+     * 
+     * @param array $articleData getArticleList()에서 반환된 데이터
+     * @return array 페이지네이션 데이터
+     */
+    public function calculatePagination($articleData)
+    {
+        // 쿼리 문자열 생성
+        $queryString = CommonHelper::getQueryString($articleData['params']);
+        
+        // 페이지네이션 데이터 계산 및 반환
+        return CommonHelper::getPaginationData(
+            $articleData['totalItems'],
+            $articleData['params']['page'],
+            $articleData['params']['page_rows'],
+            $articleData['params']['page_nums'],
+            $queryString
+        );
     }
 
     /*
@@ -282,14 +350,11 @@ class BoardsService
      * @param int $board_no
      * @param int $article_no
      */
-    public function getArticleDataByNo($board_no, $article_no)
+    public function getArticleDataByNo($boardConfig, $article_no)
     {
-        $result = $this->boardsModel->getArticleDataByNo($board_no, $article_no);
-        
-        // HTML로 변환
-        $result['content'] = htmlspecialchars_decode($result['content']);
+        $result = $this->boardsModel->getArticleDataByNo($boardConfig['no'], $article_no);
 
-        $articleData = $result;
+        $articleData = $this->boardsHelper->processArticleViewData($boardConfig, $result);
 
         return $articleData;
     }
@@ -310,6 +375,10 @@ class BoardsService
                 return $this->checkViewPermission($boardConfig, $articleData, $memberData);
             case 'write':
                 return $this->checkWritePermission($boardConfig, $articleData, $memberData);
+            case 'modify':
+                return $this->checkModifyPermission($boardConfig, $articleData, $memberData);
+            case 'delete':
+                return $this->checkDeletePermission($boardConfig, $articleData, $memberData);
             case 'download':
                 return $this->checkDownloadPermission($boardConfig, $articleData, $memberData);
             case 'comment':
@@ -317,35 +386,6 @@ class BoardsService
             default:
                 return false; // 기본적으로 권한 없음
         }
-    }
-
-    /**
-     * 글 읽기 권한 체크 메서드
-     *
-     * @param array $boardConfig 게시판 설정 배열
-     * @param array $articleData 게시글 데이터 배열
-     * @param array $memberData 회원 데이터 배열
-     * @return bool 읽기 권한이 있는지 여부
-     */
-    protected function checkViewPermission($boardConfig, $articleData, $memberData)
-    {
-        if ($this->isOwnArticle($articleData, $memberData)) {
-            return true; // 자신의 글이면 조회수 증가 없이 return
-        }
-
-        if ($this->isGuestWithReadPermission($boardConfig, $articleData, $memberData)) {
-            return true; // 비회원이 읽기 권한을 가지고 있으면 return
-        }
-
-        if ($this->isPublicArticle($boardConfig, $articleData)) {
-            return $this->processView($articleData); // 공개 글이면 처리
-        }
-
-        if ($this->hasReadLevelPermission($boardConfig, $articleData, $memberData)) {
-            return $this->processView($articleData, $memberData, $boardConfig); // 권한 있는 회원 처리
-        }
-
-        return false;
     }
 
     /**
@@ -383,6 +423,69 @@ class BoardsService
         }
 
         // 글 쓰기 권한 체크 로직
+        return false;
+    }
+
+    /**
+     * 글 읽기 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 읽기 권한이 있는지 여부
+     */
+    protected function checkViewPermission($boardConfig, $articleData, $memberData)
+    {
+        if ($this->isOwnArticle($articleData, $memberData)) {
+            return true; // 자신의 글이면 조회수 증가 없이 return
+        }
+
+        if ($this->isGuestWithReadPermission($boardConfig, $articleData, $memberData)) {
+            return true; // 비회원이 읽기 권한을 가지고 있으면 return
+        }
+
+        if ($this->isPublicArticle($boardConfig, $articleData)) {
+            return $this->processView($articleData); // 공개 글이면 처리
+        }
+
+        if ($this->hasReadLevelPermission($boardConfig, $articleData, $memberData)) {
+            return $this->processView($articleData, $memberData, $boardConfig); // 권한 있는 회원 처리
+        }
+
+        return false;
+    }
+
+    /**
+     * 글 수정 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 수정 권한이 있는지 여부
+     */
+    protected function checkModifyPermission($boardConfig, $articleData, $memberData)
+    {
+        if ($this->isOwnArticle($articleData, $memberData)) {
+            return true; // 자신의 글이면 return
+        }
+
+        return false;
+    }
+
+    /**
+     * 글 삭제 권한 체크 메서드
+     *
+     * @param array $boardConfig 게시판 설정 배열
+     * @param array $articleData 게시글 데이터 배열
+     * @param array $memberData 회원 데이터 배열
+     * @return bool 수정 권한이 있는지 여부
+     */
+    protected function checkDeletePermission($boardConfig, $articleData, $memberData)
+    {
+        if ($this->isOwnArticle($articleData, $memberData)) {
+            return true; // 자신의 글이면 return
+        }
+
         return false;
     }
 
@@ -595,19 +698,12 @@ class BoardsService
         return $categoryData;
     }
 
-    public function commentWriteUpdate($board_id, $article_no, $comment_no, $parent_no)
+    public function commentWriteUpdate($boardConfig, $article_no, $comment_no, $parent_no)
     {
-        // 게시판 설정 가져오기
-        $boardConfig = $this->adminBoardsService->getBoardsConfig($board_id);
-
-        if (!$board_id  || empty($boardConfig)) {
-            return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
-        }
-
         // comment_no 가 있다면. 실제 댓글이 있는지 확인.
         $comment = [];
         if ($comment_no) {
-            $result = $this->getComments($boardConfig['no'], $article_no, $comment_no);
+            $result = $this->getComments($boardConfig, $article_no, $comment_no);
             if ($result['result'] === 'failure') {
                 return ['result' => 'failure', 'message' => '댓글 정보가 없습니다.'];
             }
@@ -617,7 +713,7 @@ class BoardsService
         // parent_no 가 있다면 부모 글 정보를 가져옴.
         $parent = [];
         if ($parent_no) {
-            $result = $this->getComments($boardConfig['no'], $article_no, $parent_no);
+            $result = $this->getComments($boardConfig, $article_no, $parent_no);
             if ($result['result'] === 'failure') {
                 return ['result' => 'failure', 'message' => '댓글 정보가 없습니다.'];
             }
@@ -640,7 +736,7 @@ class BoardsService
         }
 
         // 이미지 저장 디렉토리
-        $storagePath = "/storage/board/$board_id/";
+        $storagePath = "/storage/board/".$boardConfig['board_id']."/";
         
         $content = $formData['content'];
         $content = CommonHelper::updateStorageImages($content, $storagePath);
@@ -657,7 +753,7 @@ class BoardsService
         $data = $this->formDataMiddleware->processFormData($formData, $numericFields);
 
         // 실제 게시판 업데이트
-        $commentData = $this->boardsModel->commentWriteUpdate($comment_no, $board_id, $data);
+        $commentData = $this->boardsModel->commentWriteUpdate($comment_no, $boardConfig['board_id'], $data);
 
         if ($commentData['result'] === 'success' && isset($commentData['comment'])) {
             $processedComment = $this->boardsHelper->processCommentData($boardConfig, [$commentData['comment']]);
@@ -677,17 +773,15 @@ class BoardsService
      * @return array 댓글 목록
      */
     public function getComments(
-        int $board_no, 
+        array $boardConfig, 
         ?int $article_no = null, 
         ?int $comment_no = null, 
         int $page = 1, 
         int $perPage = 10
     ): array {
-        // 게시판 설정 가져오기
-        $boardConfig = $this->adminBoardsService->getBoardsConfigByNo($board_no);
         $offset = ($page - 1) * $perPage;
         // 특정 게시글 또는 게시판의 모든 댓글을 가져오는 경우
-        $commentData = $this->boardsModel->getComments($board_no, $article_no, $comment_no, $offset, $perPage);
+        $commentData = $this->boardsModel->getComments($boardConfig['no'], $article_no, $comment_no, $offset, $perPage);
         
         // 댓글 데이터가 없는 경우 바로 빈 배열 반환
         if ($commentData['result'] === 'failure') {
@@ -716,12 +810,5 @@ class BoardsService
         $result = $this->boardsModel->processedLikeAction($mb_id, $table, $action, $no);
 
         return $result;
-    }
-    
-    // 사용안함.
-    // 개별 댓글 -- 삭제 예정
-    public function getCommentDataByNo($board_no, $comment_no)
-    {
-        return $this->boardsModel->getCommentDataByNo($board_no, $comment_no);
     }
 }

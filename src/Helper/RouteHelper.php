@@ -1,192 +1,126 @@
 <?php
-// src/Helper/RouteHelper.php
-
 namespace Web\PublicHtml\Helper;
 
+use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Middleware\AuthMiddleware;
 
 class RouteHelper
 {
-    /**
-     * 관리자 라우트 처리 함수
-     * 
-     * @param string $handler 라우트 핸들러 (컨트롤러와 메서드 정보)
-     * @param array $vars 라우트 변수
-     * @param object $container 의존성 주입 컨테이너
-     * @param object $adminViewRenderer 관리자 페이지 렌더러
-     */
-    public static function handleAdminRoute($handler, $vars, $container, $adminViewRenderer)
+    protected $container;
+
+    public function __construct(DependencyContainer $container)
     {
-        // JWT 토큰을 통한 인증 검증
+        $this->container = $container;
+    }
+
+    public function handleAdminRoute($handler, $vars, $adminViewRenderer)
+    {
         if (!isset($_COOKIE['jwtToken']) || !CryptoHelper::verifyJwtToken($_COOKIE['jwtToken'])) {
             header('Location: /auth/login');
             exit;
         }
 
-        // 컨트롤러와 메서드 추출
-        if (isset($vars['boardId']) && $handler === 'Web\\Admin\\Controller\\BoardController@comment') {
-            // 댓글 처리 라우팅
-            $controller = "Web\\Admin\\Controller\\BoardController";
-            $method = 'comment';
-        } elseif (isset($vars['boardId'])) { // boardId가 있는 경우
-            $controller = "Web\\Admin\\Controller\\BoardController";
-            $method = $vars['method'] ?? 'index';
+        list($controller, $method) = $this->extractControllerAndMethod($handler, $vars, 'Admin');
+        $this->executeControllerMethod($controller, $method, $vars, $adminViewRenderer);
+    }
+
+    public function handleWebRoute($handler, $vars, $viewRenderer)
+    {
+        list($controller, $method) = $this->extractControllerAndMethod($handler, $vars, 'PublicHtml');
+        $this->executeControllerMethod($controller, $method, $vars, $viewRenderer);
+    }
+
+    protected function extractControllerAndMethod($handler, $vars, $namespace = '')
+    {
+        if (isset($vars['boardId']) && $handler === "Web\\{$namespace}\\Controller\\BoardController@comment") {
+            return ["Web\\{$namespace}\\Controller\\BoardController", 'comment'];
+        } elseif (isset($vars['boardId'])) {
+            return ["Web\\{$namespace}\\Controller\\BoardController", $vars['method'] ?? 'index'];
+        } elseif ($handler === 'DynamicController') {
+            return ["Web\\{$namespace}\\Controller\\" . ucfirst($vars['controller']) . 'Controller', $vars['method'] ?? 'index'];
         } elseif (is_string($handler) && strpos($handler, '@') !== false) {
-            list($controller, $method) = explode('@', $handler);
+            return explode('@', $handler);
         } else {
             $controllerName = ucfirst($vars['controller'] ?? 'Dashboard') . 'Controller';
-            $controller = "Web\\Admin\\Controller\\{$controllerName}";
-            $method = $vars['method'] ?? 'index';
-        }
-
-        // 컨트롤러 및 메서드가 존재하는지 확인하고 호출
-        if (class_exists($controller)) {
-            $controllerInstance = new $controller($container);
-            if (method_exists($controllerInstance, $method)) {
-                $response = $controllerInstance->$method($vars);
-
-                $viewPath = $response['viewPath'] ?? null;
-                $headData = $response['headData'] ?? [];
-                $headerData = $response['headerData'] ?? [];
-                $layoutData = $response['layoutData'] ?? [];
-                $viewData = $response['viewData'] ?? [];
-                $footerData = $response['footerData'] ?? [];
-                $footData = $response['footData'] ?? [];
-                $fullPage = $response['fullPage'] ?? false;
-
-                $adminViewRenderer->renderPage($viewPath, $headData, $headerData, $layoutData, $viewData, $footerData, $footData, $fullPage);
-                
-                /*
-                list($viewPath, $viewData) = $controllerInstance->$method($vars);
-                $adminViewRenderer->renderPage($viewPath, [], [], [], $viewData, [], []);
-                */
-            } else {
-                echo 'Method not found';
-            }
-        } else {
-            echo 'Controller not found';
+            return ["Web\\{$namespace}\\Controller\\{$controllerName}", $vars['method'] ?? 'index'];
         }
     }
 
-    /**
-     * 웹 라우트 처리 함수
-     * 
-     * @param string $handler 라우트 핸들러 (컨트롤러와 메서드 정보)
-     * @param array $vars 라우트 변수
-     * @param object $container 의존성 주입 컨테이너
-     * @param object $viewRenderer 뷰 렌더러
-     */
-    public static function handleWebRoute($handler, $vars, $container, $viewRenderer)
+    protected function executeControllerMethod($controller, $method, $vars, $renderer)
     {
-        // 컨트롤러와 메서드 추출
-        if (isset($vars['boardId']) && $handler === 'Web\\PublicHtml\\Controller\\BoardController@comment') {
-            // 댓글 처리 라우팅
-            $controller = "Web\\PublicHtml\\Controller\\BoardController";
-            $method = 'comment';
-        } elseif (isset($vars['boardId'])) { // boardId가 있는 경우
-            $controller = "Web\\PublicHtml\\Controller\\BoardController";
-            $method = $vars['method'] ?? 'index';
-        } elseif($handler === 'DynamicController') {
-            $controller = 'Web\\PublicHtml\\Controller\\' . ucfirst($vars['controller']) . 'Controller';
-            $method = $vars['method'] ?? 'index';
-        } elseif (is_string($handler) && strpos($handler, '@') !== false) {
-            list($controller, $method) = explode('@', $handler);
-        } else {
-            echo 'Invalid handler';
+        if (!class_exists($controller)) {
+            echo 'Controller not found';
             return;
         }
-        
-        // 컨트롤러 및 메서드가 존재하는지 확인하고 호출
-        if (class_exists($controller)) {
-            $controllerInstance = new $controller($container);
-            if (method_exists($controllerInstance, $method)) {
-                $response = $controllerInstance->$method($vars);
 
-                $viewPath = $response['viewPath'] ?? null;
-                $headData = $response['headData'] ?? [];
-                $headerData = $response['headerData'] ?? [];
-                $layoutData = $response['layoutData'] ?? [];
-                $viewData = $response['viewData'] ?? [];
-                $footerData = $response['footerData'] ?? [];
-                $footData = $response['footData'] ?? [];
-                $fullPage = $response['fullPage'] ?? false;
-
-                $viewRenderer->renderPage($viewPath, $headData, $headerData, $layoutData, $viewData, $footerData, $footData, $fullPage);
-            } else {
-                echo 'Method not found';
-            }
-        } else {
-            echo 'Controller not found';
+        $controllerInstance = new $controller($this->container);
+        if (!method_exists($controllerInstance, $method)) {
+            echo 'Method not found';
+            return;
         }
+
+        $response = $controllerInstance->$method($vars);
+        $renderer->renderPage(
+            $response['viewPath'] ?? null,
+            $response['headData'] ?? [],
+            $response['headerData'] ?? [],
+            $response['layoutData'] ?? [],
+            $response['viewData'] ?? [],
+            $response['footerData'] ?? [],
+            $response['footData'] ?? [],
+            $response['fullPage'] ?? false
+        );
     }
 
-    /**
-     * API 라우트 처리 함수
-     * 
-     * @param string $handler 라우트 핸들러 (컨트롤러와 메서드 정보)
-     * @param array $vars 라우트 변수
-     * @param object $container 의존성 주입 컨테이너
-     */
-    public static function handleApiRoute($handler, $vars, $container)
+    public function handleApiRoute($handler, $vars)
     {
-        $apiVersion = $_ENV['API_VERSION'] ?? 'v1'; // 'V1'에서 'v1'로 변경
-
-        // API 컨트롤러와 메서드 설정
+        $apiVersion = $_ENV['API_VERSION'] ?? 'v1';
         $controller = 'Web\\PublicHtml\\Api\\' . $apiVersion . '\\' . ucfirst($vars['controller']) . 'Controller';
         $method = $vars['method'] ?? 'index';
         
-        // 컨트롤러 및 메서드가 존재하는지 확인하고 호출
-        if (class_exists($controller)) {
-            $controllerInstance = new $controller($container);
-            if (method_exists($controllerInstance, $method)) {
-                $result = $controllerInstance->$method($vars);
-                // API 응답을 JSON으로 반환
-                header('Content-Type: application/json');
-                echo json_encode($result);
-            } else {
-                echo json_encode(['error' => 'Method not found']);
-            }
-        } else {
-            echo json_encode(['error' => 'Controller not found']);
-        }
+        $this->executeJsonMethod($controller, $method, $vars);
     }
 
-    /**
-     * 템플릿 라우트 처리 함수
-     * 
-     * @param string $handler 라우트 핸들러 (컨트롤러와 메서드 정보)
-     * @param array $vars 라우트 변수
-     * @param object $container 의존성 주입 컨테이너
-     */
-    public static function handleTemplateRoute($handler, $vars, $container)
+    public function handleTemplateRoute($handler, $vars)
     {
-        // 핸들러에서 컨트롤러와 메서드를 분리
         if (is_string($handler)) {
             if (strpos($handler, '@') !== false) {
                 list($controller, $method) = explode('@', $handler);
             } else {
-                // 핸들러가 컨트롤러만 제공된 경우
                 $controller = $handler;
-                $method = $vars['method'] ?? null; // 경로에서 동적으로 메서드 추출
+                $method = $vars['method'] ?? 'index';
             }
         } else {
-            echo json_encode(['error' => 'Invalid template handler']);
+            $this->sendJsonResponse(['error' => 'Invalid template handler'], 400);
             return;
         }
 
-        // 컨트롤러 및 메서드가 존재하는지 확인하고 호출
-        if (class_exists($controller)) {
-            $controllerInstance = new $controller($container);
-            if ($method && method_exists($controllerInstance, $method)) {
-                $result = $controllerInstance->$method($vars);
-                // 템플릿 로딩 응답 처리 (예: JSON 출력)
-                header('Content-Type: application/json');
-                echo json_encode($result);
-            } else {
-                echo json_encode(['error' => 'Method not found']);
-            }
-        } else {
-            echo json_encode(['error' => 'Controller not found']);
+        $this->executeJsonMethod($controller, $method, $vars);
+    }
+
+    protected function executeJsonMethod($controller, $method, $vars)
+    {
+        if (!class_exists($controller)) {
+            $this->sendJsonResponse(['error' => 'Controller not found'], 404);
+            return;
         }
+
+        $controllerInstance = new $controller($this->container);
+
+        if (!method_exists($controllerInstance, $method)) {
+            $this->sendJsonResponse(['error' => 'Method not found'], 404);
+            return;
+        }
+
+        $result = $controllerInstance->$method($vars);
+        $this->sendJsonResponse($result);
+    }
+
+    protected function sendJsonResponse($data, $statusCode = 200)
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
     }
 }

@@ -4,9 +4,9 @@ namespace Web\Admin\Controller;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CommonHelper;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\Admin\Helper\AdminBoardsHelper;
-use Web\PublicHtml\Helper\MembersHelper;
+//use Web\PublicHtml\Middleware\FormDataMiddleware;
+//use Web\Admin\Helper\AdminBoardsHelper;
+//use Web\PublicHtml\Service\MembersHelper;
 
 class BoardadminController
 {
@@ -14,7 +14,7 @@ class BoardadminController
     protected $sessionManager;
     protected $adminBoardsHelper;
     protected $adminBoardsService;
-    protected $membersHelper;
+    protected $membersService;
     protected $config_domain;
     protected $formDataMiddleware;
 
@@ -25,7 +25,7 @@ class BoardadminController
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->sessionManager = $this->container->get('SessionManager');
         $this->adminBoardsHelper = $this->container->get('AdminBoardsHelper');
-        $this->membersHelper = $this->container->get('MembersHelper');
+        $this->membersService = $this->container->get('MembersService');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
@@ -37,7 +37,7 @@ class BoardadminController
             'content' => '',
             'config_domain' => $this->config_domain,
             'groupData' => $this->adminBoardsService->getBoardsGroup(),
-            'levelData' => $this->membersHelper->getLevelData(),
+            'levelData' => $this->membersService->getLevelData(),
         ];
 
         return [
@@ -82,7 +82,7 @@ class BoardadminController
             'content' => '',
             'config_domain' => $this->config_domain,
             'categoryData' => $this->adminBoardsService->getCategoryData(),
-            'levelData' => $this->membersHelper->getLevelData(),
+            'levelData' => $this->membersService->getLevelData(),
         ];
 
         return [
@@ -126,7 +126,7 @@ class BoardadminController
             'content' => '',
             'config_domain' => $this->config_domain,
             'boardsConfig' => $this->adminBoardsService->getBoardsConfig(),
-            'levelData' => $this->membersHelper->getLevelData(),
+            'levelData' => $this->membersService->getLevelData(),
         ];
 
         return [
@@ -147,7 +147,7 @@ class BoardadminController
             'groupData' => $this->adminBoardsService->getBoardsGroup(),
             'categoryData' => $this->adminBoardsService->getCategoryData(),
             'boardCategory' => !empty($boardConfig) ? $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']) : [],
-            'levelData' => $this->membersHelper->getLevelData(),
+            'levelData' => $this->membersService->getLevelData(),
             'skinData' => $this->adminBoardsHelper->getBoardSkinDir(),
             'boardConfig' => $boardConfig,
         ];

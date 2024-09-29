@@ -4,12 +4,12 @@ namespace Web\PublicHtml\Helper;
 class ComponentsViewHelper
 {
     protected $skinDirectory;
-    protected static $templateCache = []; // 템플릿 캐시를 위한 정적 변수
-    protected static $templateCacheTimes = []; // 템플릿 파일 수정 시간을 저장하는 정적 변수
+    protected static $templateCache = [];
+    protected static $templateCacheTimes = [];
 
     public function __construct($skinName = 'basic')
     {
-        $this->skinDirectory = __DIR__ . "/../View/components/{$skinName}/"; // components 디렉토리로 경로 설정
+        $this->skinDirectory = __DIR__ . "/../View/components/{$skinName}/";
     }
 
     public function renderMenu($config_domain, $menuData, $me_code = '')
@@ -25,23 +25,34 @@ class ComponentsViewHelper
     public function renderComponent($componentName, $data, $page = '')
     {
         $templatePath = $this->skinDirectory . "{$componentName}.php";
-
-        if (!isset(self::$templateCache[$componentName]) || $this->isTemplateUpdated($componentName, $templatePath)) {
-            if (file_exists($templatePath)) {
-                self::$templateCache[$componentName] = file_get_contents($templatePath); // 파일을 읽어서 캐시에 저장
-                self::$templateCacheTimes[$componentName] = filemtime($templatePath); // 파일의 마지막 수정 시간을 저장
-            } else {
-                return "<p>{$componentName} 컴포넌트를 찾을 수 없습니다.</p>";
-            }
+        
+        if (!file_exists($templatePath)) {
+            error_log("Template file not found: {$templatePath}");
+            return "<p>Error: {$componentName} component not found.</p>";
         }
 
-        // 캐싱된 템플릿 사용
-        $template = self::$templateCache[$componentName];
+        if (!isset(self::$templateCache[$componentName]) || $this->isTemplateUpdated($componentName, $templatePath)) {
+            self::$templateCache[$componentName] = file_get_contents($templatePath);
+            self::$templateCacheTimes[$componentName] = filemtime($templatePath);
+        }
 
-        extract($data); // 데이터를 변수로 추출
+        extract($data, EXTR_SKIP);
+
         ob_start();
-        include $templatePath; // eval 대신 include를 사용하여 템플릿을 로드
-        return ob_get_clean();
+        try {
+            include $templatePath;
+        } catch (\Exception $e) {
+            error_log("Error rendering component {$componentName}: " . $e->getMessage());
+            return "<p>Error rendering {$componentName} component.</p>";
+        }
+        $output = ob_get_clean();
+
+        // Check if output is empty
+        if (empty(trim($output))) {
+            error_log("Warning: Empty output for component {$componentName}");
+        }
+
+        return $output;
     }
 
     private function isTemplateUpdated($componentName, $templatePath)

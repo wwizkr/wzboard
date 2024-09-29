@@ -226,13 +226,15 @@ class BoardsModel
             : ['result' => 'failure', 'message' => '댓글 데이터를 가져오는 데 실패하였습니다.'];
     }
 
-    private function getCommentData($commentNo): array
+    public function getCommentData($commentNo): array
     {
         $param = [];
         $where['no'] = ['i', $commentNo];
         $result = $this->db->sqlBindQuery('select', 'board_comments', $param, $where);
 
-        return $result[0] ?? [];
+        $comment = $result[0] ?? [];
+
+        return $comment;
     }
 
     private function buildSearchConditions(?string $searchQuery, array $filters): array
@@ -298,6 +300,10 @@ class BoardsModel
          * 기본 액션은 like, dislike
          * 기본 액션이 아닐 경우 테이블에 $action.'_count' 필드를 추가해 줍니다.
          */
+        if ($action !== 'like' && $action !== 'dislike') {
+            $field = $action.'_count';
+            $this->db->checkedDbField($field, 'board_articles', 'INT NOT NULL DEFAULT 0', 'INDEX');
+        }
 
         $reaction_table = 'board_'.$table.'_reactions';
         $update_table = 'board_'.$table;
@@ -373,9 +379,9 @@ class BoardsModel
                 'result' => 'success',
                 'message' => 'delete',
                 'data' => [
-                            'reaction' => $action,
-                            'mode' => $mode,
-                          ],
+                    'reaction' => $action,
+                    'mode' => $mode,
+                ],
             ];
         }
 

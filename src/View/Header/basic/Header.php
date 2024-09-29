@@ -1,6 +1,3 @@
-<?php
-
-?>
 <div id="root">
     <h1 class="sound-only">사이트 제목</h1>
     <header id="header">

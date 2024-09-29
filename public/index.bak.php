@@ -94,7 +94,6 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
 });
 
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
-$routeHelper = new RouteHelper($container);
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
@@ -114,17 +113,17 @@ switch ($routeInfo[0]) {
         if (strpos($uri, '/admin') === 0) {
             // 관리자 페이지 처리
             $adminViewRenderer = $container->get('AdminViewRenderer');
-            $routeHelper->handleAdminRoute($handler, $vars, $adminViewRenderer);
+            RouteHelper::handleAdminRoute($handler, $vars, $container, $adminViewRenderer);
         } elseif (strpos($uri, '/template') === 0) {
             // 템플릿 요청 처리
-            $routeHelper->handleTemplateRoute($handler, $vars);
+            RouteHelper::handleTemplateRoute($handler, $vars, $container);
         } elseif (strpos($uri, $apiFullBaseUrl) === 0) {
             // API 처리
-            $routeHelper->handleApiRoute($handler, $vars);
+            RouteHelper::handleApiRoute($handler, $vars, $container);
         } else {
             // 일반 웹사이트 처리
             $viewRenderer = $container->get('ViewRenderer');
-            $routeHelper->handleWebRoute($handler, $vars, $viewRenderer);
+            RouteHelper::handleWebRoute($handler, $vars, $container, $viewRenderer);
         }
         break;
 }

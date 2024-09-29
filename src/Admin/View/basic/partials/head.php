@@ -14,5 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/common.js"></script>
 <script src="/assets/js/admin-ajax.js"></script>
+<script>
+window.API_FULL_BASE_URL = '<?php echo $_ENV['API_FULL_BASE_URL'] ?? '/api/v1'; ?>';
+</script>
 </head>
 <body>

@@ -11,13 +11,13 @@ use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class AdminViewRenderer
 {
-    private $container;
-    private $skinDirectory;
-    private $sessionManager;
-    private $componentsView;
-    private $adminMenuHelper;
-    private $csrfTokenHandler;
-    private $authService;
+    private DependencyContainer $container;
+    private string $skinDirectory;
+    private SessionManager $sessionManager;
+    private ComponentsView $componentsView;
+    private AdminMenuHelper $adminMenuHelper;
+    private CsrfTokenHandler $csrfTokenHandler;
+    private AuthService $authService;
 
     public function __construct(DependencyContainer $container)
     {
@@ -40,7 +40,7 @@ class AdminViewRenderer
     /**
      * CSRF 토큰이 세션에 없거나 만료되었으면 로그아웃 후 로그인 페이지로 리다이렉트
      */
-    private function checkCsrfToken()
+    private function checkCsrfToken(): void
     {
         $csrfTokenKey = $_ENV['ADMIN_CSRF_TOKEN_KEY'] ?? 'admin_secure_key';
         $csrfToken = $this->sessionManager->getCsrfToken($csrfTokenKey);
@@ -52,12 +52,12 @@ class AdminViewRenderer
     /**
      * 로그아웃 처리 및 로그인 페이지로 리다이렉트
      */
-    private function logoutAndRedirect()
+    private function logoutAndRedirect(): void
     {
         $this->authService->logout('/auth/login');
     }
 
-    public function renderPagination($paginationData)
+    public function renderPagination(array $paginationData): void
     {
         extract($paginationData);
 
@@ -71,32 +71,32 @@ class AdminViewRenderer
     }
 
     // 공통 헤더를 렌더링하는 메서드
-    public function renderHeader(array $data = [])
+    public function renderHeader(array $data = []): void
     {
         $data['menu'] = $this->adminMenuHelper->getAdminMenu();
         $this->render('Header', $data);
     }
 
     // 공통 푸터를 렌더링하는 메서드
-    public function renderFooter(array $data = [])
+    public function renderFooter(array $data = []): void
     {
         $this->render('Footer', $data);
     }
 
     // 레이아웃 시작 부분을 렌더링하는 메서드
-    public function renderLayoutOpen(array $data = [])
+    public function renderLayoutOpen(array $data = []): void
     {
         $this->render('LayoutOpen', $data);
     }
 
     // 레이아웃 종료 부분을 렌더링하는 메서드
-    public function renderLayoutClose(array $data = [])
+    public function renderLayoutClose(array $data = []): void
     {
         $this->render('LayoutClose', $data);
     }
 
     // 특정 뷰 파일을 렌더링하는 메서드
-    public function render($viewFilePath, array $data = [])
+    public function render(?string $viewFilePath, array $data = []): void
     {
         // SessionManager와 CsrfTokenHandler를 데이터에 추가
         $data['sessionManager'] = $this->sessionManager;
@@ -127,8 +127,16 @@ class AdminViewRenderer
     }
 
     // 전체 페이지를 렌더링하는 메서드
-    public function renderPage($view, ?array $headData = null, ?array $headerData = null, ?array $layoutData = null, ?array $viewData = null, ?array $footerData = null, ?array $footData = null, ?bool $fullPage = false)
-    {
+    public function renderPage(
+        ?string $view = null, 
+        ?array $headData = null, 
+        ?array $headerData = null, 
+        ?array $layoutData = null, 
+        ?array $viewData = null, 
+        ?array $footerData = null, 
+        ?array $footData = null, 
+        bool $fullPage = false
+    ): void {
         $this->render('partials/head', $headData ?? []);
         if($fullPage === false) { $this->renderHeader($headerData ?? []); }
         $this->renderLayoutOpen($layoutData ?? []);

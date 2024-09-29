@@ -27,16 +27,16 @@ use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\MembersHelper;
 
-// Helper, Middleware ...
+// Helper
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
+
+// Middleware
+use Web\PublicHtml\Middleware\AuthMiddleware;
 use Web\PublicHtml\Middleware\NavigationMiddleware;
 
-//use Web\PublicHtml\Helper\SessionManager;
-//use Web\PublicHtml\Middleware\CsrfTokenHandler;
-//use Web\PublicHtml\Middleware\FormDataMiddleware;
-
+// Admin
 use Web\Admin\Service\AdminSettingsService;
 use Web\Admin\model\AdminSettingsModel;
 
@@ -109,6 +109,9 @@ function registerServices(DependencyContainer $container)
     });
 
     // Middleware
+    $container->addFactory('AuthMiddleware', function($c) {
+        return new AuthMiddleware($c);
+    });
     $container->addFactory('NavigationMiddleware', function($c) {
         return new NavigationMiddleware($c);
     });

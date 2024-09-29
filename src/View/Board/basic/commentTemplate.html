@@ -1,27 +1,15 @@
-<div id="common-list-{{no}}" class="common-list" data-no="{{no}}">
-    <div class="common-list-header row">
-        <div class="row">
-            <div class="">{{nickName}}</div>
-            <div class="">{{date}}</div>
-        </div>
-        <div class="reaction-group">
-            <button type="button" class="btn btn-sm btn-outline-danger btn-reaction" data-table="comments" data-action="like" data-comment="{{no}}">
-                <b>좋아요</b>
-                <span class="reaction-count">{{likeCount}}</span>
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-primary btn-reaction" data-table="comments" data-action="dislike" data-comment="{{no}}">
-                <b>싫어요</b>
-                <span class="reaction-count">{{dislikeCount}}</span>
-            </button>
-        </div>
+<div id="comment-list-{{no}}" class="comment-list" data-no="{{no}}">
+    <div class="comment-list-header table-flex">
+        <div class="name">{{nickName}}</div>
+        <div class="date ml-1">{{date}}</div>
     </div>
     <div class="comment-content">{{content}}</div>
-    <div class="comment-footer row">
-        <div></div>
-        <div class="d-flex">
-            <button type="button" class="btn btn-sm btn-primary me-1" onclick="commentAction(this);" data-action="modify">수정</button>
-            <button type="button" class="btn btn-sm btn-primary me-1" onclick="commentAction(this);" data-action="delete">삭제</button>
-            <button type="button" class="btn btn-sm btn-primary me-1" onclick="commentAction(this);" data-action="replay">답글</button>
+    <div class="comment-footer table-flex justify-between">
+        <div class="reaction-group">{{reaction}}</div>
+        <div class="table-flex">
+            <button type="button" class="btn btn-ssm btn-outline-hover-gray-accent" onclick="commentAction(this);" data-action="modify">수정</button>
+            <button type="button" class="btn btn-ssm btn-outline-hover-gray-accent ml-1" onclick="commentAction(this);" data-action="delete">삭제</button>
+            <button type="button" class="btn btn-ssm btn-outline-hover-gray-accent ml-1" onclick="commentAction(this);" data-action="replay">답글</button>
         </div>
     </div>
 </div>

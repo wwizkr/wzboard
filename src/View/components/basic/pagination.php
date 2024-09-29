@@ -9,7 +9,7 @@ if ($endPage - $startPage + 1 < $pageNums) {
 $showFirstLast = $totalPages > 10;
 ?>
 
-<nav aria-label="Page navigation">
+<nav id="nav-page" class="justify-center">
     <ul class="pagination">
         <?php if ($showFirstLast && $currentPage > 1): ?>
             <li class="page-item page-start">

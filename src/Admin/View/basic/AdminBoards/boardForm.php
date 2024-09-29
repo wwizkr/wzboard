@@ -190,40 +190,22 @@
                 <input type="text" name="formData[is_use_file]" id="is_use_file" class="form-control">
             </div>
         </div>
-
         <div class="table-row row mb-3">
             <div class="table-th col-md-2">
-                <span>게시판 추천 사용</span>
+                <span>게시판 리액션(좋아요,싫어요...)</span>
             </div>
-            <div class="table-td col-md-4">
-            <?php
-            foreach (array('사용안함','사용함') as $key=>$val) {
-                echo '<div class="form-check form-check-inline">';
-                    echo '<input class="form-check-input" type="radio" name="formData[is_use_like]" id="is_use_like_'.$key.'" value="'.$key.'">';
-                    echo '<label class="form-check-label" for="is_use_like_'.$key.'">';
-                    echo $val;
-                    echo '</label>';
-                echo '</div>';
-            }
-            ?>
-            </div>
-            <div class="table-th col-md-2">
-                <span>게시판 비추천 사용</span>
-            </div>
-            <div class="table-td col-md-4">
-            <?php
-            foreach (array('사용안함','사용함') as $key=>$val) {
-                echo '<div class="form-check form-check-inline">';
-                    echo '<input class="form-check-input" type="radio" name="formData[is_use_dislike]" id="is_use_dislike_'.$key.'" value="'.$key.'">';
-                    echo '<label class="form-check-label" for="is_use_dislike_'.$key.'">';
-                    echo $val;
-                    echo '</label>';
-                echo '</div>';
-            }
-            ?>
+            <div class="table-td col-md-10">
+                <input type="text" name="formData[is_article_reaction]" id="is_article_reaction" class="form-control">
             </div>
         </div>
-
+        <div class="table-row row mb-3">
+            <div class="table-th col-md-2">
+                <span>댓글 리액션(좋아요,싫어요...)</span>
+            </div>
+            <div class="table-td col-md-10">
+                <input type="text" name="formData[is_comment_reaction]" id="is_comment_reaction" class="form-control">
+            </div>
+        </div>
         <div class="table-row row mb-3">
             <div class="table-th col-md-2">
                 <span>게시판 목록 형식</span>

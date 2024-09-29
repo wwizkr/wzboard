@@ -30,6 +30,7 @@ function print_menu_data($config_domain, $menu = array(), $me_code = '')
         $me_link = $v['me_link'] ?? 'javascript:void(0);';
         $me_name = generate_menu_name($v);
         $active = $me_code && $v['me_code'] === $me_code ? 'active' : '';
+        $icon = '';
         
         // 메뉴 아이템 템플릿에 데이터 바인딩
         $menuHtml = str_replace(
@@ -42,6 +43,7 @@ function print_menu_data($config_domain, $menu = array(), $me_code = '')
                 '{{target}}',
                 '{{active}}',
                 '{{name}}',
+                '{{icon}}',
                 '{{children}}'
             ],
             [
@@ -51,7 +53,9 @@ function print_menu_data($config_domain, $menu = array(), $me_code = '')
                 $v['me_class'],
                 $me_link,
                 $v['me_target'] ?? 'self',
-                $active, $me_name,
+                $active,
+                $me_name,
+                $icon,
                 print_sub_menu($v['children'], $v['me_depth'] + 1, $config_domain, $me_code)
             ],
             $template
@@ -81,6 +85,7 @@ function print_sub_menu($children, $depth, $config_domain, $me_code)
         $me_link = $menu['me_link'] ?? 'javascript:void(0);';
         $me_name = generate_menu_name($menu);
         $active = $me_code && $menu['me_code'] === $me_code ? 'active' : '';
+        $icon = '';
 
         // 서브 메뉴 아이템 템플릿에 데이터 바인딩
         $subMenuHtml = str_replace(
@@ -93,6 +98,7 @@ function print_sub_menu($children, $depth, $config_domain, $me_code)
                 '{{target}}',
                 '{{active}}',
                 '{{name}}',
+                '{{icon}}',
                 '{{children}}'
             ],
             [
@@ -102,7 +108,9 @@ function print_sub_menu($children, $depth, $config_domain, $me_code)
                 $menu['me_class'],
                 $me_link,
                 $menu['me_target'],
-                $active, $me_name,
+                $active,
+                $me_name,
+                $icon,
                 print_sub_menu($menu['children'], $menu['me_depth'] + 1, $config_domain, $me_code)
             ],
             $template
