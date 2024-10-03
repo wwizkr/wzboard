@@ -811,4 +811,18 @@ class BoardsService
 
         return $result;
     }
+
+    /**
+     * 게시판 최신글을 가져오는 메소드
+     * @param array $boardConfig 게시판 설정
+     * @param int $limit 갯수
+     * return array 목록
+     */
+    public function getLatestArticleList(array $boardConfig, int $limit)
+    {
+        $data = $this->boardsModel->getLatestArticleList($this->config_domain['cf_id'], $boardConfig['no'], $limit);
+        $articleList = $this->boardsHelper->processArticleData($boardConfig, $data);
+
+        return $articleList;
+    }
 }

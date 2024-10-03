@@ -1,0 +1,32 @@
+<div class="board-box" id="board-box-{{boxId}}">
+    <script>
+        // 이 박스에만 적용되는 JavaScript 코드
+        document.addEventListener('DOMContentLoaded', function() {
+            var boardBox = document.getElementById('board-box-{{boxId}}');
+            // 추가 JavaScript 로직...
+        });
+    </script>
+    <ul class="board-list">
+        {{items}}
+    </ul>
+</div>
+
+<!-- 항목 템플릿 -->
+<!--ITEM_TEMPLATE_START-->
+<li class="table-list-row list-body">
+    <div class="list-row">
+        <div class="list-col list-num col-custom-60 mobile-none">{{num}}</div>
+        {{thumb}}
+        <div class="list-col list-subject col-custom-auto text-left">
+            <a href="{{href}}">{{title}}</a>
+            <div class="list-article-info">
+                <div class="list-item list-name mobile-only">{{nickName}}</div>
+                <div class="list-item list-date">{{date}}</div>
+                 {{comment}}
+            </div>
+        </div>
+        <div class="list-col list-name mobile-none">{{nickName}}</div>
+        <div class="list-col list-hit col-custom-80 mobile-none">{{hit}}</div>
+    </div>
+</li>
+<!--ITEM_TEMPLATE_END-->

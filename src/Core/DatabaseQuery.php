@@ -239,9 +239,6 @@ class DatabaseQuery
                 throw new Exception('유효하지 않은 쿼리 모드');
         }
 
-        //error_log("SQL QUERY::::".print_r($sql,true));
-        //error_log("SQL VALUE::::".print_r($values,true));
-
         // 쿼리 실행
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -445,11 +442,44 @@ class DatabaseQuery
     }
 
     /**
+     * 테이블의 필드명을 키로 하고 값은 null로 하는 배열을 반환하는 메서드
+     * 
+     * @param string $table 대상 테이블 이름
+     * @return array 필드명 => null 형식의 배열
+     * @throws Exception 테이블 필드를 가져오지 못할 경우 예외 발생
+     */
+    public function getTableFieldsWithNull(string $table): array
+    {
+        // 테이블 이름에 접두사 처리
+        $table = $this->getTableName($table);
+
+        try {
+            // 테이블의 필드 정보를 가져오기 위한 쿼리 실행
+            $sql = "SHOW COLUMNS FROM $table";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+
+            // 필드명을 키로 하고 값은 null로 초기화
+            $fields = [];
+            while ($column = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $fields[$column['Field']] = null;
+            }
+
+            return $fields;
+        } catch (PDOException $e) {
+            $this->handleQueryError($e, $sql);
+        }
+    }
+
+    /**
     * 필드를 체크하고 없을 경우 해당 필드를 생성
     */
-    private function checkedDbField(string $field, string $table, string $option, ?string $key = null): void
+    private function checkedDbField(string $field, string $table, ?string $option = null, ?string $key = null): void
     {
         $table = $this->getTableName($table);
+        if ($option === null) {
+            $option = 'TEXT';
+        }
 
         try {
             // 테이블에 해당 필드가 존재하는지 확인

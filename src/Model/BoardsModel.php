@@ -387,4 +387,26 @@ class BoardsModel
 
         return $data;
     }
+
+    /**
+     * 게시판 최신글을 가져오는 메소드
+     * @pram int $cf_id 사이트 고유번호
+     * @param int $board_no 게시판 아이디
+     * @param int $limit 갯수
+     * return array 목록
+     */
+    public function getLatestArticleList(int $cf_id, int $board_no, int $limit)
+    {
+        $param = [];
+        $where['cf_id'] = ['i', $cf_id];
+        $where['board_no'] = ['i', $board_no];
+        $options = [
+            'order' => 'created_at DESC',
+            'limit' => '0, ' . $limit,
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'board_articles', $param, $where, $options);
+
+        return $result;
+    }
 }

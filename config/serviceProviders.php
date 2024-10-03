@@ -36,9 +36,14 @@ use Web\PublicHtml\Helper\ComponentsViewHelper;
 use Web\PublicHtml\Middleware\AuthMiddleware;
 use Web\PublicHtml\Middleware\NavigationMiddleware;
 
+// Template
+use Web\PublicHtml\Service\TemplateService;
+use Web\Admin\Service\AdminTemplateService;
+use Web\Admin\Model\AdminTemplateModel;
+
 // Admin
-use Web\Admin\Service\AdminSettingsService;
-use Web\Admin\model\AdminSettingsModel;
+//use Web\Admin\Service\ConfigService;
+//use Web\Admin\model\ConfigModel;
 
 function registerServices(DependencyContainer $container)
 {
@@ -115,12 +120,15 @@ function registerServices(DependencyContainer $container)
     $container->addFactory('NavigationMiddleware', function($c) {
         return new NavigationMiddleware($c);
     });
-    
-    // Admin
-    $container->addFactory('AdminSettingsService', function($c) {
-        return new AdminSettingsService($c);
+
+    // Template
+    $container->addFactory('TemplateService', function($c) {
+        return new TemplateService($c);
     });
-    $container->addFactory('AdminSettingsModel', function($c) {
-        return new AdminSettingsModel($c);
+    $container->addFactory('AdminTemplateService', function($c) {
+        return new AdminTemplateService($c);
+    });
+    $container->addFactory('AdminTemplateModel', function($c) {
+        return new AdminTemplateModel($c);
     });
 }

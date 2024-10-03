@@ -1,16 +1,11 @@
 <?php
 // 파일 위치: /home/web/public_html/public/index.php
 
-// PHP 에러 표시 설정
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // 실행 시간 측정 시작
 $startTime = microtime(true);
 
 // Composer의 autoloader 및 기본 환경 설정 파일 로드
-require_once __DIR__ . '/../vendor/autoload.php';
+//require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../bootstrap.php';
 
 use FastRoute\RouteCollector;

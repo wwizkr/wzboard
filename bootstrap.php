@@ -1,25 +1,38 @@
 <?php
 // 파일 위치: /home/web/public_html/bootstrap.php
+// PHP 에러 표시 설정
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-require_once __DIR__ . '/vendor/autoload.php';
+// 기본시간대 설정
+date_default_timezone_set('Asia/Seoul');
+
+// 주요 경로 상수 정의
+define('WZ_PROJECT_ROOT', __DIR__);
+define('WZ_PUBLIC_PATH', WZ_PROJECT_ROOT . '/public');
+define('WZ_STORAGE_PATH',WZ_PUBLIC_PATH . '/storage');
+define('WZ_SRC_PATH', WZ_PROJECT_ROOT . '/src');
+
+//카테고리 단계 문자열 길이
+define('WZ_CATEGORY_LENGTH', 3);
+
+require_once WZ_PROJECT_ROOT . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Core\DatabaseQuery;
 use Web\PublicHtml\Helper\ConfigHelper;
-use Web\PublicHtml\Helper\CacheHelper;
-use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Helper\MenuHelper;
 use Web\PublicHtml\Controller\SocialController;
 use Web\PublicHtml\View\ViewRenderer;
 use Web\Admin\View\AdminViewRenderer;
 
 // 환경 변수 로드
-$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv::createImmutable(WZ_PROJECT_ROOT);
 $dotenv->load();
 
 // 의존성 컨테이너 생성
@@ -28,59 +41,19 @@ $container = DependencyContainer::getInstance();
 // DatabaseQuery 인스턴스 생성 및 컨테이너에 등록
 $container->set('db', DatabaseQuery::getInstance());
 
-// 현재 접속 중인 도메인 가져오기 (www 제외)
-$host = preg_replace('/^www\./', '', $_SERVER["SERVER_NAME"]);
-$owner_domain = implode(".", array_filter(explode(".", $host)));
+// 서비스 프로바이더 파일 포함
+require_once WZ_PROJECT_ROOT . '/config/serviceProviders.php';
+require_once WZ_PROJECT_ROOT . '/config/configProviders.php';
 
-// 도메인 기반으로 캐시 디렉토리 설정
-$cacheDirectory = $owner_domain;
-CacheHelper::initialize($cacheDirectory);
+// 서비스와 설정 등록
+registerServices($container);
+registerConfigs($container);
 
-// 환경설정 캐시 키 생성
-$configCacheKey = 'config_domain_' . $owner_domain;
-$config_domain_data = CacheHelper::getCache($configCacheKey);
-
-if ($config_domain_data === null) {
-    // 캐시에 데이터가 없는 경우, 데이터베이스에서 정보 조회
-    $db = $container->get('db');
-    $query = "SELECT * FROM " . (new class {
-        use DatabaseHelperTrait;
-    })->getTableName('config_domain') . " WHERE cf_domain = :cf_domain";
-    $stmt = $db->query($query, ['cf_domain' => $owner_domain]);
-    $config_domain_data = $db->fetch($stmt);
-
-    if ($config_domain_data) {
-        // JSON으로 변환 후 암호화하여 캐시에 저장
-        $encryptedData = CryptoHelper::encryptJson($config_domain_data);
-        CacheHelper::setCache($configCacheKey, $encryptedData);
-    } else {
-        $config_domain_data = [];
-    }
-} else {
-    // 캐시된 데이터를 복호화
-    $config_domain_data = CryptoHelper::decryptJson($config_domain_data);
-}
-
-// 접속 환경 감지
-$userAgent = $_SERVER['HTTP_USER_AGENT'];
-$isMobile = preg_match('/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i', $userAgent);
-
-// 접속 환경에 따라 설정 값 변경
-if ($isMobile) {
-    $config_domain_data['cf_page_rows'] = $config_domain_data['cf_mo_page_rows'];
-    $config_domain_data['cf_page_nums'] = $config_domain_data['cf_mo_page_nums'];
-    $config_domain_data['device_type'] = 'mo';
-} else {
-    $config_domain_data['cf_page_rows'] = $config_domain_data['cf_pc_page_rows'];
-    $config_domain_data['cf_page_nums'] = $config_domain_data['cf_pc_page_nums'];
-    $config_domain_data['device_type'] = 'pc';
-}
-
-// config_domain 배열을 컨테이너에 등록 --- 전체 수정된 후 삭제할 것.
-$container->set('config_domain', $config_domain_data);
+// ConfigProvider 인스턴스 가져오기
+$configProvider = $container->get('ConfigProvider');
 
 // ConfigHelper에 설정 등록
-ConfigHelper::setConfig('config_domain', $config_domain_data);
+//ConfigHelper::setConfig('config_domain', $container->get('config_domain'));
 
 // MenuController를 통해 트리화된 메뉴 데이터를 가져옴
 $menuTree = MenuHelper::getMenuTree();
@@ -107,16 +80,9 @@ $container->addFactory('SocialController', function ($c) {
     return new SocialController($c);
 });
 
-// 사용자용 CSRF 토큰이 없는 경우에만 생성
+// 사용자용 CSRF 토큰 생성
 $userCsrfTokenKey = $_ENV['USER_CSRF_TOKEN_KEY'];
-$userCsrfToken = $sessionManager->get($userCsrfTokenKey);
-
-if ($userCsrfToken === null) {
-    // 세션에 토큰이 없으면 새로 생성
-    $userCsrfToken = $sessionManager->generateCsrfToken($userCsrfTokenKey);
-}
-
-// 사용자용 CSRF 토큰을 컨테이너에 등록
+$userCsrfToken = $sessionManager->get($userCsrfTokenKey) ?? $sessionManager->generateCsrfToken($userCsrfTokenKey);
 $container->set('user_csrf_token', $userCsrfToken);
 
 // ViewRenderer 및 AdminViewRenderer 등록
@@ -127,9 +93,3 @@ $container->set('ViewRenderer', function($c) {
 $container->set('AdminViewRenderer', function($c) {
     return new AdminViewRenderer($c);
 });
-
-// 서비스 프로바이더 파일 포함
-require_once __DIR__ . '/config/serviceProviders.php';
-
-// 서비스와 모델 등록
-registerServices($container);

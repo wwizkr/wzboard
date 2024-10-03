@@ -9,8 +9,8 @@ function print_menu_data($config_domain, $menu = array(), $me_code = '')
 
     // device_type 값을 사용하여 모바일 여부를 결정
     $is_mobile = ($config_domain['device_type'] === 'mo');
-    $swiper_wrapper = $is_mobile ? 'swiper-wrapper' : '';
-    $swiper_slide = $is_mobile ? 'swiper-slide' : '';
+    $swiper_wrapper = 'swiper-wrapper';
+    $swiper_slide = 'swiper-slide';
 
     // 템플릿 파일 경로 설정
     $templatePath = __DIR__ . '/menuTemplate.html';

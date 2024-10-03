@@ -5,14 +5,15 @@ namespace Web\PublicHtml\Controller;
 
 use Web\PublicHtml\Core\DependencyContainer;
 
-use Web\PublicHtml\Model\MembersModel;
-use Web\PublicHtml\Service\MembersService;
-use Web\PublicHtml\Service\AuthService;
-use Web\PublicHtml\Helper\SessionManager;
+//use Web\PublicHtml\Model\MembersModel;
+//use Web\PublicHtml\Service\MembersService;
+//use Web\PublicHtml\Service\AuthService;
+//use Web\PublicHtml\Helper\SessionManager;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\MembersHelper;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
+use Web\PublicHtml\Helper\ConfigHelper;
 
 use Web\PublicHtml\Controller\SocialController;
 
@@ -40,7 +41,7 @@ class AuthController
     // 로그인
     public function login($vars)
     {
-        $config_domain = $this->container->get('config_domain');
+        $config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $contentSkin = $config_domain['cf_skin_content'] ?? 'basic';
         $viewPath = 'Content/'.$contentSkin.'/Auth/login_form';
 

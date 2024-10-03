@@ -110,7 +110,7 @@ class AdminSettingsService
         if ($me_depth == 1) {
             // 1단계 메뉴 코드 생성
             $code = $this->adminSettingsModel->getMaxMenuCode($cf_id, 1);
-            $me_code = $code ? (int)substr($code, 0, 3) : 0;
+            $me_code = $code ? (int)substr($code, 0, WZ_CATEGORY_LENGTH) : 0;
             $me_code = sprintf("%03d", $me_code + 1);
             $depth = $me_depth;
             $parent = 0;
@@ -118,11 +118,11 @@ class AdminSettingsService
             // 하위 메뉴 코드 생성
             $tmp = $this->adminSettingsModel->getMenuByCode($cf_id, $me_code);
             $depth = (int)$tmp['me_depth'] + 1;
-            $cut = (int)($tmp['me_depth'] * 3);
+            $cut = (int)($tmp['me_depth'] * WZ_CATEGORY_LENGTH);
             $parent = (int)$tmp['no'];
 
             $code = $this->adminSettingsModel->getMaxSubMenuCode($cf_id, $tmp['me_code'], $depth);
-            $me_code = $code ? (int)substr($code, $cut, 3) : 0;
+            $me_code = $code ? (int)substr($code, $cut, WZ_CATEGORY_LENGTH) : 0;
             $me_code = sprintf("%03d", $me_code + 1);
             $me_code = $tmp['me_code'] . $me_code;
         }

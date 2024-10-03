@@ -51,6 +51,7 @@ class AuthMiddleware
         } elseif ($refreshToken) {
             // JWT 토큰이 없거나 유효하지 않지만 리프레시 토큰이 있는 경우
             $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken);
+            
             if ($decodedRefreshToken) {
                 // 리프레시 토큰이 유효한 경우, 새로운 JWT 토큰 생성
                 $member = $this->membersService->getMemberDataById($decodedRefreshToken['mb_id']);
@@ -107,12 +108,12 @@ class AuthMiddleware
         $auth = $this->sessionManager->get('auth');
         if (!$auth) {
             header('Location: /auth/login');
-            exit;
+            //exit;
         }
         // 관리자 페이지에 대한 추가 검증
         if (strpos($uri, '/admin') === 0 && (!$auth['is_admin'] && !$auth['is_super'])) {
             header('Location: /');
-            exit;
+            //exit;
         }
     }
 }

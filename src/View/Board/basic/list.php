@@ -7,28 +7,12 @@
                 <span class="current">현재 <?= number_format($paginationData['currentPage']); ?>페이지</span>
             </div>
             <div class="board-search">
-                <form name="frm" id="frm" method="get" action="/board/<?= $boardConfig['board_id']; ?>/list" onsubmit="return fboardSearch(this);">
-                <div class="board-search-form">
-                    <div class="board-search-filter">
-                        <input type="checkbox" name="filter[]" id="ft_title" value="title" <?= (!isset($_GET['filter']) || (isset($_GET['filter']) && in_array('title', $_GET['filter']))) ? 'checked' : ''; ?>>
-                        <label for="ft_title">제목</label>
-                    </div>
-                    <div class="board-search-filter">
-                        <input type="checkbox" name="filter[]" id="ft_content" value="content" <?= (isset($_GET['filter']) && in_array('content', $_GET['filter'])) ? 'checked' : ''; ?>>
-                        <label for="ft_content">내용</label>
-                    </div>
-                    <div class="board-search-filter">
-                        <input type="checkbox" name="filter[]" id="ft_nickname" value="nickName" <?= (isset($_GET['filter']) && in_array('nickName', $_GET['filter'])) ? 'checked' : ''; ?>>
-                        <label for="ft_nickname">글쓴이</label>
-                    </div>
-                    <div class="board-search-input">
-                        <input type="text" name="search" id="search" value="<?= $_GET['search'] ?? ''; ?>">
-                    </div>
-                    <div class="board-search-button">
-                        <button type="submit" class="btn btn-primary">검색</button>
-                    </div>
-                </div>
-                </form>
+                <button type="button" class="btn btn-search" onclick="setSearchForm();">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M10.5 17.5C14.366 17.5 17.5 14.366 17.5 10.5C17.5 6.63401 14.366 3.5 10.5 3.5C6.63402 3.5 3.5 6.63401 3.5 10.5C3.5 14.366 6.63402 17.5 10.5 17.5Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M15.5 15.5L20.5 20.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
             </div>
         </div>
         <?php if (!empty($categoryData)) { ?>
@@ -69,7 +53,7 @@
             <div class="table-button-s"></div>
             <div class="table-button-e">
                 <ul>
-                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/write" class="btn btn-sm btn-primary me-2">글쓰기</a></li>
+                    <li><a href="/board/<?= $boardConfig['board_id']; ?>/write" class="btn btn-fill-accent">글쓰기</a></li>
                 </ul>
             </div>
         </div>
@@ -77,7 +61,42 @@
     </div>
     <?php if (isset($paginationData)) { echo $this->renderPagination($paginationData); } ?>
 </div>
+
+
 <script>
+function setSearchForm() {
+    var searchHtml = `
+        <form name="fsearch" method="get" action="/board/<?= $boardConfig['board_id']; ?>/list" onsubmit="return fboardSearch(this);">
+        <div class="board-search-form">
+            <div class="board-search-filter">
+                <div class="filter">
+                    <input type="checkbox" name="filter[]" id="ft_title" value="title" <?= (!isset($_GET['filter']) || (isset($_GET['filter']) && in_array('title', $_GET['filter']))) ? 'checked' : ''; ?>>
+                    <label for="ft_title">제목</label>
+                </div>
+                <div class="filter">
+                    <input type="checkbox" name="filter[]" id="ft_content" value="content" <?= (isset($_GET['filter']) && in_array('content', $_GET['filter'])) ? 'checked' : ''; ?>>
+                    <label for="ft_content">내용</label>
+                </div>
+                <div class="filter">
+                    <input type="checkbox" name="filter[]" id="ft_nickname" value="nickName" <?= (isset($_GET['filter']) && in_array('nickName', $_GET['filter'])) ? 'checked' : ''; ?>>
+                    <label for="ft_nickname">글쓴이</label>
+                </div>
+            </div>
+            <div class="board-search-input">
+                <input type="text" name="search" id="search" value="<?= $_GET['search'] ?? ''; ?>" placeholder="검색어를 입력하세요">
+                <button type="submit" class="btn btn-search">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M10.5 17.5C14.366 17.5 17.5 14.366 17.5 10.5C17.5 6.63401 14.366 3.5 10.5 3.5C6.63402 3.5 3.5 6.63401 3.5 10.5C3.5 14.366 6.63402 17.5 10.5 17.5Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M15.5 15.5L20.5 20.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        </form>
+    `;
+
+    modalOpen('boardSearchModal', 'open-board-search', '검색', searchHtml);
+}
 function fboardSearch(frm) {
     return true
 }

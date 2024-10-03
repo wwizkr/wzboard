@@ -796,5 +796,32 @@ class CommonHelper
         return null;  // 이미지가 없으면 null 반환
     }
 
+    /**
+     * 현재 요청이 모바일 디바이스에서 온 것인지 확인합니다.
+     *
+     * @return bool 모바일 디바이스인 경우 true, 그렇지 않으면 false
+     */
+    public static function isMobile(): bool
+    {
+        if (isset($_SERVER['HTTP_USER_AGENT'])) {
+            $userAgent = $_SERVER['HTTP_USER_AGENT'];
+            
+            $mobileKeywords = [
+                'Android', 'webOS', 'iPhone', 'iPad', 'iPod', 'BlackBerry', 'Windows Phone'
+            ];
+            
+            foreach ($mobileKeywords as $keyword) {
+                if (stripos($userAgent, $keyword) !== false) {
+                    return true;
+                }
+            }
+        }
+        
+        // 추가적인 검사 로직을 여기에 구현할 수 있습니다.
+        // 예: 화면 해상도, 터치 지원 여부 등
+        
+        return false;
+    }
+
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음
 }

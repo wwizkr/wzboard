@@ -19,7 +19,7 @@ class AdminBoardsModel
     public function __construct(DependencyContainer $container)
     {
         $this->db = $container->get('db');
-        $this->config_domain = $container->get('config_domain');
+        $this->config_domain = $container->get('ConfigHelper')->getConfig('config_domain');
     }
 
     /*

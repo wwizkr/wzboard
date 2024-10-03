@@ -31,12 +31,16 @@
                 <?php } ?>
             </div>
         </div>
-        <div class="table-button space-between">
+        <div class="table-button justify-between">
             <div class="table-button-s"></div>
             <div class="table-button-e">
                 <ul class="board-button-group">
+                    <?php if ($is_modify_button) { ?>
                     <li><a href="/board/<?= $boardConfig['board_id']; ?>/write/<?= $articleData['no']; ?>" class="btn btn-outline-hover-gray-accent">수정</a></li>
+                    <?php } ?>
+                    <?php if ($is_modify_button) { ?>
                     <li><a href="javascript:void(0);" class="btn btn-outline-hover-gray-accent" data-target="/board/<?= $boardConfig['board_id']; ?>/delete/<?= $articleData['no']; ?>" data-callback="articleDeleteAfter" data-message="해당 게시물을 삭제하시겠습니까?" onclick="confirmDeleteBefore(this);">삭제</a></li>
+                    <?php } ?>
                     <li><a href="/board/<?= $boardConfig['board_id']; ?>/list" class="btn btn-fill-accent">목록</a></li>
                 </ul>
             </div>
@@ -51,11 +55,9 @@
                 <input type="hidden" name="article_no" id="article_no" value="<?= $articleData['no']; ?>">
                 <input type="hidden" name="comment_no" id="comment_no" value="">
                 <input type="hidden" name="parent_no" id="parent_no" value="">
-                <div class="table-form table-comment-form">
-                    <div class="table-row row mb-3">
-                        <div class="table-td col-12">
-                            <textarea name="formData[content]" id="comment_content" class="editor-form" data-toolbar="simple" data-menubar="false" data-height="200"></textarea>
-                        </div>
+                <div class="table-form board-comment-form">
+                    <div class="table-row mb-3">
+                        <textarea name="formData[content]" id="comment_content" class="editor-form require" data-toolbar="simple" data-menubar="false" data-height="200" data-type="text" data-message="내용은 필수입니다."></textarea>
                     </div>
                 </div>
                 <div class="table-button justify-between">

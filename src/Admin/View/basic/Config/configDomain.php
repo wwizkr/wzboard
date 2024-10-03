@@ -14,7 +14,7 @@
     <div class="fixed-top-inner">
         <h3 class="page-title"><?php echo $title ? $title : '' ?></h3>
         <div class="fixed-top-btn">
-            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/settings/update">확인</button>
+            <button type="button" value="확인" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/config/configDomainUpdate" data-callback="updateConfigDomain">확인</button>
         </div>
     </div>
 </div>
@@ -115,6 +115,99 @@
     <div id="anc_cf_layout" class="table-form">
         <div class="table-row row mb-3">
             <div class="table-th col-md-2">
+                <span>레이아웃 설정</span>
+            </div>
+            <div class="table-td col-md-10">
+                <div class="row">
+                    <div class="col-auto">
+                        <div class="custom-control custom-radio custom-control-inline layout-box mr-3">
+                            <input type="radio" name="formData[cf_layout]" id="cf_layout_1" class="custom-control-input" value="1">
+                            <label for="cf_layout_1" class="custom-control-label cursor-pointer">
+                                <div class="layout_box">
+                                    <div class="mini_content_box mini_content_full"></div>
+                                </div>
+                                <span>전체 레이아웃</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="custom-control custom-radio custom-control-inline layout-box mr-3">
+                            <input type="radio" name="formData[cf_layout]" id="cf_layout_2" class="custom-control-input" value="2">
+                            <label for="cf_layout_2" class="custom-control-label cursor-pointer">
+                                <div class="layout_box">
+                                    <div class="mini_side_box"></div>
+                                    <div class="mini_content_box"></div>
+                                </div>
+                                <span>2단 좌측 레이아웃</span>
+                            </label>
+                        </div>
+                        <div class="input_form_wrap input-group mt-3">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">좌측넓이</span>
+                            <input type="text" name="formData[left_width][2]" id="left_width2" class="frm_input frm_small" value="" style="width:40px;min-width:40px;border-radius:0;border-left:0;border-right:0;">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">px</span>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="custom-control custom-radio custom-control-inline layout-box mr-3">
+                            <input type="radio" name="formData[cf_layout]" id="cf_layout_3" class="custom-control-input" value="3">
+                            <label for="cf_layout_3" class="custom-control-label cursor-pointer">
+                                <div class="layout_box">
+                                    <div class="mini_content_box"></div>
+                                    <div class="mini_side_box"></div>
+                                </div>
+                                <span>2단 우측 레이아웃</span>
+                            </label>
+                        </div>
+                        <div class="input_form_wrap input-group mt-3">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">우측넓이</span>
+                            <input type="text" name="formData[right_width][3]" id="right_width3" class="frm_input frm_small"" style="width:40px;min-width:40px;border-radius:0;border-left:0;border-right:0;">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">px</span>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="custom-control custom-radio custom-control-inline layout-box mr-3">
+                            <input type="radio" name="formData[cf_layout]" id="cf_layout_4" class="custom-control-input" value="4">
+                            <label for="cf_layout_4" class="custom-control-label cursor-pointer">
+                                <div class="layout_box">
+                                    <div class="mini_side_box"></div>
+                                    <div class="mini_content_box mini_content_small"></div>
+                                    <div class="mini_side_box"></div>
+                                </div>
+                                <span>3단 레이아웃</span>
+                            </label>
+                        </div>
+                        <div class="input_form_wrap input-group mt-3">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">좌측넓이</span>
+                            <input type="text" name="formData[left_width][4]" id="left_width4" class="frm_input frm_small" value="" style="width:40px;min-width:40px;border-radius:0;border-left:0;border-right:0;">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">px</span>
+                        </div>
+                        <div class="input_form_wrap input-group mt-1">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">우측넓이</span>
+                            <input type="text" name="formData[right_width][4]" id="right_width4" class="frm_input frm_small" value="" style="width:40px;min-width:40px;border-radius:0;border-left:0;border-right:0;">
+                            <span style="display:inline-block;padding:.375rem .75rem;background-color:#e9ecef;border:1px solid #ced4da;">px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-row row mb-3">
+            <div class="table-th col-md-2">
+                <span>메인화면 전체사용</span>
+            </div>
+            <div class="table-td col-md-10">
+                <div class="d-flex">
+                    <?php foreach(array('예','아니요') as $key=>$val): ?>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="formData[cf_index_wide]" id="cf_index_wide_<?= $key; ?>" value="<?= $key; ?>">
+                        <label class="form-check-label" for="cf_index_wide_<?= $key; ?>"><?= $val; ?></label>
+                    </div>
+                    <?php endforeach; ?>
+                    <span class="form-control bg-info text-white border-0">메인화면 전체사용을 선택하시면 메인화면에는 레이아웃이 적용되지 않습니다.</span>
+                </div>
+            </div>
+        </div>
+        <div class="table-row row mb-3">
+            <div class="table-th col-md-2">
                 <label for="cf_layout_max_width" class="form-label">레이아웃 최대넓이</label>
             </div>
             <div class="table-td col-md-4">
@@ -158,14 +251,10 @@
 
     <h2>회원 설정</h2>
     <div id="anc_cf_member" class="table-form">
-        
-        
     </div>
 
     <h2>SEO/스크립트 설정</h2>
     <div id="anc_cf_seo" class="table-form">
-        
-        
     </div>
 
     <h2>기타 설정</h2>
@@ -193,12 +282,28 @@
 </div>
 </form>
 <script>
-var settingData = <?php echo json_encode($config_domain); ?>;
+var configDomain = <?php echo json_encode($config_domain); ?>;
 document.addEventListener('DOMContentLoaded', function() {
-    fillFormData(settingData, 'formData');
+    fillFormData(configDomain, 'formData', fillFormLayout);
 });
 
-function frm_submit(f) {
-    
+function fillFormLayout() {
+    console.log(configDomain);
+    if (configDomain.cf_layout === 2) {
+        document.getElementById('left_width2').value = configDomain.cf_left_width;
+    }
+
+    if (configDomain.cf_layout === 3) {
+        document.getElementById('right_width3').value = configDomain.cf_right_width;
+    }
+
+    if (configDomain.cf_layout === 4) {
+        document.getElementById('left_width4').value = configDomain.cf_left_width;
+        document.getElementById('right_width4').value = configDomain.cf_right_width;
+    }
 }
+
+App.registerCallback('updateConfigDomain', function(data) {
+
+});
 </script>

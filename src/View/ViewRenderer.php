@@ -3,6 +3,7 @@ namespace Web\PublicHtml\View;
 
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
+use Web\PublicHtml\View\LayoutManager;
 
 class ViewRenderer
 {
@@ -18,14 +19,16 @@ class ViewRenderer
     private string $footerSkinDirectory;
     private string $layoutSkinDirectory;
     private ComponentsViewHelper $componentsViewHelper;
-    private $sessionManager;
+    private LayoutManager $layoutManager;
     private bool $isLogin;
+    private $sessionManager;
     private $navigation;
+    private $templateService;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->config_domain = $container->get('config_domain');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
 
         $this->headerSkin = $this->config_domain['cf_skin_header'] ?? 'basic';
         $this->footerSkin = $this->config_domain['cf_skin_footer'] ?? 'basic';
@@ -35,13 +38,35 @@ class ViewRenderer
         $this->footerSkinDirectory = __DIR__ . "/Footer/{$this->footerSkin}/";
         $this->layoutSkinDirectory = __DIR__ . "/Layout/{$this->layoutSkin}/";
 
+        $this->layoutManager = new LayoutManager($this->container, $this);
+
         $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
+        $this->templateService = $this->container->get('TemplateService');
 
         $this->sessionManager = $this->container->get('SessionManager');
         $authInfo = $this->sessionManager->get('auth');
         $this->isLogin = !empty($authInfo);
         
         $this->navigation = $this->container->get('NavigationMiddleware');
+    }
+
+    public function isHomePage(): bool
+    {
+        // 메인 페이지로 간주할 URL 패턴을 정의합니다.
+        $homePagePatterns = [
+            '#^/$#',                 // 루트 URL
+            '#^/index\.php$#',       // index.php
+        ];
+
+        $currentRoute = $_SERVER['REQUEST_URI'] ?? '/';
+
+        foreach ($homePagePatterns as $pattern) {
+            if (preg_match($pattern, $currentRoute)) {
+                return true;
+            }
+        }
+
+        return false;
     }
     
     public function addAsset(string $type, string $filePath): void
@@ -63,6 +88,14 @@ class ViewRenderer
         return [];
     }
 
+    private function updateMeCode(): string
+    {
+        $navigation = $this->navigation->buildNavigation();
+        $me_code = $navigation['me_code'] ?? '';
+        $this->container->set('me_code', $me_code);
+        return $me_code;
+    }
+
     public function renderPagination(array $paginationData): void
     {
         extract($paginationData);
@@ -78,9 +111,10 @@ class ViewRenderer
     public function renderHeader(array $data = []): void
     {
         $menuData = $this->container->get('menu_datas');
-        $me_code = isset($this->navigation->buildNavigation()['me_code']) ? $this->navigation->buildNavigation()['me_code'] : '';
+        $me_code = $this->updateMeCode();
         
         $data['menu'] = $this->componentsViewHelper->renderMenu($this->config_domain, $menuData, $me_code);
+        $data['mainStyle'] = $this->isHomePage() && $this->config_domain['cf_index_wide'] === 0 ? '' : 'max-layout';
 
         $this->render($this->headerSkinDirectory . 'Header', $data);
     }
@@ -92,18 +126,32 @@ class ViewRenderer
 
     public function renderLayoutOpen(array $data = []): void
     {
-        $this->render($this->layoutSkinDirectory . 'LayoutOpen', $data);
+        $isIndex = $this->isHomePage();
+        $me_code = $this->updateMeCode();
+        $layoutContent = $this->layoutManager->renderLayoutOpen($isIndex, $me_code);
+        
+        echo $layoutContent;
+        
+        /**
+         * LayoutOpen 은 필요시에만 사용
+         * $this->render($this->layoutSkinDirectory . 'LayoutOpen', $data);
+        */
     }
 
     public function renderLayoutClose(array $data = []): void
     {
-        $this->render($this->layoutSkinDirectory . 'LayoutClose', $data);
+        echo '</div><!-- End container_wrap--->'.PHP_EOL;
+        echo '</div><!-- End container--->'.PHP_EOL;
+        /**
+         * LayoutClose 는 필요시에만 사용
+         * $this->render($this->layoutSkinDirectory . 'LayoutClose', $data);
+        */
     }
 
     public function render(string $viewFilePath, array $data = []): void
     {
+        $data['config_domain'] = $this->config_domain;
         extract($data, EXTR_SKIP);
-
         if (file_exists($viewFilePath . '.php')) {
             include $viewFilePath . '.php';
         } else {
@@ -126,6 +174,8 @@ class ViewRenderer
         ?array $footData = null, 
         bool $fullPage = false
     ): void {
+        $me_code = $this->updateMeCode();
+
         // head 부분 렌더링
         $this->render('/partials/'.$this->layoutSkin.'/head', $headData ?? []);
 
@@ -134,7 +184,11 @@ class ViewRenderer
         }
 
         $this->renderLayoutOpen($layoutData ?? []);
-        $this->render($view, $viewData ?? []);
+        /*
+         * 본문
+         */
+        $this->render($view, array_merge($viewData ?? [], ['me_code' => $me_code]));
+
         $this->renderLayoutClose($layoutData ?? []);
 
         if ($fullPage === false) {

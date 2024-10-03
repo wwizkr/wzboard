@@ -22,7 +22,7 @@ class AdminViewRenderer
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $config_domain = $container->get('config_domain');
+        $config_domain = $container->get('ConfigHelper')->getConfig('config_domain');
         $adminSkin = $config_domain['cf_skin_admin'] ?? 'basic';
         $layoutSkin = $config_domain['cf_layout_skin'] ?? 'basic';
         
@@ -44,6 +44,7 @@ class AdminViewRenderer
     {
         $csrfTokenKey = $_ENV['ADMIN_CSRF_TOKEN_KEY'] ?? 'admin_secure_key';
         $csrfToken = $this->sessionManager->getCsrfToken($csrfTokenKey);
+
         if (empty($csrfToken)) {
             $this->logoutAndRedirect();
         }

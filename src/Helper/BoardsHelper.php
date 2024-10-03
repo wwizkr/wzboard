@@ -119,7 +119,7 @@ class BoardsHelper
 
             $val['parentComment'] = [];
             if ($val['parent_no']) {
-                $val['parentComment'] = $this->boardsModel->getCommentData($val['no']);
+                $val['parentComment'] = $this->boardsModel->getCommentData($val['parent_no']);
             }
             
             if (!empty($val['parentComment'])) {

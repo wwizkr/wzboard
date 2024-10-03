@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css">
 <link  rel="stylesheet" href="/assets/basic/css/admin-style.css">
 <link  rel="stylesheet" href="/assets/basic/css/common-custom.css">
+<link href="/assets/css/components/button.css?<?=time();?>" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/common.js"></script>
 <script src="/assets/js/admin-ajax.js"></script>

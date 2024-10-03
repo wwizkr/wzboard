@@ -33,12 +33,12 @@ class AdminMenuHelper
             ],
             'settings' => [
                 'label' => '환경설정',
-                'url' => '/admin/settings/general',
+                'url' => '/admin/config/configDomain',
                 'icon' => 'bi-gear',
                 'submenu' => [
                     'general' => [
                         'label' => '기본 환경설정',
-                        'url' => '/admin/settings/general',
+                        'url' => '/admin/config/configDomain',
                     ],
                     'menus' => [
                         'label' => '메뉴 설정',
@@ -46,11 +46,11 @@ class AdminMenuHelper
                     ],
                     'template' => [
                         'label' => '메인화면/페이지 관리',
-                        'url' => '/admin/template/list',
+                        'url' => '/admin/template/templateList',
                     ],
                     'clause' => [
                         'label' => '이용약관 관리',
-                        'url' => '/admin/clause/list',
+                        'url' => '/admin/settings/clauseList',
                     ],
                 ],
             ],
