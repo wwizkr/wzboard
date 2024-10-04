@@ -1,0 +1,22 @@
+<div class="image-box {{swiperContainer}}" id="{{boxId}}">
+    <ul class="image-list {{swiperWrapper}}">
+        {{items}}
+    </ul>
+    {{swiperHtml}}
+</div>
+
+<script>
+    // 이 박스에만 적용되는 JavaScript 코드
+    document.addEventListener('DOMContentLoaded', function() {
+        var imageBox = document.getElementById('{{boxId}}');
+        {{swiperScript}}
+    });
+</script>
+
+<!-- 항목 템플릿 -->
+<!--ITEM_TEMPLATE_START-->
+<li class="table-list-row list-body {{swiperSlide}}">
+    <div class="list-row image-row mobile-none">{{pcImage}}</div>
+    <div class="list-row image-row mobile-only">{{moImage}}</div>
+</li>
+<!--ITEM_TEMPLATE_END-->

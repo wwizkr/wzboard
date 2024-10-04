@@ -106,7 +106,7 @@ class FileUploadManager
         return $position . '_' . substr($hashedName, 0, 16) . '.' . $extension;
     }
 
-    private function deleteOldFile($oldFile)
+    public function deleteOldFile($oldFile)
     {
         if (!$oldFile) return;
 

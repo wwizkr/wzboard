@@ -86,7 +86,7 @@ class ConfigProvider
         return [
             'noImg100' => '/assets/images/no_image100.jpg',
             'noImg430' => '/assets/images/no_image430.jpg',
-            'noProfile' => 'assets/images/no_profile.gif',
+            'noProfile' => '/assets/images/no_profile.gif',
         ];
     }
 

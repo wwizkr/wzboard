@@ -111,7 +111,7 @@ class AdminTemplateModel
         return $result;
     }
 
-    public function getTemplateCtBoxItem(string $table, int $ct_id, int $box_id, int $cf_id, string $type = null): array
+    public function getTemplateCiBoxItem(string $table, int $ct_id, int $box_id, int $cf_id, string $type = null): array
     {
         $tablename = ($table === 'page') ? 'custom_page_items' : 'custom_template_items';
 
@@ -128,7 +128,7 @@ class AdminTemplateModel
         return $result;
     }
 
-    public function deleteAllTemplateCtBoxItem(string $table, int $ct_id, int $box_id, int $cf_id): void
+    public function deleteAllTemplateCiBoxItem(string $table, int $ct_id, int $box_id, int $cf_id): void
     {
         $tablename = ($table === 'page') ? 'custom_page_items' : 'custom_template_items';
 
@@ -142,7 +142,7 @@ class AdminTemplateModel
         return;
     }
 
-    public function insertTemplateCtBoxItem(string $table, array $param): void
+    public function insertTemplateCiBoxItem(string $table, array $param): void
     {
         $tablename = ($table === 'page') ? 'custom_page_items' : 'custom_template_items';
 

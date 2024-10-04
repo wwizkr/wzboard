@@ -823,5 +823,102 @@ class CommonHelper
         return false;
     }
 
+    /**
+     * Swiper 설정을 생성합니다.
+     *
+     * @param string $containerId Swiper 컨테이너의 ID
+     * @param array $options Swiper 옵션
+     * @return array Swiper 설정, 스크립트, HTML 요소
+     */
+    public static function getSwiperConfig($containerId, array $options = [])
+    {
+        if (empty($options['style']) || $options['style'] !== 'slide') {
+            return ['script' => '', 'html' => ''];
+        }
+
+        $defaultOptions = [
+            'slidesPerView' => 1,
+            'spaceBetween' => 10,
+            'loop' => false,
+            'autoplay' => false,
+            'navigation' => false,
+            'pagination' => false,
+            'scrollbar' => false,
+            'effect' => 'slide',
+            'touchRatio' => 1,
+            'observer' => false,
+            'observeParents' => false,
+        ];
+
+        $mergedOptions = array_merge($defaultOptions, $options);
+
+        $config = [
+            'slidesPerView' => $mergedOptions['slidesPerView'],
+            'spaceBetween' => $mergedOptions['spaceBetween'],
+            'loop' => $mergedOptions['loop'] ? 'true' : 'false',
+            'touchRatio' => $mergedOptions['touchRatio'],
+            'observer' => $mergedOptions['observer'] ? 'true' : 'false',
+            'observeParents' => $mergedOptions['observeParents'] ? 'true' : 'false',
+        ];
+
+        if ($mergedOptions['autoplay']) {
+            $config['autoplay'] = is_array($mergedOptions['autoplay']) 
+                ? $mergedOptions['autoplay'] 
+                : ['delay' => 3000, 'disableOnInteraction' => false];
+        }
+
+        if ($mergedOptions['navigation']) {
+            $config['navigation'] = [
+                'nextEl' => ".swiper-button-next-{$containerId}",
+                'prevEl' => ".swiper-button-prev-{$containerId}",
+            ];
+        }
+
+        if ($mergedOptions['pagination']) {
+            $config['pagination'] = [
+                'el' => ".swiper-pagination-{$containerId}",
+                'clickable' => true,
+            ];
+        }
+
+        if ($mergedOptions['scrollbar']) {
+            $config['scrollbar'] = [
+                'el' => ".swiper-scrollbar-{$containerId}",
+                'hide' => true,
+            ];
+        }
+
+        if ($mergedOptions['effect'] !== 'slide') {
+            $config['effect'] = $mergedOptions['effect'];
+        }
+
+        if (!empty($mergedOptions['breakpoints'])) {
+            $config['breakpoints'] = $mergedOptions['breakpoints'];
+        }
+
+        $configJson = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        
+        $safeContainerId = str_replace('-', '_', $containerId);
+        $script = "
+            var swiper_{$safeContainerId} = new Swiper('#{$containerId}', {$configJson});
+        ";
+
+        $html = '';
+        if ($mergedOptions['navigation']) {
+            $html .= "<div class='swiper-button-prev-{$containerId}'></div><div class='swiper-button-next-{$containerId}'></div>";
+        }
+        if ($mergedOptions['pagination']) {
+            $html .= "<div class='swiper-pagination-{$containerId}'></div>";
+        }
+        if ($mergedOptions['scrollbar']) {
+            $html .= "<div class='swiper-scrollbar-{$containerId}'></div>";
+        }
+
+        return [
+            'script' => $script,
+            'html' => $html,
+        ];
+    }
+
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음
 }

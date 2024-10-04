@@ -17,6 +17,7 @@ class TemplateController
     protected $configProvider;
     protected $adminTemplateService;
     protected $adminTemplateModel;
+    protected $adminViewRenderer;
 
     public function __construct(DependencyContainer $container)
     {
@@ -28,6 +29,14 @@ class TemplateController
 
         $this->adminTemplateService = $this->container->get('AdminTemplateService');
         $this->adminTemplateModel = $this->container->get('AdminTemplateModel');
+        $this->adminViewRenderer = $this->container->get('AdminViewRenderer');
+    }
+
+    protected function setAssets(): void
+    {
+        $this->adminViewRenderer->addAsset('css', '/assets/js/lib/editor/tinymce/tinymce.custom.css');
+        $this->adminViewRenderer->addAsset('js', '/assets/js/lib/editor/tinymce/tinymce.min.js');
+        $this->adminViewRenderer->addAsset('js', '/assets/js/lib/editor/tinymce/tinymce.editor.js');
     }
 
     /**
@@ -55,6 +64,8 @@ class TemplateController
      */
     public function templateForm(array $vars): array
     {
+        $this->setAssets();
+
         $table = isset($vars['param']) ? $vars['param'] : 'template';
         $ctId = CommonHelper::validateParam('ct_id', 'int', 0, '', INPUT_GET);
 
@@ -64,8 +75,8 @@ class TemplateController
          *
          */
         $baseConfig = [
-            'template_id' => $templateData['ct_id'] ?? '',
-            'template_shop' => $templateData['shop_kind'] ?? '',
+            'ct_id' => $templateData['ct_id'] ?? '',
+            'ct_section_id' => $templateData['ct_section_id'] ?? '',
             'ct_position' => $templateData['ct_position'] ?? '',
             'ct_position_sub' => $templateData['ct_position_sub'] ?? '',
             'ct_position_subtype' => $templateData['ct_position_subtype'] ?? '',
@@ -127,45 +138,18 @@ class TemplateController
     }
 
     /**
-     * 템플릿 아이템 가져오기
+     * 템플릿 아이템 가져오기 ajax 요청
      */
     public function templateItem(array $vars)
     {
         $table = CommonHelper::validateParam('table', 'string', '', '', INPUT_POST);
         $itemType = CommonHelper::validateParam('itemtype', 'string', '', '', INPUT_POST);
-        $listId = CommonHelper::validateParam('idx', 'int', 0, '', INPUT_POST); //ci_box_id
+        $boxId = CommonHelper::validateParam('idx', 'int', 0, '', INPUT_POST); //ci_box_id
         $ctId = CommonHelper::validateParam('ct_id', 'int', 0, '', INPUT_POST); //ct_id
         
-        // 사용가능한 템플릿 스킨 디렉토리
-        $skinDir = $this->adminTemplateService->getTemplateSkinDir($itemType);
+        $result = $this->adminTemplateService->getTemplateItemData($table, $itemType, $boxId, $ctId);
 
-        $data = [
-            'result' => 'success',
-            'message' => '템플릿 정보를 성공적으로 가져왔습니다.',
-            'data' => [
-                'items' => [],
-                'useskin' => 'basic',
-                'skinDir' => $skinDir,
-                'display' => [],
-            ]
-        ];
-
-        switch($itemType) {
-            case 'board':
-                $items = $this->adminTemplateService->getTemplateBoardItem((int)$ctId, (int)$listId);
-                $data['data']['items'] = $items;
-                break;
-
-            default:
-                $data = [
-                    'result' => 'failure',
-                    'message' => '템플릿 정보가 잘못되었습니다.',
-                    'data' => []
-                ];
-                return CommonHelper::jsonResponse($data);
-        }
-
-        return CommonHelper::jsonResponse($data);
+        return CommonHelper::jsonResponse($result);
     }
 
     /**
@@ -197,8 +181,6 @@ class TemplateController
         }
 
         $result = $this->adminTemplateService->templateUpdate($table, $ct_section_id, (int)$ctId, (int)$cgId);
-
-        error_log("Result:::".print_r($result, true));
 
         $message = '처리하였습니다.';
         $url = '/admin/template/templateForm/'.$table.'?ct_id='.$result['ins_id'];

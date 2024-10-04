@@ -8,120 +8,33 @@ use Web\PublicHtml\Helper\CacheHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Helper\FileUploadManager;
-//use Web\Admin\Model\AdminTemplateModel;
 use InvalidArgumentException;
 
-abstract class BaseTemplateService
+use Web\PublicHtml\Traits\TemplateItemDataTrait;
+use Web\PublicHtml\Traits\BaseTemplateServiceTrait;
+
+class AdminTemplateService
 {
+    use BaseTemplateServiceTrait;
+    use TemplateItemDataTrait;
+    
     protected $container;
+    protected $config_domain;
+    protected $formDataMiddleware;
+    protected $adminTemplateModel;
+    protected $adminBoardsService;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-    }
-
-    abstract public function getTemplateList(string $table): array;
-    abstract public function getTemplateDataById(string $table, int $ctId = null): array;
-
-    // Template Skin Directory Management methods
-    public function getTemplateSkinDir(string $itemType): array
-    {
-        try {
-            $template_path = $this->getTemplatePath($itemType);
-        } catch (InvalidArgumentException $e) {
-            error_log($e->getMessage());
-            return [];
-        }
-
-        $result = [];
-        if (!is_dir($template_path)) {
-            error_log("Template directory does not exist: $template_path");
-            return $result;
-        }
-
-        if ($itemType === 'file') {
-            return $this->getTemplateFiles($template_path);
-        } else {
-            return $this->getTemplateDirs($template_path);
-        }
-    }
-
-    protected function getTemplatePath(string $itemType): string
-    {
-        $templateConfig = $this->container->get('ConfigProvider')->get('template');
-        $allowedTypes = array_keys($templateConfig['template_items'] ?? []);
-        if (!in_array($itemType, $allowedTypes)) {
-            throw new InvalidArgumentException("Invalid item type: $itemType");
-        }
-        return WZ_SRC_PATH . '/View/Templates/' . $itemType;
-    }
-
-    protected function getTemplateDirs(string $path): array
-    {
-        $sub_dirs = $this->getSubDirectories($path);
-        $result = [];
-        foreach ($sub_dirs as $dir) {
-            $result[] = [
-                'name' => $dir,
-                'desc' => $this->getSkinDescription($path . '/' . $dir)
-            ];
-        }
-        return $result;
-    }
-
-    protected function getTemplateFiles(string $path): array
-    {
-        $files = array_filter(scandir($path), function($file) use ($path) {
-            return !is_dir($path . '/' . $file) && pathinfo($file, PATHINFO_EXTENSION) === 'php';
-        });
-
-        $result = [];
-        foreach ($files as $file) {
-            $result[] = [
-                'name' => $file,
-                'desc' => $this->getFileDescription($path . '/' . $file)
-            ];
-        }
-        return $result;
-    }
-
-    protected function getSubDirectories(string $path): array
-    {
-        return array_filter(scandir($path), function($dir) use ($path) {
-            return $dir !== '.' && $dir !== '..' && is_dir($path . '/' . $dir);
-        });
-    }
-
-    protected function getSkinDescription(string $path): string
-    {
-        $desc_file = $path . '/description.txt';
-        if (file_exists($desc_file) && is_readable($desc_file)) {
-            return file_get_contents($desc_file);
-        }
-        return '설명 없음';
-    }
-
-    protected function getFileDescription(string $filePath): string
-    {
-        // 파일의 첫 몇 줄을 읽어 설명을 추출하는 로직을 구현할 수 있습니다.
-        // 예를 들어, 파일 상단의 주석을 파싱하는 등의 방법을 사용할 수 있습니다.
-        // 여기서는 간단히 파일 이름을 반환합니다.
-        return basename($filePath);
-    }
-}
-
-class AdminTemplateService extends BaseTemplateService
-{
-    protected $config_domain;
-    protected $formDataMiddleware;
-    protected $adminTemplateModel;
-
-    public function __construct(DependencyContainer $container)
-    {
-        parent::__construct($container);
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
         $this->adminTemplateModel = $this->container->get('AdminTemplateModel');
+    }
+
+    protected function getContainer()
+    {
+        return $this->container;
     }
 
     public function getTemplateList(string $table): array
@@ -136,54 +49,35 @@ class AdminTemplateService extends BaseTemplateService
         return $result;
     }
 
-    public function getTemplateBoardItem(int $ctId, int $listId): array
-    {
-        $data = [];
-
-        $adminBoardsService = $this->container->get('AdminBoardsService');
-
-        $boardList = $adminBoardsService->getBoardsConfig(null);
-
-        if (!empty($boardList)) {
-            foreach($boardList as $key=>$val) {
-                $data[$key]['board_no'] = $val['no'];
-                $data[$key]['board_id'] = $val['board_id'];
-                $data[$key]['board_name'] = $val['board_name'];
-            }
-        }
-
-        return $data;
-    }
-
     public function templateUpdate(string $table, string $ct_section_id, int $ctId, int $cgId): array
     {
         $data = [];
         
         // 변수 정리
-        $ct_list_width      = $_POST['ct_list_width'];
-        $ct_list_pc_height     = $_POST['ct_list_pc_height'];
+        $ct_list_width = $_POST['ct_list_width'];
+        $ct_list_pc_height = $_POST['ct_list_pc_height'];
         if($_POST['ct_list_pc_height'] != 'auto') {
-            $ct_list_pc_height    = $_POST['ct_list_pc_height'];
+            $ct_list_pc_height = $_POST['ct_list_pc_height'];
         }
-        $ct_list_mo_height     = $_POST['ct_list_mo_height'];
+        $ct_list_mo_height = $_POST['ct_list_mo_height'];
         if($_POST['ct_list_mo_height'] != 'auto') {
-            $ct_list_mo_height    = $_POST['ct_list_mo_height'];
+            $ct_list_mo_height = $_POST['ct_list_mo_height'];
         }
         $ct_list_pc_padding = $_POST['ct_list_pc_padding'];
         $ct_list_mo_padding = $_POST['ct_list_mo_padding'];
-        $ct_list_bgcolor    = $_POST['ct_list_bgcolor'];
-        $ct_list_box_cnt    = (int)$_POST['ct_list_box_cnt'] ?? 1;
+        $ct_list_bgcolor = $_POST['ct_list_bgcolor'];
+        $ct_list_box_cnt = (int)$_POST['ct_list_box_cnt'] ?? 1;
         $ct_list_box_margin = (int)$_POST['ct_list_box_margin'];
-        $ct_list_box_wtype  = (int)$_POST['ct_list_box_wtype'];
-        $ct_admin_subject  =  $_POST['ct_admin_subject'];
-        $ct_position       = $_POST['ct_position'];
+        $ct_list_box_wtype = (int)$_POST['ct_list_box_wtype'];
+        $ct_admin_subject =  $_POST['ct_admin_subject'];
+        $ct_position = $_POST['ct_position'];
         $ct_postion_sub_array = $_POST['ct_position_sub'] ? explode("::",$_POST['ct_position_sub']) : array();
         if(isset($ct_postion_sub_array[0]) && $ct_postion_sub_array[0] == 'all') {
-            $ct_position_sub      = $ct_postion_sub_array[0];
+            $ct_position_sub = $ct_postion_sub_array[0];
             $ct_position_subtype  = '';
         } else {
-            $ct_position_sub      = $ct_postion_sub_array[1] ?? '';
-            $ct_position_subtype  = $ct_postion_sub_array[0] ?? '';
+            $ct_position_sub = $ct_postion_sub_array[1] ?? '';
+            $ct_position_subtype = $ct_postion_sub_array[0] ?? '';
         }
 
         $ct_position_subview  = $_POST['ct_position_subview'] ?? 'Y';
@@ -336,33 +230,40 @@ class AdminTemplateService extends BaseTemplateService
                         'ci_type' => $val,
                         'ci_link' => $_POST['item_link'][$key] ?? '',
                         'ci_win' => $_POST['item_win'][$key] ?? '',
+                        'ci_content' => $_POST['content'][$key] ?? null,
                         'options' => []
                     ];
-                    
-                    // 기존의 데이터 중 이미지가 있다면 모두 삭제
-                    $oldData = $this->adminTemplateModel->getTemplateCtBoxItem($table, $ct_id, $key, $this->config_domain['cf_id'], 'image');
-
-                    if (!empty($oldData)) {
-                        $filePath = WZ_STORAGE_PATH . '/template/'.$this->config_domain['cf_id'].'/'.$table;
-                        foreach($oldData as $img) {
-                            if ($img['ci_pc_item']) {
-                                $uploadManager->deleteOldFile($img['ci_pc_item']);
-                            }
-                            if ($img['ci_mo_item']) {
-                                $uploadManager->deleteOldFile($img['ci_mo_item']);
-                            }
-                        }
-                    }
 
                     // 기존의 데이터를 DB에서 모두 삭제
-                    $this->adminTemplateModel->deleteAllTemplateCtBoxItem($table, $ct_id, $key, $this->config_domain['cf_id']);
+                    $this->adminTemplateModel->deleteAllTemplateCiBoxItem($table, $ct_id, $key, $this->config_domain['cf_id']);
+
                     switch($val) {
+                        case 'banner':
+                            $data['data']['items'] = [];
+                            break;
+                        case 'image':
+                            $result = $this->processedImageItem($table, $ciData, $key, $uploadManager);
+                            break;
+                        case 'movie':
+                            $data['data']['items'] = [];
+                            break;
+                        case 'outlogin':
+                            $data['data']['items'] = [];
+                            break;
+                        case 'banner':
+                            $data['data']['items'] = [];
+                            break;
                         case 'board':
                             $ciData['options'] = isset($_POST['template_items'][$key]) ? explode(",",$_POST['template_items'][$key]) : [];
                             $result = $this->processedBoardItem($table, $ciData);
                             break;
-
-                        default:
+                        case 'boardgroup':
+                            $data['data']['items'] = [];
+                            break;
+                        case 'file':
+                            $data['data']['items'] = [];
+                            break;
+                        default: //editor
                             $result = $this->processedDefaultItem($table, $ciData);
                             break;
                     }
@@ -373,9 +274,24 @@ class AdminTemplateService extends BaseTemplateService
         return $updated;
     }
 
+    private function processedDefaultItem(string $table, array $ciData): void
+    {
+        $param = [
+            'cf_id' => ['i', $ciData['cf_id']],
+            'ct_id' => ['i', $ciData['ct_id']],
+            'ci_box_id' => ['i', $ciData['ci_box_id']],
+            'ci_type' => ['s', $ciData['ci_type']],
+            'ci_pc_item' => ['s', ''],
+            'ci_mo_item' => ['s', ''],
+            'ci_content' => ['s', $ciData['ci_content']],
+        ];
+
+        $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+    }
+
     private function processedBoardItem(string $table, array $ciData): void
     {
-        $unitData = $ciData['options'] ?? [];
+        $unitData = $ciData['options'];
         
         foreach($unitData as $val) {
             $unit = explode("_", $val);
@@ -389,7 +305,67 @@ class AdminTemplateService extends BaseTemplateService
                 'ci_mo_item' => ['s', $board_id]
             ];
             
-            $this->adminTemplateModel->insertTemplateCtBoxItem($table, $param);
+            $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+        }
+    }
+
+    private function processedImageItem(string $table, array $ciData, int $key, FileUploadManager $uploadManager): void
+    {
+        $imageData = $_POST['image_items'][$key] ?? [];
+        
+        $pc_old_image = $_POST['pc_old_image'][$key] ?? [];
+        $mo_old_image = $_POST['mo_old_image'][$key] ?? [];
+        $temp_pc_images = $_FILES['temp_pc_image']['name'][$key] ?? [];
+        $temp_mo_images = $_FILES['temp_mo_image']['name'][$key] ?? [];
+
+        foreach ($imageData as $index => $val) {
+            $pc_image = $pc_old_image[$index] ?? '';
+            $mo_image = $mo_old_image[$index] ?? '';
+
+            // PC 이미지 업로드 처리
+            if (!empty($temp_pc_images[$index])) {
+                $pc_image_file = [
+                    'name' => $_FILES['temp_pc_image']['name'][$key][$index],
+                    'type' => $_FILES['temp_pc_image']['type'][$key][$index],
+                    'tmp_name' => $_FILES['temp_pc_image']['tmp_name'][$key][$index],
+                    'error' => $_FILES['temp_pc_image']['error'][$key][$index],
+                    'size' => $_FILES['temp_pc_image']['size'][$key][$index]
+                ];
+                $pc_upload_result = $uploadManager->handleFileUploads($pc_image_file, '', $ciData['ct_id'] . '_pc_' . $index);
+                $pc_image = $pc_upload_result[0] ?? $pc_image;
+                if (!empty($pc_upload_result[0])) {
+                    $uploadManager->deleteOldFile($pc_old_image);
+                }
+            }
+
+            // 모바일 이미지 업로드 처리
+            if (!empty($temp_mo_images[$index])) {
+                $mo_image_file = [
+                    'name' => $_FILES['temp_mo_image']['name'][$key][$index],
+                    'type' => $_FILES['temp_mo_image']['type'][$key][$index],
+                    'tmp_name' => $_FILES['temp_mo_image']['tmp_name'][$key][$index],
+                    'error' => $_FILES['temp_mo_image']['error'][$key][$index],
+                    'size' => $_FILES['temp_mo_image']['size'][$key][$index]
+                ];
+                $mo_upload_result = $uploadManager->handleFileUploads($mo_image_file, '', $ciData['ct_id'] . '_mo_' . $index);
+                $mo_image = $mo_upload_result[0] ?? $mo_image;
+                if (!empty($mo_upload_result[0])) {
+                    $uploadManager->deleteOldFile($mo_old_image);
+                }
+            }
+
+            $param = [
+                'cf_id' => ['i', $ciData['cf_id']],
+                'ct_id' => ['i', $ciData['ct_id']],
+                'ci_box_id' => ['i', $key],
+                'ci_type' => ['s', $ciData['ci_type']],
+                'ci_pc_item' => ['s', $pc_image],
+                'ci_mo_item' => ['s', $mo_image],
+                'ci_link' => ['s', $_POST['item_link'][$key][$index] ?? ''],
+                'ci_new_win' => ['i', $_POST['item_win'][$key][$index] ?? 0],
+            ];
+
+            $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
         }
     }
 

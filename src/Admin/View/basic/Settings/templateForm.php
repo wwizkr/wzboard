@@ -348,8 +348,6 @@ const TemplateFunctions = {
         const $this = $(this);
         const $wrap = $this.closest('.list_box');
         const value = $this.val();
-
-        console.log(event);
         
         // 클릭 이벤트인 경우에만 상태를 변경
         if (event.type === 'click') {
@@ -907,13 +905,13 @@ const TemplateHandlers = {
         const $wrap = $this.closest('.table-td');
         const value = $this.val();
 
-        //TemplateFunctions.updateItemTypeDescription($this, value);
-        //TemplateHandlers.toggleShopKind($wrap, value); //사용안함
+        if (e.type === 'change') {
+            $wrap.find('.ct_list_itemcnt').val('').prop('selected', true);
+            $wrap.find('.item_skin').empty();
+            $wrap.find('.item_style').empty();
+            $wrap.find('.box_item_wrap').empty();
+        }
     },
-
-    //toggleShopKind($wrap, value) { // 이 함수도 사용 안함.
-        //$wrap.find('.template-shop-kind')[value === 'goods' || value === 'category' ? 'show' : 'hide']();
-    //},
 
     updateItemCountOptions($wrap, value) {
         const $itemCount = $wrap.find('.ct_list_itemcnt');
@@ -998,7 +996,6 @@ const TemplateHandlers = {
     
     // 스킨 선택 HTML 생성 및 렌더링 로직
     renderSkinSelection(data, requestData, $parent) {
-        console.log(data.skinDir);
         const { itemtype, idx } = requestData;
         const skinHtml = `
             <div class="frm-input-row box_skin">
@@ -1129,6 +1126,29 @@ const TemplateHandlers = {
             return false;
         }
     },
+
+    // 이미지 등록
+    handleImageChange(e) {
+        const $this = $(e.target);
+        const $wrap = $this.closest('.image-card');
+        const $that = $wrap.find('.card-img-label');
+        const image = CONFIG.noimg;
+        
+        if (this.files && this.files[0]) {
+            var reader = new FileReader();
+            reader.readAsDataURL(this.files[0]);
+            reader.onload = function (event) {
+                var data = event.target.result;
+                var node = $that.css('background-image', 'url('+data+')').removeClass('null');
+                var image = new Image();
+                image.src = data;
+            }
+        } else {
+            $that
+                .css('background-image', 'url('+image+')')
+                .addClass('null');
+        }
+    }
     // 기타 템플릿 관련 함수들...
 };
 
@@ -1238,7 +1258,7 @@ const TemplateHtmls = {
 
         html += TemplateHtmls.renderAssetCloseHtml(idx, invenCnt, listcnt, invenHtml);
 
-        $parent.find('.box_item_wrap').html(html);
+        $parent.find('.box_item_wrap').empty().html(html);
 
         // Sortable 초기화
         TemplateHtmls.initializeSortable(idx);
@@ -1284,7 +1304,7 @@ const TemplateHtmls = {
 
         html += TemplateHtmls.renderAssetCloseHtml(idx, invenCnt, listcnt, invenHtml);
 
-        $parent.find('.box_item_wrap').html(html);
+        $parent.find('.box_item_wrap').empty().html(html);
 
         // Sortable 초기화
         TemplateHtmls.initializeSortable(idx);
@@ -1297,13 +1317,12 @@ const TemplateHtmls = {
         let html = '<div class="template_image">';
         for (let i = 0; i < listcnt; i++) {
             const item = data?.items?.[i] ?? {};
-            const pc_temp_image = item.item_image || noimg;
-            const mobile_temp_image = item.item_mobile_image || noimg;
-            const pc_oldimg = item.item_name || '';
-            const mobile_oldimg = item.item_mobile_name || '';
+            const pc_temp_image = item.pc_image_url || noimg;
+            const mo_temp_image = item.mo_image_url|| noimg;
+            const pc_oldimg = item.pc_image_name || '';
+            const mo_oldimg = item.mo_image_name || '';
             const link_url = item.link_url || '';
             const link_win = item.link_win || '';
-            const image_cnt = item.image_cnt || 0;
 
             html += `
                 <div class="template_image_box">
@@ -1316,18 +1335,18 @@ const TemplateHtmls = {
                                     <input type="hidden" name="pc_old_image[${idx}][${i}]" value="${pc_oldimg}">
                                     <input type="hidden" name="pc_del_image[${idx}][${i}]" value="${pc_oldimg}">
                                     <div class="image-card-file">
-                                        <input type="file" name="temp_image${idx}[${i}]" class="custom-file-input temp_image_file" id="custom-pc-file-${idx}-${i}">
+                                        <input type="file" name="temp_pc_image[${idx}][${i}]" class="custom-file-input temp_image_file" id="custom-pc-file-${idx}-${i}">
                                         <label class="custom-file-label" for="custom-pc-file-${idx}-${i}">PC용 이미지 선택</label>
                                     </div>
                                 </div>
                             </div>
                             <div class="image-card image-card-${idx}-${i}">
-                                <a class="card-img-label card-img-top" style="background-image:url('${mobile_temp_image}');"><img src="${noimg}" alt="" style="width:100%;opacity:0;"></a>
+                                <a class="card-img-label card-img-top" style="background-image:url('${mo_temp_image}');"><img src="${noimg}" alt="" style="width:100%;opacity:0;"></a>
                                 <div class="image-card-body">
-                                    <input type="hidden" name="mobile_old_image[${idx}][${i}]" value="${mobile_oldimg}">
-                                    <input type="hidden" name="mobile_del_image[${idx}][${i}]" value="${mobile_oldimg}">
+                                    <input type="hidden" name="mo_old_image[${idx}][${i}]" value="${mo_oldimg}">
+                                    <input type="hidden" name="mo_del_image[${idx}][${i}]" value="${mo_oldimg}">
                                     <div class="image-card-file">
-                                        <input type="file" name="temp_mobile_image${idx}[${i}]" class="custom-file-input temp_image_file" id="custom-mobile-file-${idx}-${i}">
+                                        <input type="file" name="temp_mo_image[${idx}][${i}]" class="custom-file-input temp_image_file" id="custom-mobile-file-${idx}-${i}">
                                         <label class="custom-file-label" for="custom-mobile-file-${idx}-${i}">MOBILE용 이미지 선택</label>
                                     </div>
                                 </div>
@@ -1353,17 +1372,6 @@ const TemplateHtmls = {
                                 </select>
                             </div>
                         </div>
-                        <div class="frm-input-row">
-                            <div class="frm-input input-prepend wfpx-100">
-                                <span class="frm_text">한줄 출력갯수</span>
-                            </div>
-                            <div class="frm-input">
-                                <select name="item_cnt[${idx}][${i}]" class="frm_input">
-                                    <option value="">자동출력</option>
-                                    ${[1,2,3,4,5,6].map(ii => `<option value="${ii}" ${image_cnt == ii ? 'selected' : ''}>${ii}개</option>`).join('')}
-                                </select>
-                            </div>
-                        </div>
                     </div>
                 </div>
             `;
@@ -1371,13 +1379,13 @@ const TemplateHtmls = {
         html += '</div>';
 
         $(`#template_items_${idx}`).val('');
-        $parent.find('.box_item_wrap').html(html);
+        $parent.find('.box_item_wrap').empty().html(html);
     },
     
     renderMovie(data, requestData, $parent) {
         const { idx, listcnt } = requestData;
-        let html = '';
 
+        let html = '';
         for (let i = 0; i < listcnt; i++) {
             const movieurl = data.items[i] ? data.items[i].item_name : '';
             html += `
@@ -1395,10 +1403,31 @@ const TemplateHtmls = {
             `;
         }
 
-        $parent.find('.box_item_wrap').html(html);
+        $parent.find('.box_item_wrap').empty().html(html);
     },
     
     renderEditor(data, requestData, $parent) {
+        const { idx } = requestData;
+        const content = data.items[0].ci_content ?? '';
+        
+        let html = '';
+        html += `
+            <div class="frm-input-row editor-area">
+                <div class="frm-input frm-input-full">
+                    <textarea name="content[${idx}]" id="content_${idx}" class="editor-form"></textarea>
+                </div>
+            </div>
+        `;
+
+        $parent.find('.box_item_wrap').empty().html(html);
+        
+        initializeTinyMCE('#content_'+idx, 'basic', false, 300);
+        
+        setTimeout(function () {
+            if (tinymce.get('content_'+idx)) {
+                tinymce.get('content_'+idx).setContent(content);
+            }
+        }, 600);
     },
 };
 
@@ -1418,37 +1447,17 @@ const EventHandlers = {
         // 이미 위임을 사용하고 있는 이벤트들
         $(document).on('change init', '.ct_list_itemtype', TemplateHandlers.handleItemTypeChange.bind(TemplateHandlers));
         $(document).on('change init', '.ct_list_itemcnt', TemplateHandlers.handleItemCountChange.bind(TemplateHandlers));
+
+        $(document).on('change', '.temp_image_file', TemplateHandlers.handleImageChange);
     
         // 기타 이벤트 리스너들...
-        
-        // minicolors는 동적 요소에 적용하기 어려울 수 있으므로, 필요시 별도 처리
-        $('.color_code').minicolors({
-            theme: 'default',
-            change: function(hex, opacity) {
-            // 색상 변경 처리
-            }
-        });
     },
-
-    // minicolors를 동적 요소에 적용하기 위한 별도 메서드
-    applyMinicolors() {
-        $('.color_code').not('.minicolors-input').minicolors({
-            theme: 'default',
-            change: function(hex, opacity) {
-            // 색상 변경 처리
-            }
-        });
-    }
 };
 
 // 초기화 및 메인 실행
 $(document).ready(function() {
     EventHandlers.setupEventListeners();
     TemplateFunctions.initializeForm();
-
-    // 동적으로 요소가 추가된 후 minicolors 적용
-    // 예: AJAX 요청 완료 후 또는 동적 요소 추가 후
-    // EventHandlers.applyMinicolors();
 });
 
 // 폼 제출 함수 (전역 함수로 유지, PHP에서 호출됨)

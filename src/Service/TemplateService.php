@@ -19,7 +19,6 @@ class TemplateService
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->adminTemplateModel = $this->container->get('AdminTemplateModel');
         $this->isMobile = CommonHelper::isMobile();
-        //CacheHelper::initialize('templates', 'template_cache', 3600);
     }
 
     public function getHomeTemplateData()
@@ -166,7 +165,7 @@ class TemplateService
             'text' => $boxData['ct_copytext'][$box_id] ?? '',
             'color' => $boxData['ct_copytext_color'][$box_id] ?? '',
             'size' => $this->isMobile ? ($boxData['ct_mcopytext_size'][$box_id] ?? '') : ($boxData['ct_copytext_size'][$box_id] ?? ''),
-            'position' => $boxData['ct_copytext_pos'][$box_id] ?? '',
+            'position' => $boxData['ct_copytext_pos'][$box_id] ?? 'right',
         ];
 
         return [
@@ -224,6 +223,6 @@ class TemplateService
 
     private function getBoxItems($ct_id, $box_id, $table)
     {
-        return $this->adminTemplateModel->getTemplateCtBoxItem($table, $ct_id, $box_id, $this->config_domain['cf_id']);
+        return $this->adminTemplateModel->getTemplateCiBoxItem($table, $ct_id, $box_id, $this->config_domain['cf_id']);
     }
 }

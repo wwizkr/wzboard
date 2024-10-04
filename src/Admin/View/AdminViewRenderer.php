@@ -18,6 +18,8 @@ class AdminViewRenderer
     private AdminMenuHelper $adminMenuHelper;
     private CsrfTokenHandler $csrfTokenHandler;
     private AuthService $authService;
+    private array $cssFiles = [];
+    private array $jsFiles = [];
 
     public function __construct(DependencyContainer $container)
     {
@@ -56,6 +58,25 @@ class AdminViewRenderer
     private function logoutAndRedirect(): void
     {
         $this->authService->logout('/auth/login');
+    }
+
+    public function addAsset(string $type, string $filePath): void
+    {
+        if ($type === 'css') {
+            $this->cssFiles[] = $filePath;
+        } elseif ($type === 'js') {
+            $this->jsFiles[] = $filePath;
+        }
+    }
+
+    public function getAssets(string $type): array
+    {
+        if ($type === 'css') {
+            return $this->cssFiles;
+        } elseif ($type === 'js') {
+            return $this->jsFiles;
+        }
+        return [];
     }
 
     public function renderPagination(array $paginationData): void

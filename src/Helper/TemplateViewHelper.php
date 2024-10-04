@@ -7,10 +7,16 @@ use Web\PublicHtml\Core\DependencyContainer;
 class TemplateViewHelper
 {
     protected $container;
+    protected $table;
+    protected $configProvider;
+    protected $config_domain;
 
-    public function __construct(DependencyContainer $container)
+    public function __construct(DependencyContainer $container, $table = 'template')
     {
         $this->container = $container;
+        $this->table = $table;
+        $this->configProvider = $this->container->get('ConfigProvider');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
     }
 
     public function render($templateData)
@@ -74,7 +80,7 @@ class TemplateViewHelper
         <div id="tempbox_<?php echo $template['ct_id']; ?>_<?php echo $index; ?>" class="temp_box" <?php echo $box['display']; ?> <?php echo $box['effect']; ?>>
             <?php $this->renderSubject($template, $box, $index); ?>
             <div class="temp_box_inner" style="<?php echo $template['sectionHeight'] ? $template['sectionHeight'].'px;' : ''; ?>">
-                <?php $this->renderBoxContent($box); ?>
+                <?php echo $this->renderBoxContent($box); ?>
             </div>
         </div>
         <?php
@@ -85,9 +91,9 @@ class TemplateViewHelper
         if ($box['subject']['view'] != 1) return;
 
         if ($box['subject']['image']) {
-            $this->renderSubjectImage($template, $box, $index);
+            echo $this->renderSubjectImage($template, $box, $index);
         } elseif ($box['subject']['text']) {
-            $this->renderSubjectText($template, $box, $index);
+            echo $this->renderSubjectText($template, $box, $index);
         }
     }
 
@@ -156,7 +162,7 @@ class TemplateViewHelper
         if ($box['item_dir'] == 'file') {
             $this->renderFile($box);
         } else {
-            $this->renderSkin($box);
+            return $this->renderSkin($box);
         }
     }
 
@@ -166,7 +172,7 @@ class TemplateViewHelper
         if (file_exists($skin_file)) {
             include $skin_file;
         } else {
-            $this->renderError();
+            return $this->renderError();
         }
     }
 
@@ -179,61 +185,50 @@ class TemplateViewHelper
                 $preparedData = $this->prepareDataForSkin($box);
                 $template = file_get_contents($template_file);
                 $output = $this->fillTemplateWithData($template, $preparedData);
-                echo $output;
+                return $output;
             } else {
-                echo '<div class="box_empty"></div>';
+                return '<div class="box_empty"></div>';
             }
         } else {
-            $this->renderError();
+            return $this->renderError();
         }
-    }
-
-    private function getCacheKey($box)
-    {
-        // 고유한 캐시 키 생성
-        return 'template_' . $box['item_dir'] . '_' . $box['skin_dir'] . '_' . md5(serialize($box));
-    }
-
-    // 캐시 무효화 메서드
-    public function invalidateTemplateCache($itemDir, $skinDir)
-    {
-        $cacheKey = 'template_' . $itemDir . '_' . $skinDir . '_*';
-        CacheHelper::clearCache($cacheKey);
     }
 
     protected function fillTemplateWithData($template, $data)
     {
         // 아이템 템플릿 추출
-        if (!preg_match('/<!--ITEM_TEMPLATE_START-->(.*?)<!--ITEM_TEMPLATE_END-->/s', $template, $matches)) {
-            throw new \Exception('Error: Item template not found');
+        if (preg_match('/<!--ITEM_TEMPLATE_START-->(.*?)<!--ITEM_TEMPLATE_END-->/s', $template, $matches)) {
+            $itemTemplate = $matches[1];
+            // 전체 템플릿에서 아이템 템플릿 부분 제거
+            $template = preg_replace('/<!--ITEM_TEMPLATE_START-->.*?<!--ITEM_TEMPLATE_END-->/s', '', $template);
+        } else {
+            $itemTemplate = '';
         }
 
-        $itemTemplate = $matches[1];
-        
-        // 전체 템플릿에서 아이템 템플릿 부분 제거
-        $template = preg_replace('/<!--ITEM_TEMPLATE_START-->.*?<!--ITEM_TEMPLATE_END-->/s', '', $template);
-
-        // 아이템 HTML 생성
+        // 아이템 HTML 생성 (items가 있을 경우에만)
         $itemsHtml = '';
-        foreach ($data['items'] as $item) {
-            $itemHtml = $itemTemplate;
-            foreach ($item as $key => $value) {
-                // 특수한 경우 처리 (예: 썸네일)
-                if ($key === 'thumb' && !empty($value)) {
-                    $value = '<div class="list-col list-thumb">' . $value . '</div>';
+        if (isset($data['items']) && !empty($data['items']) && !empty($itemTemplate)) {
+            foreach ($data['items'] as $item) {
+                $itemHtml = $itemTemplate;
+                foreach ($item as $key => $value) {
+                    // 특수한 경우 처리 (예: 썸네일)
+                    if ($key === 'thumb' && !empty($value)) {
+                        $value = '<div class="list-col list-thumb">' . $value . '</div>';
+                    }
+                    $itemHtml = str_replace('{{'.$key.'}}', $value, $itemHtml);
                 }
-                $itemHtml = str_replace('{{'.$key.'}}', $value, $itemHtml);
+                // 사용되지 않은 플레이스홀더 제거
+                $itemHtml = preg_replace('/{{[^}]+}}/', '', $itemHtml);
+                $itemsHtml .= $itemHtml;
             }
-            // 사용되지 않은 플레이스홀더 제거
-            $itemHtml = preg_replace('/{{[^}]+}}/', '', $itemHtml);
-            $itemsHtml .= $itemHtml;
         }
 
-        // 전체 템플릿에 아이템 HTML 삽입 및 나머지 데이터 치환
+        // 전체 템플릿에 아이템 HTML 삽입
         $output = str_replace('{{items}}', $itemsHtml, $template);
-        
-        foreach ($data as $key => $value) {
-            if (!is_array($value)) {
+
+        // replace 데이터 처리 (모든 단일 치환을 여기서 처리)
+        if (isset($data['replace']) && is_array($data['replace'])) {
+            foreach ($data['replace'] as $key => $value) {
                 $output = str_replace('{{'.$key.'}}', $value, $output);
             }
         }
@@ -244,18 +239,16 @@ class TemplateViewHelper
         return $output;
     }
 
-    protected function renderError()
-    {
-        include(WZ_SRC_PATH.'/View/ErrorRenderer.php');
-    }
-
     protected function prepareDataForSkin($box)
     {
         $method = 'prepareDataFor' . ucfirst($box['item_dir']);
         if (method_exists($this, $method)) {
             return $this->$method($box);
         }
-        return ['items' => $box['items']];
+        return [
+            'replace' => $box['replace'] ?? [],
+            'items' => $box['items'] ?? [],
+        ];
     }
     
     // 게시판 최신글 출력 로직
@@ -296,12 +289,105 @@ class TemplateViewHelper
                 'date' => $article['date1'],
             ];
         }
+
+        $replace = [
+            'boxId' => $box['id'] ?? uniqid('editor-'),
+        ];
         
         return [
             'result' => 'success',
             'message' => '게시판 최신글 목록을 가져왔습니다.',
-            'boxId' => $box['id'] ?? uniqid('board-'),
             'items' => $processedArticles,
+            'replace' => $replace,
         ];
+    }
+
+    // 에디터 출력
+    protected function prepareDataForEditor($box)
+    {
+        $replace = [
+            'boxId' => $box['id'] ?? uniqid('editor-'),
+            'content' => $box['items'][0]['ci_content'],
+        ];
+
+        return [
+            'result' => 'success',
+            'message' => '에디터 내용을 가져왔습니다.',
+            'items' => [],
+            'replace' => $replace,
+        ];
+    }
+
+    protected function prepareDataForImage($box)
+    {
+        $boxId = $box['id'] ? 'image-box-'.$box['id'] : uniqid('image-');
+        $baseImage100 = $this->configProvider->get('image')['noImg100'];
+        $baseImage430 = $this->configProvider->get('image')['noImg430'];
+        $imagePath = WZ_STORAGE_PATH . '/template/' . $this->config_domain['cf_id'] . '/' . $this->table;
+        
+        // 이미지 목록 처리
+        $items = [];
+        foreach ($box['items'] ?? [] as $key => $val) {
+            $pc_image = $val['ci_pc_item'] ?? '';
+            $mo_image = $val['ci_mo_item'] ?? '';
+            $link = $val['ci_link'] ?? '';
+            $win = ($val['ci_new_win'] ?? 0) === 1 ? 'target="_blank"' : '';
+
+            $pc_image_url = $pc_image && file_exists($imagePath . '/' . $pc_image)
+                ? '/storage/template/' . $this->config_domain['cf_id'] . '/' . $this->table . '/' . $pc_image
+                : $baseImage100;
+
+            $mo_image_url = $mo_image && file_exists($imagePath . '/' . $mo_image)
+                ? '/storage/template/' . $this->config_domain['cf_id'] . '/' . $this->table . '/' . $mo_image
+                : ($pc_image_url !== $baseImage100 ? $pc_image_url : $baseImage430);
+
+            $pc_string = $link
+                ? "<a href=\"{$link}\" {$win}><img src=\"{$pc_image_url}\"></a>"
+                : "<img src=\"{$pc_image_url}\">";
+
+            $mo_string = $link
+                ? "<a href=\"{$link}\" {$win}><img src=\"{$mo_image_url}\"></a>"
+                : "<img src=\"{$mo_image_url}\">";
+
+            $items[$key] = [
+                'pcImage' => $pc_string,
+                'moImage' => $mo_string,
+                'swiperSlide' => $box['style'] === 'slide' ? 'swiper-slide' : '',
+            ];
+        }
+
+        // Swiper 설정
+        $swiperOptions = [
+            'style' => $box['style'] ?? '',
+            'slidesPerView' => $box['cols'] ?? 'auto',
+            'navigation' => true,
+            'pagination' => true,
+            'touchRatio' => 1,
+            'observer' => true,
+            'observeParents' => true,
+            // 필요에 따라 다른 옵션들을 추가할 수 있습니다.
+        ];
+
+        $swiperConfig = CommonHelper::getSwiperConfig($boxId, $swiperOptions);
+
+        $replace = [
+            'boxId' => $boxId,
+            'swiperContainer' => $box['style'] === 'slide' ? 'swiper-container' : '',
+            'swiperWrapper' => $box['style'] === 'slide' ? 'swiper-wrapper' : '',
+            'swiperScript' => $swiperConfig['script'],
+            'swiperHtml' => $swiperConfig['html'],
+        ];
+
+        return [
+            'result' => 'success',
+            'message' => '이미지 내용을 가져왔습니다.',
+            'items' => $items,
+            'replace' => $replace,
+        ];
+    }
+
+    protected function renderError()
+    {
+        include(WZ_SRC_PATH.'/View/ErrorRenderer.php');
     }
 }
