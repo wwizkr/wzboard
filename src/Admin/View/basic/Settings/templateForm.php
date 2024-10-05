@@ -1152,6 +1152,9 @@ const TemplateHandlers = {
     // 기타 템플릿 관련 함수들...
 };
 
+/*
+ * itemtype 별 html 출력코드
+ */
 const TemplateHtmls = {
     initializeSortable: function(idx) {
         var $list = $(`#item_asset_${idx}, #item_inven_${idx}`);
@@ -1262,6 +1265,27 @@ const TemplateHtmls = {
 
         // Sortable 초기화
         TemplateHtmls.initializeSortable(idx);
+    },
+    
+    renderBoardgroup(data, requestData, $parent) {
+        const { idx } = requestData;
+        const items = data.display[0].ci_pc_item ? data.display[0].ci_pc_item.split(',') : [];
+        const boardItems = data?.items || [];
+
+        let html = '<div class="frm-input-row">';
+            html += '<div class="frm-input input-prepend wfpx-140"><span class="frm_text">출력게시판 선택</span></div>';
+            boardItems.forEach(function($i, i) {
+                const isChecked = items.includes($i.board_id) ? 'checked' : '';
+                html += `
+                    <div class="frm-input frm-check">
+                        <input type="checkbox" name="item_group[${idx}][]" id="item_group_${idx}_${i}" value="${$i.board_id}" ${isChecked}>
+                        <label for="item_group_${idx}_${i}">${$i.board_name}</label>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        html += '</div>';
+        $parent.find('.box_item_wrap').empty().html(html);
     },
 
     renderBanner(data, requestData, $parent) {

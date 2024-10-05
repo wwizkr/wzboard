@@ -32,7 +32,6 @@ trait TemplateItemDataTrait
             case 'banner':
             case 'movie':
             case 'outlogin':
-            case 'boardgroup':
             case 'file':
                 // 이 타입들은 현재 빈 배열을 반환합니다.
                 break;
@@ -44,6 +43,10 @@ trait TemplateItemDataTrait
                 break;
             case 'board':
                 $data['data']['items'] = $this->getTemplateBoardItem($ctId, $boxId);
+                break;
+            case 'boardgroup':
+                $data['data']['items'] = $this->getTemplateBoardItem($ctId, $boxId);
+                $data['data']['display'] = $this->getTemplateCiBoxItem($table, $ctId, $boxId);
                 break;
             default:
                 return [

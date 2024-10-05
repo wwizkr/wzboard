@@ -1,0 +1,152 @@
+<style>
+#{{boxId}} .board-list-wrap {
+    position: relative;
+    overflow: hidden;
+}
+#{{boxId}} .swiper-container {
+    width: 100%;
+    height: 100%;
+}
+#{{boxId}} .swiper-slide {
+    width: 100%;
+}
+#{{boxId}} .tab-content {
+    display: none;
+}
+#{{boxId}} .tab-content.active {
+    display: block;
+}
+</style>
+<div class="board-box" id="{{boxId}}">
+    <ul class="board-tab-list">
+        {{items}}
+    </ul>
+    <div class="board-list-wrap"></div>
+</div>
+<!--ITEM_TEMPLATE_START-->
+<li class="board-tab-item">
+    <a href="javascript:void(0);" data-idx="{{index}}">{{boardName}}</a>
+</li>
+<!--ITEM_TEMPLATE_END-->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var boardBox = document.getElementById('{{boxId}}');
+        var isSwiper = {{isSwiper}};
+        var articleData = {{jsonData}};
+
+        function renderContent() {
+            var boardListWrap = boardBox.querySelector('.board-list-wrap');
+            var html = isSwiper ? '<div class="swiper-container"><div class="swiper-wrapper">' : '';
+            
+            var tabItems = boardBox.querySelectorAll('.board-tab-item a');
+            tabItems.forEach(function(tab, index) {
+                var idx = tab.getAttribute('data-idx');
+                if (isSwiper) {
+                    html += '<div class="swiper-slide">' + renderTabContent(idx) + '</div>';
+                } else {
+                    html += '<div class="tab-content' + (index === 0 ? ' active' : '') + '">' + renderTabContent(idx) + '</div>';
+                }
+            });
+
+            html += isSwiper ? '</div></div>' : '';
+            boardListWrap.innerHTML = html;
+        }
+
+        function renderTabContent(idx) {
+            var articles = articleData[idx] || [];
+            var html = '<ul class="table-list">';
+            if (articles.length === 0) {
+                html += '<li class="box-empty">게시글이 없습니다.</li>';
+            } else {
+                articles.forEach(function(article) {
+                    html += `
+                        <li class="table-list-row list-body">
+                            <div class="list-row">
+                                <div class="list-col list-num col-custom-60 mobile-none">${article.num}</div>
+                                ${article.thumb || ''}
+                                <div class="list-col list-subject col-custom-auto text-left">
+                                    <a href="${article.href}">${article.title}</a>
+                                    <div class="list-article-info">
+                                        <div class="list-item list-name mobile-only">${article.nickName}</div>
+                                        <div class="list-item list-date">${article.date}</div>
+                                        ${article.comment ? `<div class="list-item list-comment">${article.comment}</div>` : ''}
+                                    </div>
+                                </div>
+                                <div class="list-col list-name mobile-none">${article.nickName}</div>
+                                <div class="list-col list-hit col-custom-80 mobile-none">${article.hit}</div>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+            html += '</ul>';
+            return html;
+        }
+
+        function initSwiper() {
+            if (!isSwiper) return null;
+
+            var swiper = new Swiper(boardBox.querySelector('.swiper-container'), {
+                loop: true,
+                autoplay: {
+                    delay: 6000,
+                    disableOnInteraction: false,
+                },
+                on: {
+                    slideChange: function () {
+                        updateActiveTab(this.realIndex);
+                    }
+                }
+            });
+
+            return swiper;
+        }
+
+        function updateActiveTab(index) {
+            var tabItems = boardBox.querySelectorAll('.board-tab-item a');
+            tabItems.forEach(function(tab, i) {
+                if (i === index) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            if (!isSwiper) {
+                var tabContents = boardBox.querySelectorAll('.tab-content');
+                tabContents.forEach(function(content, i) {
+                    if (i === index) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+            }
+        }
+
+        renderContent();
+        var swiper = initSwiper();
+
+        var tabItems = boardBox.querySelectorAll('.board-tab-item a');
+        tabItems.forEach(function(tab, index) {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (isSwiper) {
+                    swiper.slideToLoop(index);
+                } else {
+                    updateActiveTab(index);
+                }
+            });
+        });
+
+        if (isSwiper) {
+            boardBox.addEventListener('mouseenter', function() {
+                swiper.autoplay.stop();
+            });
+
+            boardBox.addEventListener('mouseleave', function() {
+                swiper.autoplay.start();
+            });
+        }
+    });
+</script>

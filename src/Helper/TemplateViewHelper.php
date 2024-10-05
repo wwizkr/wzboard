@@ -243,8 +243,12 @@ class TemplateViewHelper
     {
         $method = 'prepareDataFor' . ucfirst($box['item_dir']);
         if (method_exists($this, $method)) {
-            return $this->$method($box);
+            $box['boxId'] = $box['item_dir'] ? $box['item_dir'].'-box-'.$box['id'] : uniqid($box['item_dir'].'-');
+            $prepareData = $this->$method($box);
+            $prepareData['replace']['boxId'] = $box['boxId'];
+            return $prepareData;
         }
+
         return [
             'replace' => $box['replace'] ?? [],
             'items' => $box['items'] ?? [],
@@ -291,7 +295,6 @@ class TemplateViewHelper
         }
 
         $replace = [
-            'boxId' => $box['id'] ?? uniqid('editor-'),
         ];
         
         return [
@@ -302,11 +305,71 @@ class TemplateViewHelper
         ];
     }
 
+    // 게시판 그룹 최신글 출력 로직
+    protected function prepareDataForBoardgroup($box)
+    {
+        // 게시판 데이터 준비 로직
+        $limit = $box['itemcnt'] ?? 5;
+        $listStyle = $box['style']; // list or swiper
+        $boardItems = $box['items'][0]['ci_pc_item'] ? explode(",", $box['items'][0]['ci_pc_item']) : [];
+        
+        $adminBoardsService = $this->container->get('AdminBoardsService');
+        $boardsService = $this->container->get('BoardsService');
+        
+        $boardData = [];
+        foreach($boardItems as $index => $board) {
+            $boardData[$index] = $adminBoardsService->getBoardsConfig($board);
+            $listData[$index] = $boardsService->getLatestArticleList($boardData[$index], $limit);
+        }
+
+        $boardTab = [];
+        foreach($boardData as $index => $tab) {
+            $boardTab[$index] = [
+                'index' => $index,
+                'boardName' => $tab['board_name'],
+            ];
+        }
+
+        $jsonData = [];
+        foreach($listData as $index => $articleData) {
+            if (empty($articleData)) {
+                continue;
+            }
+
+            foreach($articleData as $article) {
+                $jsonData[$index][] = [
+                    'num' => $limit - $index,
+                    'href' => '/board/' . $boardData[$index]['board_id'] . '/view/' . $article['no'] . '/' . $article['slug'],
+                    'articleNo' => $article['no'],
+                    'boardId' => $boardData[$index]['board_id'],
+                    'thumb' => $article['thumb'] ?? '',
+                    'title' => $article['title'],
+                    'slug' => $article['slug'],
+                    'nickName' => $article['nickName'],
+                    'hit' => number_format($article['view_count']),
+                    'comment' => $article['comment_count'] ?? 0,
+                    'date' => $article['date1'],
+                ];
+            }
+        }
+        
+        $replace = [
+            'jsonData' => !empty($jsonData) ? json_encode($jsonData) : '[]',
+            'isSwiper' => $box['style'] === 'slide' ? 'true' : 'false',
+        ];
+
+        return [
+            'result' => 'success',
+            'message' => '게시판 최신글 목록을 가져왔습니다.',
+            'items' => $boardTab,
+            'replace' => $replace,
+        ];
+    }
+
     // 에디터 출력
     protected function prepareDataForEditor($box)
     {
         $replace = [
-            'boxId' => $box['id'] ?? uniqid('editor-'),
             'content' => $box['items'][0]['ci_content'],
         ];
 
@@ -320,7 +383,6 @@ class TemplateViewHelper
 
     protected function prepareDataForImage($box)
     {
-        $boxId = $box['id'] ? 'image-box-'.$box['id'] : uniqid('image-');
         $baseImage100 = $this->configProvider->get('image')['noImg100'];
         $baseImage430 = $this->configProvider->get('image')['noImg430'];
         $imagePath = WZ_STORAGE_PATH . '/template/' . $this->config_domain['cf_id'] . '/' . $this->table;
@@ -357,6 +419,7 @@ class TemplateViewHelper
         }
 
         // Swiper 설정
+        $swiperId = $box['boxId'];
         $swiperOptions = [
             'style' => $box['style'] ?? '',
             'slidesPerView' => $box['cols'] ?? 'auto',
@@ -368,10 +431,9 @@ class TemplateViewHelper
             // 필요에 따라 다른 옵션들을 추가할 수 있습니다.
         ];
 
-        $swiperConfig = CommonHelper::getSwiperConfig($boxId, $swiperOptions);
+        $swiperConfig = CommonHelper::getSwiperConfig($swiperId, $swiperOptions);
 
         $replace = [
-            'boxId' => $boxId,
             'swiperContainer' => $box['style'] === 'slide' ? 'swiper-container' : '',
             'swiperWrapper' => $box['style'] === 'slide' ? 'swiper-wrapper' : '',
             'swiperScript' => $swiperConfig['script'],

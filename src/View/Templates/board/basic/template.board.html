@@ -1,17 +1,9 @@
-<div class="board-box" id="board-box-{{boxId}}">
-    <script>
-        // 이 박스에만 적용되는 JavaScript 코드
-        document.addEventListener('DOMContentLoaded', function() {
-            var boardBox = document.getElementById('board-box-{{boxId}}');
-            // 추가 JavaScript 로직...
-        });
-    </script>
-    <ul class="board-list">
+<div class="board-box" id="{{boxId}}">
+    <ul class="table-list board-list">
         {{items}}
     </ul>
 </div>
 
-<!-- 항목 템플릿 -->
 <!--ITEM_TEMPLATE_START-->
 <li class="table-list-row list-body">
     <div class="list-row">
@@ -30,3 +22,10 @@
     </div>
 </li>
 <!--ITEM_TEMPLATE_END-->
+<script>
+    // 이 박스에만 적용되는 JavaScript 코드
+    document.addEventListener('DOMContentLoaded', function() {
+        var boardBox = document.getElementById('{{boxId}}');
+        // 추가 JavaScript 로직...
+    });
+</script>

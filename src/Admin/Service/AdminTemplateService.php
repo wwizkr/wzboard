@@ -264,7 +264,9 @@ class AdminTemplateService
                             $result = $this->processedBoardItem($table, $ciData);
                             break;
                         case 'boardgroup':
-                            $data['data']['items'] = [];
+                            // 상품필터 게시판 그룹과 같은 그룹형 아이템
+                            $ciData['options'] = isset($_POST['item_group'][$key]) && !empty($_POST['item_group'][$key]) ? implode(",",$_POST['item_group'][$key]) : '';
+                            $result = $this->processedGroupItem($table, $ciData);
                             break;
                         case 'file':
                             $data['data']['items'] = [];
@@ -290,6 +292,21 @@ class AdminTemplateService
             'ci_pc_item' => ['s', ''],
             'ci_mo_item' => ['s', ''],
             'ci_content' => ['s', $ciData['ci_content']],
+        ];
+
+        $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+    }
+    
+    // 상품필터 게시판 그룹과 같은 그룹형 아이템
+    private function processedGroupItem(string $table, array $ciData): void
+    {
+        $param = [
+            'cf_id' => ['i', $ciData['cf_id']],
+            'ct_id' => ['i', $ciData['ct_id']],
+            'ci_box_id' => ['i', $ciData['ci_box_id']],
+            'ci_type' => ['s', $ciData['ci_type']],
+            'ci_pc_item' => ['s', $ciData['options']],
+            'ci_mo_item' => ['s', $ciData['options']],
         ];
 
         $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
