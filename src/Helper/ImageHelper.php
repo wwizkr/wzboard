@@ -19,11 +19,11 @@ class ImageHelper
     public static function initialize($subDirectory = '')
     {
         // 동적으로 디렉토리 설정
-        self::$imageDirectory = __DIR__ . '/../../public/storage/' . $subDirectory;
+        self::$imageDirectory = WZ_STORAGE_PATH.'/' . $subDirectory;
         
         // 디렉토리가 없으면 생성
         if (!is_dir(self::$imageDirectory)) {
-            if (!mkdir(self::$imageDirectory, 0777, true)) {
+            if (!mkdir(self::$imageDirectory, 0755, true)) {
                 die('Failed to create image directories...');
             }
         }

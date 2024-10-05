@@ -197,7 +197,7 @@ class TemplateService
             ? $template['ct_subject_mo_image'][$box_id] 
             : ($template['ct_subject_pc_image'][$box_id] ?? '');
         if ($subject_image && file_exists(WZ_STORAGE_PATH.'/template/'.$this->config_domain['cf_id'].'/'.$table.'/'.$subject_image)) {
-            return $_ENV['APP_URL'].'/template/'.$this->config_domain['cf_id'].'/'.$table.'/'.$subject_image;
+            return '/storage/template/'.$this->config_domain['cf_id'].'/'.$table.'/'.$subject_image;
         }
         return '';
     }

@@ -223,6 +223,12 @@ class AdminTemplateService
             $ct_id = $updated['ins_id'];
             if (isset($_POST['ct_list_itemtype']) && !empty($_POST['ct_list_itemtype'])) {
                 foreach($_POST['ct_list_itemtype'] as $key=>$val) {
+                    $content = $_POST['content'][$key] ?? null;
+                    if ($content) {
+                        $storagePath = "/storage/editor";
+                        $content = CommonHelper::updateStorageImages($content, $storagePath);
+                    }
+
                     $ciData = [
                         'cf_id' => $this->config_domain['cf_id'],
                         'ct_id' => $ct_id,
@@ -230,7 +236,7 @@ class AdminTemplateService
                         'ci_type' => $val,
                         'ci_link' => $_POST['item_link'][$key] ?? '',
                         'ci_win' => $_POST['item_win'][$key] ?? '',
-                        'ci_content' => $_POST['content'][$key] ?? null,
+                        'ci_content' => $content,
                         'options' => []
                     ];
 
@@ -333,8 +339,8 @@ class AdminTemplateService
                 ];
                 $pc_upload_result = $uploadManager->handleFileUploads($pc_image_file, '', $ciData['ct_id'] . '_pc_' . $index);
                 $pc_image = $pc_upload_result[0] ?? $pc_image;
-                if (!empty($pc_upload_result[0])) {
-                    $uploadManager->deleteOldFile($pc_old_image);
+                if (!empty($pc_upload_result[0]) && !empty($pc_old_image[$index])) {
+                    $uploadManager->deleteOldFile($pc_old_image[$index]);
                 }
             }
 
@@ -349,23 +355,25 @@ class AdminTemplateService
                 ];
                 $mo_upload_result = $uploadManager->handleFileUploads($mo_image_file, '', $ciData['ct_id'] . '_mo_' . $index);
                 $mo_image = $mo_upload_result[0] ?? $mo_image;
-                if (!empty($mo_upload_result[0])) {
-                    $uploadManager->deleteOldFile($mo_old_image);
+                if (!empty($mo_upload_result[0]) && !empty($mo_old_image[$index])) {
+                    $uploadManager->deleteOldFile($mo_old_image[$index]);
                 }
             }
 
-            $param = [
-                'cf_id' => ['i', $ciData['cf_id']],
-                'ct_id' => ['i', $ciData['ct_id']],
-                'ci_box_id' => ['i', $key],
-                'ci_type' => ['s', $ciData['ci_type']],
-                'ci_pc_item' => ['s', $pc_image],
-                'ci_mo_item' => ['s', $mo_image],
-                'ci_link' => ['s', $_POST['item_link'][$key][$index] ?? ''],
-                'ci_new_win' => ['i', $_POST['item_win'][$key][$index] ?? 0],
-            ];
+            if ($pc_image) {
+                $param = [
+                    'cf_id' => ['i', $ciData['cf_id']],
+                    'ct_id' => ['i', $ciData['ct_id']],
+                    'ci_box_id' => ['i', $key],
+                    'ci_type' => ['s', $ciData['ci_type']],
+                    'ci_pc_item' => ['s', $pc_image],
+                    'ci_mo_item' => ['s', $mo_image],
+                    'ci_link' => ['s', $_POST['item_link'][$key][$index] ?? ''],
+                    'ci_new_win' => ['i', $_POST['item_win'][$key][$index] ?? 0],
+                ];
 
-            $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+                $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+            }
         }
     }
 

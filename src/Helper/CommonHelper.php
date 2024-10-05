@@ -594,35 +594,36 @@ class CommonHelper
     /**
      * $content 의 임시저장된 이미지 파일을 복사한 후 $content 내용 변경 및 임시 이미지 삭제
      * @param $content
-     * @param $storagePath : 복사할 디렉토리
+     * @param $storagePath : 반드시 /storage 로 시작하는 절대경로로.
      * @return string $congent;
      */
     public static function updateStorageImages($content, $storagePath)
     {
-        // 오늘 날짜 형식 설정
-        $dateFolder = date('Ymd'); // 예: 20240828
-        $storagePath = rtrim($storagePath, '/') . '/' . $dateFolder;
-
-        // 폴더가 존재하지 않으면 생성
-        if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $storagePath)) {
-            mkdir($_SERVER['DOCUMENT_ROOT'] . $storagePath, 0777, true);
-        }
-
         // 정규식을 사용하여 $content 내의 모든 /storage/tmp/ 경로의 파일들을 찾기
         preg_match_all('/\/storage\/tmp\/[^\s"\']+/', $content, $matches);
 
         // 찾은 파일들을 새로운 경로로 복사하고 경로를 업데이트
         if (isset($matches[0]) && count($matches[0]) > 0) {
+
+            // 오늘 날짜 형식 설정 -- 컨텐츠에 이미지가 포함되어 있을 경우에만 일자 디렉토리 생성
+            $dateFolder = date('Ymd'); // 예: 20240828
+            $storagePath = rtrim($storagePath, '/') . '/' . $dateFolder;
+
+            // 디렉토리가 존재하지 않으면 생성
+            if (!is_dir(WZ_PUBLIC_PATH . $storagePath)) {
+                mkdir(WZ_PUBLIC_PATH . $storagePath, 0755, true);
+            }
+
             foreach ($matches[0] as $filePath) {
                 $fileName = basename($filePath);
-                $sourcePath = $_SERVER['DOCUMENT_ROOT'] . $filePath;
-                $destinationPath = $_SERVER['DOCUMENT_ROOT'] . $storagePath . '/' . $fileName;
+                $sourcePath =  WZ_PUBLIC_PATH . $filePath;
+                $destinationPath = WZ_PUBLIC_PATH . $storagePath . '/' . $fileName;
 
                 // 파일이 존재하면 복사 후 경로 변경
                 if (file_exists($sourcePath)) {
                     if (copy($sourcePath, $destinationPath)) {
                         // 복사 성공 시 콘텐츠 내 경로 변경
-                        $newFilePath = $storagePath . '/' . $fileName;
+                        $newFilePath = $storagePath . '/' . $fileName; //http(s):// 가 제외된 경로 - 필요시 :// 붙힐것.
                         $contentBeforeReplace = $content; // 변경 전 콘텐츠 백업
 
                         // 경로 변경 시 절대 경로로 통일
@@ -630,9 +631,9 @@ class CommonHelper
 
                         // 로그: 콘텐츠 경로 변경 후 로그
                         if ($content !== $contentBeforeReplace) {
-                            error_log("Content path replaced: $filePath -> $newFilePath");
+                            //error_log("Content path replaced: $filePath -> $newFilePath");
                         } else {
-                            error_log("Content path replacement failed for: $filePath");
+                            //error_log("Content path replacement failed for: $filePath");
                         }
 
                         // 원본 파일 삭제
@@ -759,7 +760,11 @@ class CommonHelper
         // 이 부분에 도달할 일은 없지만, 안전을 위해 남겨둠
         return "방금 전";
     }
-
+    
+    /*
+     * 에디터로 작성된 컨텐츠에서 썸네일을 추출
+     * 컨텐츠에 여러개의 이미지가 있을 경우 첫번째 이미지를 썸네일로 추출함.
+     */
     public static function createThumbnailFromContent(string $content, int $width = 200, int $height = 200): ?string
     {
         // 콘텐츠에서 첫 번째 이미지 URL을 추출
@@ -775,13 +780,13 @@ class CommonHelper
 
             // 썸네일 경로 설정 (동적으로 디렉토리 경로 반영)
             $thumbnailPath = $imageDirectory . '/' . $thumbnailFilename;
-            $fullThumbnailPath = $_SERVER['DOCUMENT_ROOT'] . $thumbnailPath;
+            $fullThumbnailPath = WZ_PUBLIC_PATH . $thumbnailPath;
 
             // 썸네일이 이미 존재하는지 확인
             if (!file_exists($fullThumbnailPath)) {
                 // 썸네일이 없을 경우 새로 생성
                 ImageHelper::initialize(str_replace('/storage/', '', $imageDirectory));  // 동적 하위 디렉토리 설정
-                $thumbnailCreated = ImageHelper::createThumbnail($_SERVER['DOCUMENT_ROOT'] . $imageUrl, $thumbnailFilename, $width, $height);
+                $thumbnailCreated = ImageHelper::createThumbnail(WZ_PUBLIC_PATH .'/'. $imageUrl, $thumbnailFilename, $width, $height);
 
                 if ($thumbnailCreated) {
                     return $thumbnailPath;  // 생성된 썸네일 경로 반환

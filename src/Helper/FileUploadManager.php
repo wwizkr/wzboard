@@ -2,6 +2,9 @@
 // 파일 위치: /src/PublicHtml/Helper/FileUploadManager.php
 namespace Web\PublicHtml\Helper;
 
+use InvalidArgumentException;
+use RuntimeException;
+
 class FileUploadManager
 {
     private $tempFilePath;

@@ -240,7 +240,7 @@ class BoardController
         // 글 정보
         $articleData = [];
         if($article_no) {
-            $articleData = $this->boardsService->getArticleDataByNo($this->boardConfig['group_no'], $article_no);
+            $articleData = $this->boardsService->getArticleDataByNo($this->boardConfig, $article_no);
         }
 
         /*
