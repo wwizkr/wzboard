@@ -152,6 +152,19 @@ class ViewRenderer
     {
         $data['config_domain'] = $this->config_domain;
         extract($data, EXTR_SKIP);
+
+        // 플러그인 경로를 먼저 확인
+        if (strpos($viewFilePath, 'Plugins/') === 0) {
+            $pluginViewFilePath = WZ_SRC_PATH . '/' . $viewFilePath . '.php';
+            if (file_exists($pluginViewFilePath)) {
+                include $pluginViewFilePath;
+                return;
+            } else {
+                echo "플러그인 뷰 파일을 찾을 수 없습니다: {$pluginViewFilePath}";
+                return;
+            }
+        }
+
         if (file_exists($viewFilePath . '.php')) {
             include $viewFilePath . '.php';
         } else {

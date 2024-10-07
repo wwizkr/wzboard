@@ -126,13 +126,29 @@ class BoardsModel
             $where = ['no' => ['i', $article_no]];
             $result = $this->db->sqlBindQuery('update', 'board_articles', $param, $where);
             return $result['result'] === 'success' 
-                ? ['result' => 'success', 'message' => '게시글을 수정하였습니다.']
-                : ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+                ? [
+                    'result' => 'success',
+                    'message' => '게시글을 수정하였습니다.',
+                    'view' => '/board/'.$board_id.'/view/'.$article_no.'/'.$data['slug'][1],
+                    'data' => ['articleNo' => $article_no, 'slug' => $data['slug'][1]]
+                  ]
+                : [
+                    'result' => 'failure',
+                    'message' => '오류가 발생하였습니다.'
+                  ];
         } else {
             $result = $this->db->sqlBindQuery('insert', 'board_articles', $data, []);
             return $result['ins_id']
-                ? ['result' => 'success', 'message' => '게시글을 등록하였습니다.']
-                : ['result' => 'failure', 'message' => '오류가 발생하였습니다.'];
+                ? [
+                    'result' => 'success',
+                    'message' => '게시글을 등록하였습니다.',
+                    'view' => '/board/'.$board_id.'/view/'.$result['ins_id'].'/'.$data['slug'][1],
+                    'data' => ['articleNo' => $result['ins_id'], 'slug' => $data['slug'][1]]
+                  ]
+                : [
+                    'result' => 'failure',
+                    'message' => '오류가 발생하였습니다.'
+                  ];
         }
     }
 

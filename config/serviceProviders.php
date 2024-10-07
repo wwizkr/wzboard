@@ -3,6 +3,11 @@
 
 use Web\PublicHtml\Core\DependencyContainer;
 
+/*
+ * bootstarp 등록
+ * -- $this->db(/Core/DatabaseQeury)
+ */
+
 // Auth
 use Web\PublicHtml\Service\AuthService;
 
@@ -28,6 +33,9 @@ use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Helper\MembersHelper;
 
 // Helper
+use Web\PublicHtml\Helper\SessionManager;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
+use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
@@ -41,9 +49,11 @@ use Web\PublicHtml\Service\TemplateService;
 use Web\Admin\Service\AdminTemplateService;
 use Web\Admin\Model\AdminTemplateModel;
 
-// Admin
-//use Web\Admin\Service\ConfigService;
-//use Web\Admin\model\ConfigModel;
+// ETC
+use Web\PublicHtml\Controller\SocialController;
+use Web\PublicHtml\View\ViewRenderer;
+use Web\Admin\View\AdminViewRenderer;
+
 
 function registerServices(DependencyContainer $container)
 {
@@ -82,7 +92,7 @@ function registerServices(DependencyContainer $container)
         return new MembersHelper($c);
     });
 
-    // Trial
+    // Trial -- Plugin으로 변환 완료 후 전체 삭제
     $container->addFactory('AdminTrialService', function($c) {
         return new AdminTrialService($c);
     });
@@ -98,11 +108,23 @@ function registerServices(DependencyContainer $container)
     $container->addFactory('TrialModel', function($c) {
         return new TrialModel($c);
     });
+    /*
+     * 삭제
     $container->addFactory('TrialHelper', function($c) {
         return new TrialHelper($c);
     });
+    */
 
     // Helpers
+    $container->addFactory('SessionManager', function($c) {
+        return new SessionManager();
+    });
+    $container->addFactory('CsrfTokenHandler', function($c) {
+        return new CsrfTokenHandler($c->get('SessionManager'));
+    });
+    $container->addFactory('FormDataMiddleware', function($c) {
+        return new FormDataMiddleware($c->get('CsrfTokenHandler'));
+    });
     $container->addFactory('CookieManager', function($c) {
         return new CookieManager();
     });
@@ -130,5 +152,17 @@ function registerServices(DependencyContainer $container)
     });
     $container->addFactory('AdminTemplateModel', function($c) {
         return new AdminTemplateModel($c);
+    });
+
+    // ETC
+    $container->addFactory('SocialController', function ($c) {
+        return new SocialController($c);
+    });
+    // ViewRenderer 및 AdminViewRenderer 등록
+    $container->set('ViewRenderer', function($c) {
+        return new ViewRenderer($c);
+    });
+    $container->set('AdminViewRenderer', function($c) {
+        return new AdminViewRenderer($c);
     });
 }

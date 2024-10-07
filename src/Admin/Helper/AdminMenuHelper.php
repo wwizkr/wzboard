@@ -44,10 +44,6 @@ class AdminMenuHelper
                         'label' => '메뉴 설정',
                         'url' => '/admin/settings/menus',
                     ],
-                    'template' => [
-                        'label' => '메인화면/페이지 관리',
-                        'url' => '/admin/template/templateList',
-                    ],
                     'clause' => [
                         'label' => '이용약관 관리',
                         'url' => '/admin/settings/clauseList',
@@ -112,6 +108,29 @@ class AdminMenuHelper
                     'gichul' => [
                         'label' => '기출문제 관리',
                         'url' => '/admin/trialadmin/gichulList',
+                    ],
+                ],
+            ],
+            'design' => [
+                'label' => '디자인 관리',
+                'url' => '/admin/template/templateList',
+                'icon' => 'bi-people',
+                'submenu' => [
+                    'template' => [
+                        'label' => '템플릿 관리',
+                        'url' => '/admin/template/templateList',
+                    ],
+                    'page' => [
+                        'label' => '페이지 생성/관리',
+                        'url' => '/admin/template/pageGroup',
+                    ],
+                    'banner' => [
+                        'label' => '배너 관리',
+                        'url' => '/admin/banner/bannerList',
+                    ],
+                    'widget' => [
+                        'label' => '위젯 관리',
+                        'url' => '/admin/widget/widgetList',
                     ],
                 ],
             ],

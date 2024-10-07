@@ -28,25 +28,34 @@ trait TemplateItemDataTrait
             ]
         ];
 
+        $listData = $this->adminTemplateModel->getTemplateDataById($table, $ctId, $this->config_domain['cf_id']);
+        $useSkin = explode(",", $listData['ct_list_box_skin'] ?? '');
+        $data['data']['useskin'] = $useSkin[$boxId] ?? 'basic';
+
+        if ($itemType === 'file' && $data['data']['useskin'] === 'basic') {
+            $data['data']['useskin'] .= '.php';
+        }
+
+        $boxData = $this->getTemplateCiBoxItem($table, $ctId, $boxId);
+
         switch($itemType) {
             case 'banner':
             case 'movie':
             case 'outlogin':
             case 'file':
-                // 이 타입들은 현재 빈 배열을 반환합니다.
                 break;
             case 'image':
                 $data['data']['items'] = $this->processImageData($table, $ctId, $boxId);
                 break;
             case 'editor':
-                $data['data']['items'] = $this->getTemplateCiBoxItem($table, $ctId, $boxId);
+                $data['data']['items'] = $boxData;
                 break;
             case 'board':
                 $data['data']['items'] = $this->getTemplateBoardItem($ctId, $boxId);
                 break;
             case 'boardgroup':
                 $data['data']['items'] = $this->getTemplateBoardItem($ctId, $boxId);
-                $data['data']['display'] = $this->getTemplateCiBoxItem($table, $ctId, $boxId);
+                $data['data']['display'] = $boxData;
                 break;
             default:
                 return [

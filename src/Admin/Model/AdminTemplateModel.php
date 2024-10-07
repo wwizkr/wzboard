@@ -11,7 +11,6 @@ class AdminTemplateModel
     use DatabaseHelperTrait;
 
     private $db;
-    //private $config;
 
     /**
      * 생성자: 의존성 주입을 통해 데이터베이스 연결을 설정합니다.
@@ -43,7 +42,7 @@ class AdminTemplateModel
         return $result;
     }
 
-    public function getTemplateDataById(string $table, int $ctId = null, int $cf_id): array
+    public function getTemplateDataById(string $table, int $ctId = null, int $cf_id = 1): array
     {
         $tablename = ($table === 'page') ? 'custom_page_lists' : 'custom_template_lists';
 

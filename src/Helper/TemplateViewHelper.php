@@ -170,6 +170,7 @@ class TemplateViewHelper
     {
         $skin_file = WZ_SRC_PATH.'/View/Templates/'.$box['item_dir'].'/'.$box['skin_dir'];
         if (file_exists($skin_file)) {
+            $container = $this->container;
             include $skin_file;
         } else {
             return $this->renderError();
@@ -229,7 +230,15 @@ class TemplateViewHelper
         // replace 데이터 처리 (모든 단일 치환을 여기서 처리)
         if (isset($data['replace']) && is_array($data['replace'])) {
             foreach ($data['replace'] as $key => $value) {
-                $output = str_replace('{{'.$key.'}}', $value, $output);
+                // null 체크 추가
+                if ($value !== null) {
+                    // 문자열로 강제 변환
+                    $value = (string)$value;
+                    $output = str_replace('{{'.$key.'}}', $value, $output);
+                } else {
+                    // null인 경우 빈 문자열로 대체하거나 다른 처리를 수행
+                    $output = str_replace('{{'.$key.'}}', '', $output);
+                }
             }
         }
 
@@ -404,12 +413,12 @@ class TemplateViewHelper
                 : ($pc_image_url !== $baseImage100 ? $pc_image_url : $baseImage430);
 
             $pc_string = $link
-                ? "<a href=\"{$link}\" {$win}><img src=\"{$pc_image_url}\"></a>"
-                : "<img src=\"{$pc_image_url}\">";
+                ? "<a href=\"{$link}\" {$win}><img src=\"{$pc_image_url}\" style=\"width:100%;height:auto\"></a>"
+                : "<img src=\"{$pc_image_url}\" style=\"width:100%;height:auto\">";
 
             $mo_string = $link
-                ? "<a href=\"{$link}\" {$win}><img src=\"{$mo_image_url}\"></a>"
-                : "<img src=\"{$mo_image_url}\">";
+                ? "<a href=\"{$link}\" {$win}><img src=\"{$mo_image_url}\" style=\"width:100%;height:auto\"></a>"
+                : "<img src=\"{$mo_image_url}\" style=\"width:100%;height:auto\">";
 
             $items[$key] = [
                 'pcImage' => $pc_string,

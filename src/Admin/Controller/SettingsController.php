@@ -36,7 +36,7 @@ class SettingsController
         $csrfTokenHandler = new CsrfTokenHandler($container->get('SessionManager'));
         $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
 
-        $this->config_domain = $this->container->get('config_domain');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->cf_id = (int)$this->config_domain['cf_id'];
     }
 
@@ -44,7 +44,7 @@ class SettingsController
      * 환경설정 페이지 표시
      *
      * @return array
-     */
+     
     public function general(): array
     {
         $anchor = [
@@ -72,12 +72,12 @@ class SettingsController
             'viewData' => $viewData,
         ];
     }
-    
+    */
     /**
      * 환경설정 업데이트
      *
      * @return array
-     */
+     
     public function update(): array
     {
         $cf_id = CommonHelper::pickNumber($_POST['cf_id'] ?? 1, 1);
@@ -102,6 +102,7 @@ class SettingsController
             'message' => $updateData ? '환경설정을 업데이트 하였습니다' : '환경설정 업데이트에 실패 하였습니다'
         ]);
     }
+    */
 
     /**
      * 메뉴설정 페이지 표시

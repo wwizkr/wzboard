@@ -5,26 +5,15 @@
 $startTime = microtime(true);
 
 // Composer의 autoloader 및 기본 환경 설정 파일 로드
-//require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../bootstrap.php';
 
 use FastRoute\RouteCollector;
 use function FastRoute\simpleDispatcher;
-use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\RouteHelper;
-use Web\PublicHtml\Middleware\AuthMiddleware;
-
-// 의존성 컨테이너 가져오기
-$container = DependencyContainer::getInstance();
 
 // HTTP 메서드와 요청 URI를 가져옴
 $httpMethod = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
-
-// 정적 파일 패턴을 정의 (예: .css, .js, .png, .jpg, .gif, .webp, 등)
-if (preg_match('/\.(?:png|jpg|jpeg|gif|webp|css|js|ico)$/', $uri)) {
-    //return false; // 웹 서버가 정적 파일을 처리하도록 전달 (이 경우 FastRoute가 아니라 Apache/Nginx가 직접 처리)
-}
 
 // 쿼리 스트링을 제거하고 URI 디코딩
 if (false !== $pos = strpos($uri, '?')) {
@@ -47,6 +36,19 @@ $authMiddleware->handle($uri);
 $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     // 공통으로 사용되는 HTTP 메서드 배열
     $httpMethods = ['GET', 'POST', 'PUT', 'DELETE'];
+    
+    #######################################################
+    // 플러그인 디렉토리 스캔하여 플러그인별 라우팅 추가
+    $pluginDirectory = WZ_SRC_PATH . '/Plugins';
+    $pluginFolders = scandir($pluginDirectory);
+
+    foreach ($pluginFolders as $pluginFolder) {
+        if (is_dir($pluginDirectory . '/' . $pluginFolder) && file_exists($pluginDirectory . '/' . $pluginFolder . '/routes.php')) {
+            $pluginRoutes = require $pluginDirectory . '/' . $pluginFolder . '/routes.php';
+            $pluginRoutes($r, $httpMethods);  // 라우터 콜렉터에 플러그인 라우트를 추가
+        }
+    }
+    #######################################################
     
     // 관리자 라우트 그룹
     $r->addGroup('/admin', function (RouteCollector $r) use ($httpMethods) {
@@ -91,6 +93,7 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
 // FastRoute로 요청을 디스패치하여 라우트 매핑 처리
 $routeHelper = new RouteHelper($container);
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
+
 switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
         echo '404 Not Found';
@@ -136,10 +139,10 @@ function formatMemoryUsage($size)
 }
 
 // 메모리 사용량 출력
-echo '<!---';
-echo "현재 메모리 사용량: " . memory_get_usage() . " bytes (" . formatMemoryUsage(memory_get_usage()) . ")<br>";
-echo "최대 메모리 사용량: " . memory_get_peak_usage() . " bytes (" . formatMemoryUsage(memory_get_peak_usage()) . ")<br>";
+echo '<!---'.PHP_EOL;
+echo "현재 메모리 사용량: " . memory_get_usage() . " bytes (" . formatMemoryUsage(memory_get_usage()) . ")".PHP_EOL;
+echo "최대 메모리 사용량: " . memory_get_peak_usage() . " bytes (" . formatMemoryUsage(memory_get_peak_usage()) . ")".PHP_EOL;
 
 // 실행 시간 출력
-echo "실행 시간: " . round($executionTime, 4) . " 초";
+echo "실행 시간: " . round($executionTime, 4) . " 초".PHP_EOL;
 echo '--->';

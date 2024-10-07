@@ -24,6 +24,7 @@ node_modules/
 # 동적으로 생성되는 public / storage 디렉토리의 파일을 제외
 /public/assets/*
 /public/storage/*
+/Plugins/*
 
 # .gitignore 파일을 제외한 storage 디렉토리 내의 모든 파일을 제외
 /storage/*

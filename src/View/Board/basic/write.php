@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 App.registerCallback('successUpdateWrite', function(data) {
-    console.log(data);
-    alert(data.message);
+    if (data.result === 'success') {
+        document.location.href = data.view;
+    }
 });
 </script>

@@ -264,12 +264,14 @@ class AdminTemplateService
                             $result = $this->processedBoardItem($table, $ciData);
                             break;
                         case 'boardgroup':
-                            // 상품필터 게시판 그룹과 같은 그룹형 아이템
+                            // options = text => DefaultItem(pc,mobile 동일 아이템인경우)
                             $ciData['options'] = isset($_POST['item_group'][$key]) && !empty($_POST['item_group'][$key]) ? implode(",",$_POST['item_group'][$key]) : '';
-                            $result = $this->processedGroupItem($table, $ciData);
+                            $result = $this->processedDefaultItem($table, $ciData);
                             break;
                         case 'file':
-                            $data['data']['items'] = [];
+                            // options = text => DefaultItem(pc,mobile 동일 아이템인경우)
+                            $ciData['options'] = isset($_POST['ct_list_box_skin'][$key]) && $_POST['ct_list_box_skin'][$key] ? $_POST['ct_list_box_skin'][$key] : 'basic.php';
+                            $result = $this->processedDefaultItem($table, $ciData);
                             break;
                         default: //editor
                             $result = $this->processedDefaultItem($table, $ciData);
@@ -289,8 +291,8 @@ class AdminTemplateService
             'ct_id' => ['i', $ciData['ct_id']],
             'ci_box_id' => ['i', $ciData['ci_box_id']],
             'ci_type' => ['s', $ciData['ci_type']],
-            'ci_pc_item' => ['s', ''],
-            'ci_mo_item' => ['s', ''],
+            'ci_pc_item' => ['s', $ciData['options']],
+            'ci_mo_item' => ['s', $ciData['options']],
             'ci_content' => ['s', $ciData['ci_content']],
         ];
 
@@ -298,6 +300,7 @@ class AdminTemplateService
     }
     
     // 상품필터 게시판 그룹과 같은 그룹형 아이템
+    /*
     private function processedGroupItem(string $table, array $ciData): void
     {
         $param = [
@@ -311,6 +314,7 @@ class AdminTemplateService
 
         $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
     }
+    */
 
     private function processedBoardItem(string $table, array $ciData): void
     {

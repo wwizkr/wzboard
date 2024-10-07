@@ -996,6 +996,7 @@ const TemplateHandlers = {
     
     // 스킨 선택 HTML 생성 및 렌더링 로직
     renderSkinSelection(data, requestData, $parent) {
+        console.log(data);
         const { itemtype, idx } = requestData;
         const skinHtml = `
             <div class="frm-input-row box_skin">
@@ -1269,7 +1270,7 @@ const TemplateHtmls = {
     
     renderBoardgroup(data, requestData, $parent) {
         const { idx } = requestData;
-        const items = data.display[0].ci_pc_item ? data.display[0].ci_pc_item.split(',') : [];
+        const items = (data.display.length > 0 && data.display[0].ci_pc_item) ? data.display[0].ci_pc_item.split(',') : [];
         const boardItems = data?.items || [];
 
         let html = '<div class="frm-input-row">';
@@ -1295,8 +1296,6 @@ const TemplateHtmls = {
         let invenHtml = '';
         let invenCnt = 0;
         let html = TemplateHtmls.renderAssetOpenHtml(idx, data.items?.length || 0);
-
-        //html += ``;
         
         const bannerItems = data?.items || [];
 
@@ -1323,8 +1322,6 @@ const TemplateHtmls = {
                 html += itemHtml;
             }
         });
-
-        //html += '</ul>';
 
         html += TemplateHtmls.renderAssetCloseHtml(idx, invenCnt, listcnt, invenHtml);
 
@@ -1432,7 +1429,7 @@ const TemplateHtmls = {
     
     renderEditor(data, requestData, $parent) {
         const { idx } = requestData;
-        const content = data.items[0].ci_content ?? '';
+        const content = (data.items.length > 0 && data.items[0].ci_content) ? data.items[0].ci_content : '';
         
         let html = '';
         html += `

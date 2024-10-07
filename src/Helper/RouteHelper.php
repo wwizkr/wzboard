@@ -26,13 +26,26 @@ class RouteHelper
 
     public function handleWebRoute($handler, $vars, $viewRenderer)
     {
+        // 플러그인 경로 처리 추가
+        if (strpos($handler, 'Plugins\\') === 0) {
+            list($controller, $method) = $this->extractControllerAndMethod($handler, $vars, 'Plugins');
+            $this->executeControllerMethod($controller, $method, $vars, $viewRenderer);
+            return;
+        }
+        #######################################################
+
         list($controller, $method) = $this->extractControllerAndMethod($handler, $vars, 'PublicHtml');
         $this->executeControllerMethod($controller, $method, $vars, $viewRenderer);
     }
 
     protected function extractControllerAndMethod($handler, $vars, $namespace = '')
     {
-        if (isset($vars['boardId']) && $handler === "Web\\{$namespace}\\Controller\\BoardController@comment") {
+        if (strpos($handler, 'Plugins\\') === 0) {
+            // 플러그인 컨트롤러 처리
+            $parts = explode('\\', $handler);
+            $method = $vars['method'] ?? 'index';
+            return [$handler, $method];
+        } elseif (isset($vars['boardId']) && $handler === "Web\\{$namespace}\\Controller\\BoardController@comment") {
             return ["Web\\{$namespace}\\Controller\\BoardController", 'comment'];
         } elseif (isset($vars['boardId'])) {
             return ["Web\\{$namespace}\\Controller\\BoardController", $vars['method'] ?? 'index'];

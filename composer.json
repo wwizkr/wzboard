@@ -3,7 +3,8 @@
     "autoload": {
         "psr-4": {
             "Web\\PublicHtml\\": "src/",
-            "Web\\Admin\\": "src/Admin/"
+            "Web\\Admin\\": "src/Admin/",
+            "Plugins\\": "src/Plugins/"
         }
     },
     "require": {
