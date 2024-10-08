@@ -35,6 +35,18 @@ class TemplateService
         return $processedTemplates;
     }
 
+    public function getSideTemplateData(string $table = 'template', string $position = '', string $positionCode = '', string $positionSub = ''): array
+    {
+        
+        return [];
+    }
+
+    public function getPageTemplateData(string $table = 'template', string $position = '', string $positionCode = '', string $positionSub = ''): array
+    {
+        
+        return [];
+    }
+
     private function processTemplate($template, $table = 'template')
     {
         // 템플릿 데이터 처리 로직

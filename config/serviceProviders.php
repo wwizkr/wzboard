@@ -51,8 +51,8 @@ use Web\Admin\Model\AdminTemplateModel;
 
 // ETC
 use Web\PublicHtml\Controller\SocialController;
-use Web\PublicHtml\View\ViewRenderer;
-use Web\Admin\View\AdminViewRenderer;
+use Web\PublicHtml\Core\ViewRenderer;
+use Web\PublicHtml\Core\AdminViewRenderer;
 
 
 function registerServices(DependencyContainer $container)

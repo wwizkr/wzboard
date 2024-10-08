@@ -27,4 +27,5 @@ const menuSwiper = new Swiper('.header-gnb', {
     observeParents: true,
 });
 </script>
+<?= $subContent; ?>
 <main id="main" class="<?= $mainStyle; ?>">

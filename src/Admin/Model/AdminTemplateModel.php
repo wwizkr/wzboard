@@ -20,7 +20,7 @@ class AdminTemplateModel
         $this->db = $container->get('db');
     }
 
-    public function getTemplateList(string $table, int $cf_id, string $position = null, int $use = null): array
+    public function getTemplateList(string $table, int $cf_id, string $position = null, int $use = null, string $positionCode = null, string $positionSub = null): array
     {
         $tablename = ($table === 'page') ? 'custom_page_lists' : 'custom_template_lists';
 
@@ -29,8 +29,17 @@ class AdminTemplateModel
         if ($position) {
             $where['ct_position'] = ['s', $position];
         }
+
+        if ($positionCode) {
+            $where['ct_position_sub'] = ['s', $positionCode];
+        }
+
+        if ($positionSub) {
+            $where['ct_postion_subtype'] = ['s', $positionSub];
+        }
+
         if ($use !== null) {
-            $where['ct_use'] = ['i', 0];
+            $where['ct_use'] = ['i', $use];
         }
         
         $options = [

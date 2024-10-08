@@ -459,6 +459,6 @@ class TemplateViewHelper
 
     protected function renderError()
     {
-        include(WZ_SRC_PATH.'/View/ErrorRenderer.php');
+        include(WZ_SRC_PATH.'/Core/ErrorRenderer.php');
     }
 }

@@ -1,24 +1,42 @@
 <?php
-namespace Web\PublicHtml\View;
+namespace Web\PublicHtml\Core;
 
 use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\TemplateViewHelper;
 
 class LayoutManager
 {
     private $container;
     private $config_domain;
-    private $viewRenderer;
+    protected $templateService;
+    protected $templateViewHelper;
 
-    public function __construct(DependencyContainer $container, ViewRenderer $viewRenderer)
+    public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
-        $this->viewRenderer = $viewRenderer;
+        $this->templateService = $this->container->get('TemplateService');
+        $this->templateViewHelper = new TemplateViewHelper($container);
     }
     
     public function renderLayoutOpen($isIndex, $me_code)
     {
         $layout = $this->determineLayout($me_code, $isIndex);
+
+        $leftTemplate = [];
+        if ($layout['left']['display']) {
+            $leftTemplate = $this->templateService->getSideTemplateData('template', 'left', $me_code, 'menu');
+        }
+
+        $rightTemplate = [];
+        if ($layout['right']['display']) {
+            $rightTemplate = $this->templateService->getSideTemplateData('template', 'right', $me_code, 'menu');
+        }
+
+        $pageTopTemplate = [];
+        if (!$isIndex) {
+            $pageTopTemplate = $this->templateService->getPageTemplateData('template', 'pagetop', $me_code, 'menu');
+        }
 
         ob_start();
         
@@ -27,13 +45,13 @@ class LayoutManager
             
             if ($layout['left']['display']) {
                 echo "<aside id=\"aside_left\" class=\"mobile-none\" style=\"flex: 0 0 {$layout['left']['width']}px; max-width:{$layout['left']['width']}px;\">".PHP_EOL;
-                //include(WZ_PATH.'/left.php');
+                    echo !empty($leftTemplate) ? $this->templateViewHelper->render($leftTemplate) : '';
                 echo '</aside>';
             }
             
             if ($layout['right']['display']) {
                 echo "<aside id=\"aside_right\" class=\"mobile-none\" style=\"flex: 0 0 {$layout['right']['width']}px; max-width:{$layout['right']['width']}px;\">".PHP_EOL;
-                //include(WZ_PATH.'/right.php');
+                    echo !empty($rightTemplate) ? $this->templateViewHelper->render($rightTemplate) : '';
                 echo '</aside>';
             }
             
@@ -44,8 +62,44 @@ class LayoutManager
         }
 
         if (!$isIndex) {
-            // Placeholder for pagetop template data
-            // $this->viewRenderer->renderTemplateData('pagetop', $me_code);
+            echo 'test pagetop Content';
+            echo !empty($pageTopTemplate) ? $this->templateViewHelper->render($pageTopTemplate) : '';
+        }
+
+        return ob_get_clean();
+    }
+
+    public function renderLayoutClose($isIndex, $me_code)
+    {
+        $pageFootTemplate = [];
+        if (!$isIndex) {
+            $pageFootTemplate = $this->templateService->getPageTemplateData('template', 'pagefoot', $me_code, 'menu');
+        }
+
+        ob_start();
+        echo '</div><!-- End container_wrap--->'.PHP_EOL;
+        echo '</div><!-- End container--->'.PHP_EOL;
+
+        if (!$isIndex) {
+            echo 'test pagefoot Content';
+            echo !empty($pageFootTemplate) ? $this->templateViewHelper->render($pageFootTemplate) : '';
+        }
+
+        return ob_get_clean();
+    }
+
+    public function renderSubContent($position, $isIndex, $me_code)
+    {
+        $contentTemplate = [];
+        if (!$isIndex) {
+            $contentTemplate = $this->templateService->getPageTemplateData('template', $position, $me_code, 'menu');
+        }
+
+        ob_start();
+            
+        if (!$isIndex) {
+            echo 'test ' . $position . ' Content';
+            echo !empty($contentTemplate) ? $this->templateViewHelper->render($contentTemplate) : '';
         }
 
         return ob_get_clean();
@@ -95,47 +149,5 @@ class LayoutManager
         $layout['content']['width'] = $contentWidth . '%';
 
         return $layout;
-    }
-
-    private function shouldDisplaySection($section, $me_code)
-    {
-        if (!$me_code || $me_code == 'mb') {
-            return false;
-        }
-        
-        /*
-        $table_name = $this->container->get('db_table_prefix') . 'custom_template_lists';
-        
-        $sql = "SELECT COUNT(ct_id) AS cnt FROM {$table_name} 
-                WHERE cf_id = ? AND ct_use = '0' 
-                AND ct_position = ? AND ct_position_sub = ?";
-        
-        $stmt = $this->container->get('db')->prepare($sql);
-        $stmt->execute([$this->config_domain['cf_id'], $section, $me_code]);
-        $result = $stmt->fetch();
-
-        if ($result['cnt'] == 0) {
-            $length = strlen($me_code) / 2;
-            for ($i = 0; $i < $length; $i++) {
-                $cut = strlen($me_code) - (($i * 2) + 2);
-                $pa_mecode = ($cut == 0) ? 'all' : substr($me_code, 0, $cut);
-                
-                $sql = "SELECT COUNT(ct_id) AS cnt FROM {$table_name} 
-                        WHERE cf_id = ? AND ct_use = '0'
-                        AND ct_position = ? AND ct_position_sub = ? AND ct_position_subview = 'Y'";
-                
-                $stmt = $this->container->get('db')->prepare($sql);
-                $stmt->execute([$this->config_domain['cf_id'], $section, $pa_mecode]);
-                $result = $stmt->fetch();
-                
-                if ($result['cnt'] > 0) {
-                    return true;
-                }
-            }
-        }
-        
-
-        return $result['cnt'] > 0;
-        */
     }
 }

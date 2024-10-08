@@ -54,7 +54,7 @@ class TemplateController
         ];
 
         return [
-            'viewPath' => 'Settings/templateList',
+            'viewPath' => 'Design/templateList',
             'viewData' => $viewData,
         ];
     }
@@ -132,7 +132,7 @@ class TemplateController
         ];
 
         return [
-            'viewPath' => 'Settings/templateForm',
+            'viewPath' => 'Design/templateForm',
             'viewData' => $viewData,
         ];
     }

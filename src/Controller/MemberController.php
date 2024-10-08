@@ -7,17 +7,6 @@ use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 
-//use Web\PublicHtml\Controller\SocialController;
-//use Web\PublicHtml\Helper\ComponentsViewHelper;
-//use Web\PublicHtml\Service\MembersService;
-//use Web\PublicHtml\Model\MembersModel;
-//use Web\PublicHtml\Helper\MembersHelper;
-//use Web\PublicHtml\Helper\ConfigHelper;
-//use Web\PublicHtml\Helper\SessionManager;
-//use Web\PublicHtml\Helper\CookieManager;
-//use Web\PublicHtml\Middleware\FormDataMiddleware;
-//use Web\PublicHtml\Middleware\CsrfTokenHandler;
-
 class MemberController
 {
     protected $container;
@@ -53,7 +42,6 @@ class MemberController
 
     public function register($vars)
     {
-        $config_domain = $this->container->get('config_domain');
         $contentSkin = $config_domain['cf_skin_content'] ?? 'basic';
         $param = isset($vars['param']) ? $vars['param'] : 'clause';
         $viewPath = 'Content/'.$contentSkin.'/Member/register_'.$param;

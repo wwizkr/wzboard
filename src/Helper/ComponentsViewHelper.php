@@ -9,7 +9,7 @@ class ComponentsViewHelper
 
     public function __construct($skinName = 'basic')
     {
-        $this->skinDirectory = __DIR__ . "/../View/components/{$skinName}/";
+        $this->skinDirectory = WZ_SRC_PATH . "/View/components/{$skinName}/";
     }
 
     public function renderMenu($config_domain, $menuData, $me_code = '')

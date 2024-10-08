@@ -1,5 +1,5 @@
 <?php
-namespace Web\PublicHtml\View;
+namespace Web\PublicHtml\Core;
 
 class ComponentsView
 {
@@ -9,7 +9,7 @@ class ComponentsView
 
     public function __construct($skinName = 'basic')
     {
-        $this->skinDirectory = __DIR__ . "/components/{$skinName}/";
+        $this->skinDirectory = WZ_SRC_PATH . "/View/components/{$skinName}/";
     }
 
     public function renderMenu($deviceType, $menuData)
