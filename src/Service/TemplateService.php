@@ -35,16 +35,18 @@ class TemplateService
         return $processedTemplates;
     }
 
-    public function getSideTemplateData(string $table = 'template', string $position = '', string $positionCode = '', string $positionSub = ''): array
-    {
-        
-        return [];
-    }
-
     public function getPageTemplateData(string $table = 'template', string $position = '', string $positionCode = '', string $positionSub = ''): array
     {
+        $templateList = $this->adminTemplateModel->getTemplateList($table, $this->config_domain['cf_id'], $position, 0, $positionCode, $positionSub);
+        $processedTemplates = [];
+        foreach ($templateList as $template) {
+            $processedTemplate = $this->processTemplate($template, $table);
+            if ($processedTemplate) {
+                $processedTemplates[] = $processedTemplate;
+            }
+        }
         
-        return [];
+        return $processedTemplates;
     }
 
     private function processTemplate($template, $table = 'template')

@@ -35,7 +35,7 @@ class AdminTemplateModel
         }
 
         if ($positionSub) {
-            $where['ct_postion_subtype'] = ['s', $positionSub];
+            $where['ct_position_subtype'] = ['s', $positionSub];
         }
 
         if ($use !== null) {
@@ -96,7 +96,7 @@ class AdminTemplateModel
         if ($ctId > 0) {
             $param['ct_order'] = ['i', $_POST['ct_order'] ?? 0];
             $where['ct_id'] = ['i', $ctId];
-            $where['cf_id'] = $param['cf_id'];
+            $where['cf_id'] = ['i', $param['cf_id'][1]];
 
             unset($param['ct_section_id']);
             unset($param['cf_id']);

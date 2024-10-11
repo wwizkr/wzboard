@@ -9,47 +9,55 @@ use Web\PublicHtml\Core\DependencyContainer;
 //use Web\PublicHtml\Service\MembersService;
 //use Web\PublicHtml\Service\AuthService;
 //use Web\PublicHtml\Helper\SessionManager;
-use Web\PublicHtml\Helper\CookieManager;
-use Web\PublicHtml\Helper\MembersHelper;
-use Web\PublicHtml\Helper\ComponentsViewHelper;
-use Web\PublicHtml\Helper\CryptoHelper;
-use Web\PublicHtml\Helper\ConfigHelper;
-
-use Web\PublicHtml\Controller\SocialController;
+//use Web\PublicHtml\Helper\CookieManager;
+//use Web\PublicHtml\Helper\MembersHelper;
+//use Web\PublicHtml\Helper\ComponentsViewHelper;
+//use Web\PublicHtml\Helper\CryptoHelper;
+//use Web\PublicHtml\Helper\ConfigHelper;
+//use Web\PublicHtml\Controller\SocialController;
 
 class AuthController
 {
     protected $container;
+
+    /*
     protected $membersModel;
     protected $membersService;
     protected $membersHelper;
     protected $sessionManager;
     protected $socialController;
     private $componentsViewHelper;
+    */
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->membersModel = $this->container->get('MembersModel');
-        $this->membersService = $this->container->get('MembersService');
-        $this->sessionManager = $this->container->get('SessionManager');
-        $this->membersHelper = $this->container->get('MembersHelper');
-        $this->socialController = $this->container->get('SocialController');
-        $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
+        
+        
+        //$this->membersModel = $this->container->get('MembersModel');
+        //$this->sessionManager = $this->container->get('SessionManager');
+        //$this->membersHelper = $this->container->get('MembersHelper');
     }
 
     // 로그인
     public function login($vars)
     {
         $config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+
+        $membersService = $this->container->get('MembersService');
+        $socialController = $this->container->get('SocialController');
+        $componentsViewHelper = $this->container->get('ComponentsViewHelper');
+        $cookieManager = $this->container->get('CookieManager');
+        $cryptoHelper = $this->container->get('CryptoHelper');
+        
         $contentSkin = $config_domain['cf_skin_content'] ?? 'basic';
         $viewPath = 'Content/'.$contentSkin.'/Auth/login_form';
 
-        $jwtToken = CookieManager::get('jwtToken');
-        $refreshToken = CookieManager::get('refreshToken');
+        $jwtToken = $cookieManager->get('jwtToken');
+        $refreshToken = $cookieManager->get('refreshToken');
 
         // 인증 토큰 유효성 검사
-        if ($jwtToken && $decodedJwtToken = CryptoHelper::verifyJwtToken($jwtToken)) {
+        if ($jwtToken && $decodedJwtToken = $cryptoHelper->verifyJwtToken($jwtToken)) {
             // 인증 토큰이 유효한 경우
             if ($decodedJwtToken['is_admin']) {
                 header('Location: /admin/dashboard'); // 관리 페이지로 리다이렉트
@@ -57,10 +65,10 @@ class AuthController
                 header('Location: /'); // 일반 사용자 대시보드로 리다이렉트
             }
             exit();
-        } elseif ($refreshToken && $decodedRefreshToken = CryptoHelper::verifyJwtToken($refreshToken)) {
+        } elseif ($refreshToken && $decodedRefreshToken = $cryptoHelper->verifyJwtToken($refreshToken)) {
             // 리프레시 토큰이 유효한 경우 새로운 JWT 토큰 생성
-            $member = $this->membersService->getMemberDataById($decodedRefreshToken['mb_id']);
-            $level  = $this->membersService->getMemberLevelData($member['member_level']) ?? 0;
+            $member = $membersService->getMemberDataById($decodedRefreshToken['mb_id']);
+            $level  = $membersService->getMemberLevelData($member['member_level']) ?? 0;
 
             // 새로운 인증 토큰 생성
             $payload = [
@@ -71,8 +79,8 @@ class AuthController
                 'is_admin' => $level['is_admin'],
                 'is_super' => $level['is_super'],
             ];
-            $newJwtToken = CryptoHelper::generateJwtToken($payload);
-            CookieManager::set('jwtToken', $newJwtToken); // 새로운 JWT 토큰을 쿠키에 저장
+            $newJwtToken = $cryptoHelper->generateJwtToken($payload);
+            $cookieManager->set('jwtToken', $newJwtToken); // 새로운 JWT 토큰을 쿠키에 저장
 
             // 대시보드로 리다이렉트
             if ($level['is_admin']) {
@@ -85,8 +93,8 @@ class AuthController
 
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $viewData = [];
-            $socialProvider = $this->socialController->getProviderList();
-            $socialItems = !empty($socialProvider) ? $this->componentsViewHelper->renderComponent('socialItems', $socialProvider, 'login') : '';
+            $socialProvider = $socialController->getProviderList();
+            $socialItems = !empty($socialProvider) ? $componentsViewHelper->renderComponent('socialItems', $socialProvider, 'login') : '';
             $viewData['socialProvider'] = $socialItems;
 
             return [
@@ -99,14 +107,20 @@ class AuthController
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            $member = $this->membersService->getMemberDataById($email);
+            $member = $membersService->getMemberDataById($email);
 
             // 비밀번호 검증
-            if ($member && CryptoHelper::verifyPassword($password, $member['password'])) {
-                $level = $this->membersService->getMemberLevelData($member['member_level']) ?? [];
+            if ($member && $cryptoHelper->verifyPassword($password, $member['password'])) {
+                $level = $membersService->getMemberLevelData($member['member_level']) ?? [];
                 $authService = $this->container->get('AuthService');
                 $authService->login($member, $level);
             } else { // 로그인 실패
+                $viewPath = 'Content/'.$contentSkin.'/Auth/login_form';
+                
+                $socialProvider = $socialController->getProviderList();
+                $socialItems = !empty($socialProvider) ? $componentsViewHelper->renderComponent('socialItems', $socialProvider, 'login') : '';
+                $viewData['socialProvider'] = $socialItems;
+
                 $viewData = ['error' => 'Invalid email or password', 'email' => $email];
                 return [
                     "viewPath" => $viewPath,

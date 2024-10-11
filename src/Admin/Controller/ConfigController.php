@@ -92,8 +92,6 @@ class ConfigController
         unset($formData['left_width']);
         unset($formData['right_width']);
 
-        error_log("formData:::".print_r($formData, true));
-        
         $numericFields = ['cf_layout_max_width', 'cf_content_max_width', 'cf_layout', 'cf_index_wide', 'cf_left_width', 'cf_right_width'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
         

@@ -73,16 +73,19 @@ class RouteHelper
         }
 
         $response = $controllerInstance->$method($vars);
-        $renderer->renderPage(
-            $response['viewPath'] ?? null,
-            $response['headData'] ?? [],
-            $response['headerData'] ?? [],
-            $response['layoutData'] ?? [],
-            $response['viewData'] ?? [],
-            $response['footerData'] ?? [],
-            $response['footData'] ?? [],
-            $response['fullPage'] ?? false
-        );
+
+        if (!empty($response)) {
+            $renderer->renderPage(
+                $response['viewPath'] ?? null,
+                $response['headData'] ?? [],
+                $response['headerData'] ?? [],
+                $response['layoutData'] ?? [],
+                $response['viewData'] ?? [],
+                $response['footerData'] ?? [],
+                $response['footData'] ?? [],
+                $response['fullPage'] ?? false
+            );
+        }
     }
 
     public function handleApiRoute($handler, $vars)

@@ -82,6 +82,17 @@ class AdminViewRenderer
         $csrfToken = $this->sessionManager->getCsrfToken($csrfTokenKey);
 
         if (empty($csrfToken)) {
+            /*
+            $cookieManager = $this->container->get('CookieManager');
+            
+            $jwtToken = $cookieManager->get('jwtToken');
+            $refreshToken = $cookieManager->get('refreshToken');
+
+            if ($jwtToken && $decodedJwtToken = CryptoHelper::verifyJwtToken($jwtToken)) {
+                return
+            }
+            */
+            
             $this->logoutAndRedirect();
         }
     }

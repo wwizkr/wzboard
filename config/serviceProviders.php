@@ -19,14 +19,6 @@ use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Service\BoardsService;
 use Web\PublicHtml\Helper\BoardsHelper;
 
-// Trial
-use Web\Admin\Model\AdminTrialModel;
-use Web\Admin\Service\AdminTrialService;
-use Web\Admin\Helper\AdminTrialHelper;
-use Web\PublicHtml\Model\TrialModel;
-use Web\PublicHtml\Service\TrialService;
-use Web\PublicHtml\Helper\TrialHelper;
-
 // Member
 use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
@@ -38,6 +30,7 @@ use Web\PublicHtml\Middleware\CsrfTokenHandler;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
+use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
 
 // Middleware
@@ -53,6 +46,7 @@ use Web\Admin\Model\AdminTemplateModel;
 use Web\PublicHtml\Controller\SocialController;
 use Web\PublicHtml\Core\ViewRenderer;
 use Web\PublicHtml\Core\AdminViewRenderer;
+use Web\Admin\Service\AdminBannerService;
 
 
 function registerServices(DependencyContainer $container)
@@ -92,29 +86,6 @@ function registerServices(DependencyContainer $container)
         return new MembersHelper($c);
     });
 
-    // Trial -- Plugin으로 변환 완료 후 전체 삭제
-    $container->addFactory('AdminTrialService', function($c) {
-        return new AdminTrialService($c);
-    });
-    $container->addFactory('AdminTrialModel', function($c) {
-        return new AdminTrialModel($c);
-    });
-    $container->addFactory('AdminTrialHelper', function($c) {
-        return new AdminTrialHelper($c);
-    });
-    $container->addFactory('TrialService', function($c) {
-        return new TrialService($c);
-    });
-    $container->addFactory('TrialModel', function($c) {
-        return new TrialModel($c);
-    });
-    /*
-     * 삭제
-    $container->addFactory('TrialHelper', function($c) {
-        return new TrialHelper($c);
-    });
-    */
-
     // Helpers
     $container->addFactory('SessionManager', function($c) {
         return new SessionManager();
@@ -130,6 +101,9 @@ function registerServices(DependencyContainer $container)
     });
     $container->addFactory('ConfigHelper', function($c) {
         return new ConfigHelper();
+    });
+    $container->addFactory('CryptoHelper', function($c) {
+        return new CryptoHelper();
     });
     $container->addFactory('ComponentsViewHelper', function($c) {
         return new ComponentsViewHelper();
@@ -164,5 +138,8 @@ function registerServices(DependencyContainer $container)
     });
     $container->set('AdminViewRenderer', function($c) {
         return new AdminViewRenderer($c);
+    });
+    $container->set('AdminBannerService', function($c) {
+        return new AdminBannerService($c);
     });
 }

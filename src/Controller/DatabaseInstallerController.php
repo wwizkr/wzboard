@@ -57,6 +57,8 @@ class DatabaseInstallerController
         }
 
         echo json_encode(["success" => true, "results" => $results]);
+
+        return;
     }
 
     /**

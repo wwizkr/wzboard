@@ -33,7 +33,7 @@ $authMiddleware = $container->get('AuthMiddleware');
 $authMiddleware->handle($uri);
 
 // FastRoute 설정을 위한 디스패처 생성
-$dispatcher = simpleDispatcher(function (RouteCollector $r) {
+$dispatcher = simpleDispatcher(function (RouteCollector $r) use ($configProvider) {
     // 공통으로 사용되는 HTTP 메서드 배열
     $httpMethods = ['GET', 'POST', 'PUT', 'DELETE'];
     
@@ -41,6 +41,7 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) {
     // 플러그인 디렉토리 스캔하여 플러그인별 라우팅 추가
     $pluginDirectory = WZ_SRC_PATH . '/Plugins';
     $pluginFolders = scandir($pluginDirectory);
+    //$pluginFolders = $configProvider->get('plugin');
 
     foreach ($pluginFolders as $pluginFolder) {
         if (is_dir($pluginDirectory . '/' . $pluginFolder) && file_exists($pluginDirectory . '/' . $pluginFolder . '/routes.php')) {

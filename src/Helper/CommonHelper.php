@@ -281,7 +281,7 @@ class CommonHelper
      * @param array $additionalParams 추가 파라미터 설정 (키: 파라미터 이름, 값: [타입, 기본값])
      * @return array 리스트 파라미터
      */
-    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = [], array $searchParams = []): array
+    public static function getListParameters(array $config, array $allowedFilters, array $allowedSortFields, array $additionalParams = [], array $searchParams = [], int $page = null): array
     {
         // 빈배열이 올 경우 에러방지
         if (empty($searchParams)) {
@@ -289,11 +289,11 @@ class CommonHelper
             $searchParams['filter'] = null;
             $searchParams['sort'] = [];
         }
+
         $params = [
-            'page' => max(
-                1,
-                self::validateParam('page', 'int', 1, null, INPUT_GET) ?: 
-                self::validateParam('page', 'int', 1, null, INPUT_POST) ?: 
+            'page' => max(1, $page ?? 
+                self::validateParam('page', 'int', $_GET['page'] ?? 0, null, INPUT_GET) ?? 
+                self::validateParam('page', 'int', $_POST['page'] ?? 0, null, INPUT_POST) ?? 
                 ($_GET['page'] ?? $_POST['page'] ?? 1)
             ),
             'search' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: 
@@ -860,10 +860,10 @@ class CommonHelper
         $config = [
             'slidesPerView' => $mergedOptions['slidesPerView'],
             'spaceBetween' => $mergedOptions['spaceBetween'],
-            'loop' => $mergedOptions['loop'] ? 'true' : 'false',
+            'loop' => $mergedOptions['loop'],
             'touchRatio' => $mergedOptions['touchRatio'],
-            'observer' => $mergedOptions['observer'] ? 'true' : 'false',
-            'observeParents' => $mergedOptions['observeParents'] ? 'true' : 'false',
+            'observer' => $mergedOptions['observer'],
+            'observeParents' => $mergedOptions['observeParents'],
         ];
 
         if ($mergedOptions['autoplay']) {

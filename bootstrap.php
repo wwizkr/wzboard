@@ -8,7 +8,9 @@ define('WZ_PROJECT_ROOT', __DIR__);
 define('WZ_PUBLIC_PATH', WZ_PROJECT_ROOT . '/public');
 define('WZ_STORAGE_PATH',WZ_PUBLIC_PATH . '/storage');
 define('WZ_SRC_PATH', WZ_PROJECT_ROOT . '/src');
+define('WZ_STORAGE_DIR', '/storage');
 define('WZ_CATEGORY_LENGTH', 3);
+
 
 require_once WZ_PROJECT_ROOT . '/vendor/autoload.php';
 

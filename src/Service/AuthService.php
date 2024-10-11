@@ -3,21 +3,20 @@
 namespace Web\PublicHtml\Service;
 
 use Web\PublicHtml\Core\DependencyContainer;
-use Web\PublicHtml\Helper\CookieManager;
-use Web\PublicHtml\Helper\CryptoHelper;
-use Web\PublicHtml\Helper\SessionManager;
 
 class AuthService
 {
     private $container;
     private $sessionManager;
     private $cookieManager;
+    private $cryptoHelper;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
         $this->sessionManager = $container->get('SessionManager');
         $this->cookieManager = $container->get('CookieManager');
+        $this->cryptoHelper = $container->get('CryptoHelper');
     }
 
     public function login(array $memberData, array $level): void
@@ -34,11 +33,11 @@ class AuthService
             'is_super' => $isSuper,
         ];
 
-        $jwtToken = CryptoHelper::generateJwtToken($payload);
+        $jwtToken = $this->cryptoHelper->generateJwtToken($payload);
         
         $refreshTokenPayload = $payload;
         $refreshTokenPayload['type'] = 'refresh';
-        $refreshToken = CryptoHelper::generateJwtToken($refreshTokenPayload, 60 * 60 * 24 * 30);
+        $refreshToken = $this->cryptoHelper->generateJwtToken($refreshTokenPayload, 60 * 60 * 24 * 30);
 
         $this->cookieManager->set('jwtToken', $jwtToken);
         $this->cookieManager->set('refreshToken', $refreshToken, time() + (60 * 60 * 24 * 30));

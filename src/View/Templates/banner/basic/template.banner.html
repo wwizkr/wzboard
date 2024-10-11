@@ -9,21 +9,22 @@
     width: 100%;
 }
 </style>
-<div class="image-box {{swiperContainer}}" id="{{boxId}}">
-    <ul class="image-list {{swiperWrapper}}">
+<div class="banner-box {{swiperContainer}}" id="{{boxId}}">
+    <ul class="banner-list {{swiperWrapper}}">
         {{items}}
     </ul>
 </div>
 {{swiperHtml}}
+
 <!--ITEM_TEMPLATE_START-->
 <li class="table-list-row list-body {{swiperSlide}}">
-    <div class="list-row image-row mobile-none">{{pcImage}}</div>
-    <div class="list-row image-row mobile-only">{{moImage}}</div>
+    <div class="list-row banner-row mobile-none">{{pcImage}}</div>
+    <div class="list-row banner-row mobile-only">{{moImage}}</div>
 </li>
 <!--ITEM_TEMPLATE_END-->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var imageBox = document.getElementById('{{boxId}}');
+        var bannerBox = document.getElementById('{{boxId}}');
         {{swiperScript}}
     });
 </script>

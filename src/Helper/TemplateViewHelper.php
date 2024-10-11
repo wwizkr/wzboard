@@ -263,6 +263,61 @@ class TemplateViewHelper
             'items' => $box['items'] ?? [],
         ];
     }
+
+    protected function prepareDataForBanner($box)
+    {
+        $limit = $box['itemcnt'] ?? 5;
+        
+        $adminBannerService = $this->container->get('AdminBannerService');
+
+        $processedBanners = [];
+        $items = $box['items'];
+        if (!empty($items)) {
+            foreach($items as $key=>$val) {
+                $temp = json_decode($val['ci_option'], true);
+                $processedData = $adminBannerService->processedBannerData($temp, $box['style']);
+    
+                if ($processedData !== null) {
+                    $processedBanners[] = $processedData;
+                }
+            }
+        }
+
+        // Swiper 설정
+        $swiperId = $box['boxId'];
+        $swiperOptions = [
+            'style' => $box['style'] ?? '',
+            'slidesPerView' => $box['cols'] ?? 'auto',
+            'navigation' => true,
+            'pagination' => true,
+            'touchRatio' => 1,
+            'observer' => true,
+            'observeParents' => true,
+            'loop' => true,
+            'autoplay' => [
+                'delay' => 6000,
+                'disableOnInteraction' => false,
+            ],
+            'spaceBetween' => 0,
+            // 필요에 따라 다른 옵션들을 추가할 수 있습니다.
+        ];
+
+        $swiperConfig = CommonHelper::getSwiperConfig($swiperId, $swiperOptions);
+
+        $replace = [
+            'swiperContainer' => $box['style'] === 'slide' ? 'swiper-container' : '',
+            'swiperWrapper' => $box['style'] === 'slide' ? 'swiper-wrapper' : '',
+            'swiperScript' => $swiperConfig['script'],
+            'swiperHtml' => $swiperConfig['html'],
+        ];
+        
+        return [
+            'result' => 'success',
+            'message' => '배너 목록을 가져왔습니다.',
+            'items' => $processedBanners,
+            'replace' => $replace,
+        ];
+    }
     
     // 게시판 최신글 출력 로직
     protected function prepareDataForBoard($box)
@@ -304,6 +359,7 @@ class TemplateViewHelper
         }
 
         $replace = [
+            'isSwiper' => $box['style'] === 'slide' ? 'true' : 'false',
         ];
         
         return [

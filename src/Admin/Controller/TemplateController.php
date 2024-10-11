@@ -5,6 +5,8 @@ namespace Web\Admin\Controller;
 
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
+use Web\Admin\Helper\AdminCommonHelper;
+
 //use Web\Admin\Service\AdminTemplateService;
 //use Web\Admin\Model\AdminTemplateModel;
 
@@ -51,6 +53,8 @@ class TemplateController
         $viewData = [
             'title' => '메인화면/페이지관리',
             'listData' => $listData,
+            'templatePosition' => $this->configProvider->get('template')['template_position'],
+            'templateItems' => $this->configProvider->get('template')['template_items'],
         ];
 
         return [

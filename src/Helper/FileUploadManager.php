@@ -37,33 +37,58 @@ class FileUploadManager
         $this->ensureDirectoryExists();
         $result = [];
 
-        // 파일이 단일 파일인 경우 (다중 파일 업로드가 아닌 경우)
-        if (isset($files['name']) && !is_array($files['name'])) {
-            $files = [$files];
-        }
+        // 파일 배열 재구성
+        $files = $this->arrayFiles($files);
 
-        foreach ($files as $index => $file) {
-            $oldFile = $oldFiles[$index] ?? '';
-            $deleteFlag = $deleteFlags[$index] ?? false;
+        foreach ($files as $key => $file) {
+            $oldFile = $oldFiles[$key] ?? '';
+            $deleteFlag = $deleteFlags[$key] ?? false;
 
             if ($this->isValidUploadedFile($file)) {
-                $newFileName = $this->uploadFile($file, $position);
+                $newFileName = $this->uploadFile($file, $position . '_' . $key);
                 if ($newFileName) {
-                    $result[$index] = $newFileName;
+                    $result[$key] = $newFileName;
                     $this->deleteOldFile($oldFile);
                 } else {
-                    $result[$index] = $oldFile;
+                    $result[$key] = $oldFile;
                 }
             } else {
                 if ($deleteFlag) {
                     $this->deleteOldFile($oldFile);
-                    $result[$index] = '';
+                    $result[$key] = '';
                 } else {
-                    $result[$index] = $oldFile;
+                    $result[$key] = $oldFile;
                 }
             }
         }
         return $result;
+    }
+
+    public function arrayFiles($filePost)
+    {
+        $fileArray = [];
+
+        if (is_array($filePost)) {
+            foreach ($filePost as $key => $value) {
+                if (is_array($value)) {
+                    foreach ($value as $subKey => $subValue) {
+                        if (is_array($subValue)) {
+                            foreach ($subValue as $finalKey => $finalValue) {
+                                $fileArray[$finalKey][$subKey] = $finalValue;
+                            }
+                        } else {
+                            $fileArray[$key][$subKey] = $subValue;
+                        }
+                    }
+                } else {
+                    $fileArray[$key] = $value;
+                }
+            }
+        } else {
+            $fileArray = $filePost;
+        }
+
+        return $fileArray;
     }
 
     private function isValidUploadedFile($file)

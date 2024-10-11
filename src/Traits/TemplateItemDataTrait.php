@@ -40,6 +40,7 @@ trait TemplateItemDataTrait
 
         switch($itemType) {
             case 'banner':
+                $data['data']['items'] = $this->getTemplateBannerItem();
             case 'movie':
             case 'outlogin':
             case 'file':
@@ -51,10 +52,10 @@ trait TemplateItemDataTrait
                 $data['data']['items'] = $boxData;
                 break;
             case 'board':
-                $data['data']['items'] = $this->getTemplateBoardItem($ctId, $boxId);
+                $data['data']['items'] = $this->getTemplateBoardItem();
                 break;
             case 'boardgroup':
-                $data['data']['items'] = $this->getTemplateBoardItem($ctId, $boxId);
+                $data['data']['items'] = $this->getTemplateBoardItem();
                 $data['data']['display'] = $boxData;
                 break;
             default:
@@ -122,11 +123,9 @@ trait TemplateItemDataTrait
     /**
      * 템플릿 게시판 아이템을 가져옵니다.
      * 
-     * @param int $ctId CT ID
-     * @param int $boxId 박스 ID
      * @return array 템플릿 게시판 아이템 데이터
      */
-    public function getTemplateBoardItem(int $ctId, int $boxId): array
+    public function getTemplateBoardItem(): array
     {
         $data = [];
         $adminBoardsService = $this->container->get('AdminBoardsService');
@@ -138,6 +137,34 @@ trait TemplateItemDataTrait
                     'board_no' => $val['no'],
                     'board_id' => $val['board_id'],
                     'board_name' => $val['board_name']
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * 템플릿 배너 아이템을 가져옵니다.
+     * 
+     * @return array 템플릿 배너 아이템 데이터
+     */
+    public function getTemplateBannerItem(): array
+    {
+        $data = [];
+        $bannerList = $this->adminBannerService->getBannerList('내용', 1);
+        $configProvider = $this->container->get('ConfigProvider');
+        
+        if (!empty($bannerList)) {
+            foreach($bannerList as $key => $val) {
+                $image = $configProvider->get('image')['noImg430'];
+                if ($val['ba_pc_image'] && file_exists(WZ_STORAGE_PATH.'/banner/'.$val['cf_id'].'/'.$val['ba_pc_image'])) {
+                    $image = '/storage/banner/'.$val['cf_id'].'/'.$val['ba_pc_image'];
+                }
+                $data[$key] = [
+                    'banner_no' => $val['ba_id'],
+                    'image' => $image,
+                    'link' => $val['ba_link'] ?? '',
                 ];
             }
         }

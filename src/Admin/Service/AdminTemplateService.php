@@ -3,15 +3,19 @@
 namespace Web\Admin\Service;
 
 use Web\PublicHtml\Core\DependencyContainer;
-use Web\PublicHtml\Helper\ConfigHelper;
-use Web\PublicHtml\Helper\CacheHelper;
-use Web\PublicHtml\Helper\CryptoHelper;
+
 use Web\PublicHtml\Helper\CommonHelper;
+use Web\Admin\Helper\AdminCommonHelper;
 use Web\PublicHtml\Helper\FileUploadManager;
+
+//use Web\PublicHtml\Helper\ConfigHelper;
+//use Web\PublicHtml\Helper\CacheHelper;
+//use Web\PublicHtml\Helper\CryptoHelper;
 use InvalidArgumentException;
 
 use Web\PublicHtml\Traits\TemplateItemDataTrait;
 use Web\PublicHtml\Traits\BaseTemplateServiceTrait;
+
 
 class AdminTemplateService
 {
@@ -23,6 +27,7 @@ class AdminTemplateService
     protected $formDataMiddleware;
     protected $adminTemplateModel;
     protected $adminBoardsService;
+    protected $adminBannerService;
 
     public function __construct(DependencyContainer $container)
     {
@@ -30,6 +35,7 @@ class AdminTemplateService
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
         $this->adminTemplateModel = $this->container->get('AdminTemplateModel');
+        $this->adminBannerService = $this->container->get('AdminBannerService');
     }
 
     protected function getContainer()
@@ -39,7 +45,14 @@ class AdminTemplateService
 
     public function getTemplateList(string $table): array
     {
-        $result = $this->adminTemplateModel->getTemplateList($table, $this->config_domain['cf_id']);
+        $data = $this->adminTemplateModel->getTemplateList($table, $this->config_domain['cf_id']);
+
+        $result = [];
+        foreach($data as $key=>$val) {
+            $result[$key] = $val;
+            $result[$key]['useSelect'] = AdminCommonHelper::makeSelectBox('ct_use['.$key.']', [0=>'사용함', 1=>'사용안함'], $val['ct_use']);
+        }
+
         return $result;
     }
 
@@ -218,7 +231,7 @@ class AdminTemplateService
         }
 
         $updated = $this->adminTemplateModel->templateUpdate($table, $ctId, $param);
-        
+
         if ($updated['result'] === 'success') {
             $ct_id = $updated['ins_id'];
             if (isset($_POST['ct_list_itemtype']) && !empty($_POST['ct_list_itemtype'])) {
@@ -245,7 +258,8 @@ class AdminTemplateService
 
                     switch($val) {
                         case 'banner':
-                            $data['data']['items'] = [];
+                            $ciData['options'] = isset($_POST['template_items'][$key]) ? explode(",",$_POST['template_items'][$key]) : [];
+                            $result = $this->processedBannerItem($table, $ciData);
                             break;
                         case 'image':
                             $result = $this->processedImageItem($table, $ciData, $key, $uploadManager);
@@ -254,9 +268,6 @@ class AdminTemplateService
                             $data['data']['items'] = [];
                             break;
                         case 'outlogin':
-                            $data['data']['items'] = [];
-                            break;
-                        case 'banner':
                             $data['data']['items'] = [];
                             break;
                         case 'board':
@@ -280,7 +291,6 @@ class AdminTemplateService
                 }
             }
         }
-
         return $updated;
     }
 
@@ -298,23 +308,34 @@ class AdminTemplateService
 
         $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
     }
-    
-    // 상품필터 게시판 그룹과 같은 그룹형 아이템
-    /*
-    private function processedGroupItem(string $table, array $ciData): void
-    {
-        $param = [
-            'cf_id' => ['i', $ciData['cf_id']],
-            'ct_id' => ['i', $ciData['ct_id']],
-            'ci_box_id' => ['i', $ciData['ci_box_id']],
-            'ci_type' => ['s', $ciData['ci_type']],
-            'ci_pc_item' => ['s', $ciData['options']],
-            'ci_mo_item' => ['s', $ciData['options']],
-        ];
 
-        $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+    private function processedBannerItem(string $table, array $ciData): void
+    {
+        $adminBannerService = $this->container->get('AdminBannerService');
+        $unitData = $ciData['options'];
+        
+        foreach($unitData as $val) {
+            $unit = explode("_", $val);
+            $banner_no = $unit[2] ?? '';
+            $banner = $adminBannerService->getBannerDataById($banner_no);
+            if (empty($banner['ba_id'])) {
+                continue;
+            }
+            $ci_option = json_encode($banner);
+
+            $param = [
+                'cf_id' => ['i', $ciData['cf_id']],
+                'ct_id' => ['i', $ciData['ct_id']],
+                'ci_box_id' => ['i', $ciData['ci_box_id']],
+                'ci_type' => ['s', $ciData['ci_type']],
+                'ci_pc_item' => ['s', $banner_no],
+                'ci_mo_item' => ['s', $banner_no],
+                'ci_option' => ['s', $ci_option]
+            ];
+            
+            $this->adminTemplateModel->insertTemplateCiBoxItem($table, $param);
+        }
     }
-    */
 
     private function processedBoardItem(string $table, array $ciData): void
     {

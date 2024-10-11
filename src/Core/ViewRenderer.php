@@ -5,82 +5,116 @@ use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
 use Web\PublicHtml\Core\LayoutManager;
 
+/**
+ * ViewRenderer 클래스
+ * 
+ * 이 클래스는 뷰 렌더링과 관련된 다양한 기능을 제공합니다.
+ * 레이아웃, 헤더, 푸터 등의 렌더링을 담당하며 지연 로딩 패턴을 사용합니다.
+ */
 class ViewRenderer
 {
     private DependencyContainer $container;
+    private array $lazyLoadedProperties = [];
     private array $cssFiles = [];
     private array $jsFiles = [];
-    private ?array $config_domain = null;
-    private ?string $deviceType = null;
-    private ?string $headerSkin = null;
-    private ?string $footerSkin = null;
-    private ?string $layoutSkin = null;
-    private ?string $headerSkinDirectory = null;
-    private ?string $footerSkinDirectory = null;
-    private ?string $layoutSkinDirectory = null;
-    private ?ComponentsViewHelper $componentsViewHelper = null;
-    private ?LayoutManager $layoutManager = null;
-    private ?bool $isLogin = null;
-    private $sessionManager;
-    private $navigation;
-    private $templateService;
-    private ?bool $isIndex = null;
-    private ?string $meCode = null;
-
+    
+    /**
+     * ViewRenderer 생성자
+     * 
+     * @param DependencyContainer $container 의존성 컨테이너
+     */
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->sessionManager = $this->container->get('SessionManager');
-        $this->navigation = $this->container->get('NavigationMiddleware');
-        $this->templateService = $this->container->get('TemplateService');
     }
 
-    private function lazyLoadConfig(): void
+    private function lazyLoad(string $property, callable $loader): void
     {
-        if ($this->config_domain === null) {
-            $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
-            $this->headerSkin = $this->config_domain['cf_skin_header'] ?? 'basic';
-            $this->footerSkin = $this->config_domain['cf_skin_footer'] ?? 'basic';
-            $this->layoutSkin = $this->config_domain['cf_skin_layout'] ?? 'basic';
-            
-            $this->headerSkinDirectory = WZ_SRC_PATH . "/View/Header/{$this->headerSkin}/";
-            $this->footerSkinDirectory = WZ_SRC_PATH . "/View/Footer/{$this->footerSkin}/";
-            $this->layoutSkinDirectory = WZ_SRC_PATH . "/View/Layout/{$this->layoutSkin}/";
+        if (!isset($this->lazyLoadedProperties[$property])) {
+            $this->lazyLoadedProperties[$property] = $loader();
         }
     }
 
-    private function lazyLoadLayoutManager(): void
+    private function get(string $property)
     {
-        if ($this->layoutManager === null) {
-            $this->layoutManager = new LayoutManager($this->container);
-        }
+        return $this->lazyLoadedProperties[$property] ?? null;
     }
 
-    private function lazyLoadComponentsViewHelper(): void
+    /**
+     * 설정 정보를 지연 로드합니다.
+     * 
+     * 이 메서드는 필요한 시점에 설정 정보를 로드하여 메모리 사용을 최적화합니다.
+     */
+    private function loadConfig(): void
     {
-        if ($this->componentsViewHelper === null) {
-            $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
-        }
+        $this->lazyLoad('config_domain', function() {
+            return $this->container->get('ConfigHelper')->getConfig('config_domain');
+        });
+
+        $this->lazyLoad('headerSkin', function() {
+            return $this->get('config_domain')['cf_skin_header'] ?? 'basic';
+        });
+
+        $this->lazyLoad('footerSkin', function() {
+            return $this->get('config_domain')['cf_skin_footer'] ?? 'basic';
+        });
+
+        $this->lazyLoad('layoutSkin', function() {
+            return $this->get('config_domain')['cf_skin_layout'] ?? 'basic';
+        });
+
+        $this->lazyLoad('headerSkinDirectory', function() {
+            return WZ_SRC_PATH . "/View/Header/{$this->get('headerSkin')}/";
+        });
+
+        $this->lazyLoad('footerSkinDirectory', function() {
+            return WZ_SRC_PATH . "/View/Footer/{$this->get('footerSkin')}/";
+        });
+
+        $this->lazyLoad('layoutSkinDirectory', function() {
+            return WZ_SRC_PATH . "/View/Layout/{$this->get('layoutSkin')}/";
+        });
     }
 
-    private function lazyLoadAuthInfo(): void
+    private function loadLayoutManager(): void
     {
-        if ($this->isLogin === null) {
-            $authInfo = $this->sessionManager->get('auth');
-            $this->isLogin = !empty($authInfo);
-        }
+        $this->lazyLoad('layoutManager', function() {
+            return new LayoutManager($this->container);
+        });
     }
 
-    private function lazyLoadPageInfo(): void
+    private function loadComponentsViewHelper(): void
     {
-        if ($this->isIndex === null) {
-            $this->isIndex = $this->isHomePage();
-        }
-        if ($this->meCode === null) {
-            $this->meCode = $this->updateMeCode();
-        }
+        $this->lazyLoad('componentsViewHelper', function() {
+            return $this->container->get('ComponentsViewHelper');
+        });
     }
 
+    private function loadAuthInfo(): void
+    {
+        $this->lazyLoad('isLogin', function() {
+            $sessionManager = $this->container->get('SessionManager');
+            $authInfo = $sessionManager->get('auth');
+            return !empty($authInfo);
+        });
+    }
+
+    private function loadPageInfo(): void
+    {
+        $this->lazyLoad('isIndex', function() {
+            return $this->isHomePage();
+        });
+
+        $this->lazyLoad('meCode', function() {
+            return $this->updateMeCode();
+        });
+    }
+    
+    /**
+     * 현재 페이지가 홈페이지인지 확인합니다.
+     * 
+     * @return bool 홈페이지인 경우 true, 아닌 경우 false를 반환
+     */
     public function isHomePage(): bool
     {
         $homePagePatterns = [
@@ -99,6 +133,12 @@ class ViewRenderer
         return false;
     }
     
+    /**
+     * CSS 또는 JS 파일을 에셋 목록에 추가합니다.
+     * 
+     * @param string $type 에셋 타입 ('css' 또는 'js')
+     * @param string $filePath 파일 경로
+     */
     public function addAsset(string $type, string $filePath): void
     {
         if ($type === 'css') {
@@ -107,7 +147,13 @@ class ViewRenderer
             $this->jsFiles[] = $filePath;
         }
     }
-
+    
+    /**
+     * 특정 타입의 에셋 목록을 반환합니다.
+     * 
+     * @param string $type 에셋 타입 ('css' 또는 'js')
+     * @return array 요청된 타입의 에셋 목록
+     */
     public function getAssets(string $type): array
     {
         return $type === 'css' ? $this->cssFiles : ($type === 'js' ? $this->jsFiles : []);
@@ -115,65 +161,98 @@ class ViewRenderer
 
     private function updateMeCode(): string
     {
-        $navigation = $this->navigation->buildNavigation();
+        $navigation = $this->container->get('NavigationMiddleware')->buildNavigation();
         $me_code = $navigation['me_code'] ?? '';
         $this->container->set('me_code', $me_code);
         return $me_code;
     }
-
+    
+     /**
+     * 페이지네이션을 렌더링합니다.
+     * 
+     * @param array $paginationData 페이지네이션 데이터
+     */
     public function renderPagination(array $paginationData): void
     {
-        $this->lazyLoadComponentsViewHelper();
-        echo $this->componentsViewHelper->renderComponent('pagination', $paginationData);
+        $this->loadComponentsViewHelper();
+        echo $this->get('componentsViewHelper')->renderComponent('pagination', $paginationData);
     }
-
+    
+    /**
+     * 헤더를 렌더링합니다.
+     * 
+     * @param array $data 푸터 렌더링에 필요한 데이터
+     */
     public function renderHeader(array $data = []): void
     {
-        $this->lazyLoadConfig();
-        $this->lazyLoadComponentsViewHelper();
-        $this->lazyLoadLayoutManager();
-        $this->lazyLoadPageInfo();
+        $this->loadConfig();
+        $this->loadComponentsViewHelper();
+        $this->loadLayoutManager();
+        $this->loadPageInfo();
 
         $menuData = $this->container->get('menu_datas');
-        $data['menu'] = $this->componentsViewHelper->renderMenu($this->config_domain, $menuData, $this->meCode);
-        $data['mainStyle'] = $this->isIndex && $this->config_domain['cf_index_wide'] === 0 ? '' : 'max-layout';
-        $data['subContent'] = $this->layoutManager->renderSubContent('subtop', $this->isIndex, $this->meCode);
+        $data['menu'] = $this->get('componentsViewHelper')->renderMenu($this->get('config_domain'), $menuData, $this->get('meCode'));
+        $data['mainStyle'] = $this->get('isIndex') && $this->get('config_domain')['cf_index_wide'] === 0 ? '' : 'max-layout';
+        $data['subContent'] = $this->get('layoutManager')->renderSubContent('subtop', $this->get('isIndex'), $this->get('meCode'));
 
-        $this->render($this->headerSkinDirectory . 'Header', $data);
+        $this->render($this->get('headerSkinDirectory') . 'Header', $data);
     }
-
+    
+    /**
+     * 푸터를 렌더링합니다.
+     * 
+     * @param array $data 푸터 렌더링에 필요한 데이터
+     */
     public function renderFooter(array $data = []): void
     {
-        $this->lazyLoadConfig();
-        $this->lazyLoadLayoutManager();
-        $this->lazyLoadPageInfo();
+        $this->loadConfig();
+        $this->loadLayoutManager();
+        $this->loadPageInfo();
 
-        $data['subContent'] = $this->layoutManager->renderSubContent('subfoot', $this->isIndex, $this->meCode);
-        $this->render($this->footerSkinDirectory . 'Footer', $data);
+        $data['subContent'] = $this->get('layoutManager')->renderSubContent('subfoot', $this->get('isIndex'), $this->get('meCode'));
+        $this->render($this->get('footerSkinDirectory') . 'Footer', $data);
     }
-
+    
+    /**
+     * 레이아웃 시작 부분을 렌더링합니다.
+     * 
+     * @param array $data 레이아웃 렌더링에 필요한 데이터
+     */
     public function renderLayoutOpen(array $data = []): void
     {
-        $this->lazyLoadLayoutManager();
-        $this->lazyLoadPageInfo();
+        $this->loadLayoutManager();
+        $this->loadPageInfo();
 
-        echo $this->layoutManager->renderLayoutOpen($this->isIndex, $this->meCode);
+        echo $this->get('layoutManager')->renderLayoutOpen($this->get('isIndex'), $this->get('meCode'));
     }
-
+    
+    /**
+     * 레이아웃 종료 부분을 렌더링합니다.
+     * 
+     * @param array $data 레이아웃 렌더링에 필요한 데이터
+     */
     public function renderLayoutClose(array $data = []): void
     {
-        $this->lazyLoadLayoutManager();
-        $this->lazyLoadPageInfo();
+        $this->loadLayoutManager();
+        $this->loadPageInfo();
 
-        echo $this->layoutManager->renderLayoutClose($this->isIndex, $this->meCode);
+        echo $this->get('layoutManager')->renderLayoutClose($this->get('isIndex'), $this->get('meCode'));
     }
-
+    
+    /**
+     * 뷰 파일을 렌더링합니다.
+     * 
+     * @param string $viewFilePath 렌더링할 뷰 파일의 경로
+     * @param array $data 뷰에 전달할 데이터
+     */
     public function render(string $viewFilePath, array $data = []): void
     {
-        $this->lazyLoadConfig();
-        $data['config_domain'] = $this->config_domain;
+        $this->loadConfig();
+        $this->loadAuthInfo();
 
-        // 변수 추출 시 안전한 방식 사용
+        $data['config_domain'] = $this->get('config_domain');
+        $data['isLogin'] = $this->get('isLogin');
+
         foreach ($data as $key => $value) {
             if (!isset($$key)) {
                 $$key = $value;
@@ -188,7 +267,13 @@ class ViewRenderer
             $this->handleMissingViewFile($fullViewFilePath);
         }
     }
-
+    
+    /**
+     * 뷰 파일의 전체 경로를 해석합니다.
+     * 
+     * @param string $viewFilePath 뷰 파일의 상대 경로
+     * @return string 뷰 파일의 전체 경로
+     */
     private function resolveViewPath(string $viewFilePath): string
     {
         if (strpos($viewFilePath, 'Plugins/') === 0) {
@@ -198,13 +283,34 @@ class ViewRenderer
             ? $viewFilePath . '.php'
             : WZ_SRC_PATH . '/View/' . $viewFilePath . '.php';
     }
-
+    
+    /**
+     * 뷰 파일이 없을 때의 처리를 담당합니다.
+     * 
+     * @param string $fullViewFilePath 찾을 수 없는 뷰 파일의 전체 경로
+     */
     private function handleMissingViewFile(string $fullViewFilePath): void
     {
         // 사용자에게 보여줄 오류 메시지
         echo "페이지를 표시할 수 없습니다. 관리자에게 문의해주세요.";
+        // 로깅 추가
+        error_log("Missing view file: $fullViewFilePath");
     }
-
+    
+    /**
+     * 전체 페이지를 렌더링합니다.
+     * 
+     * 이 메서드는 헤더, 본문, 푸터 등 페이지의 모든 부분을 렌더링합니다.
+     * 
+     * @param string $view 메인 뷰 파일의 경로
+     * @param array|null $headData 헤드 섹션에 전달할 데이터
+     * @param array|null $headerData 헤더에 전달할 데이터
+     * @param array|null $layoutData 레이아웃에 전달할 데이터
+     * @param array|null $viewData 메인 뷰에 전달할 데이터
+     * @param array|null $footerData 푸터에 전달할 데이터
+     * @param array|null $footData 최하단 스크립트 섹션에 전달할 데이터
+     * @param bool $fullPage 전체 페이지 렌더링 여부
+     */
     public function renderPage(
         string $view, 
         ?array $headData = null, 
@@ -215,23 +321,23 @@ class ViewRenderer
         ?array $footData = null, 
         bool $fullPage = false
     ): void {
-        $this->lazyLoadConfig();
-        $this->lazyLoadPageInfo();
+        $this->loadConfig();
+        $this->loadPageInfo();
 
-        $this->render(WZ_SRC_PATH.'/View/partials/'.$this->layoutSkin.'/head', $headData ?? []);
+        $this->render(WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/head', $headData ?? []);
 
         if ($fullPage === false) {
             $this->renderHeader($headerData ?? []);
         }
 
         $this->renderLayoutOpen($layoutData ?? []);
-        $this->render($view, array_merge($viewData ?? [], ['me_code' => $this->meCode]));
+        $this->render($view, array_merge($viewData ?? [], ['me_code' => $this->get('meCode')]));
         $this->renderLayoutClose($layoutData ?? []);
 
         if ($fullPage === false) {
             $this->renderFooter($footerData ?? []);
         }
 
-        $this->render(WZ_SRC_PATH.'/View/partials/'.$this->layoutSkin.'/foot', $footData ?? []);
+        $this->render(WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/foot', $footData ?? []);
     }
 }

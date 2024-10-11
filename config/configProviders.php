@@ -22,6 +22,7 @@ class ConfigProvider
     private function loadConfigs()
     {
         $this->loadDomainConfig();
+        $this->config['plugin'] = $this->getPluginDir();
         $this->config['image'] = $this->getImageUrl();
         $this->config['template'] = $this->getTemplateItems();
         $this->config['widget'] = [
@@ -79,6 +80,13 @@ class ConfigProvider
     public function get($key, $default = null)
     {
         return $this->config[$key] ?? $default;
+    }
+
+    private function getPluginDir()
+    {
+        return [
+            'trial',
+        ];
     }
 
     private function getImageUrl()

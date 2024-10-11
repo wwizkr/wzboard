@@ -312,7 +312,7 @@ const TemplateFunctions = {
             theme: 'default'
         });
     },
-    
+
     // 위치 변경 처리: 출력 위치가 변경될 때 UI 업데이트
     handlePositionChange() {
         const value = $(this).val();
@@ -1300,15 +1300,15 @@ const TemplateHtmls = {
         const bannerItems = data?.items || [];
 
         bannerItems.forEach(function($i, i) {
-            const itemid = `banner_${idx}_${$i.item_uid}`;
+            console.log($i);
+            const itemid = `banner_${idx}_${$i.banner_no}`;
             let itemHtml = `
                 <li id="${itemid}">
                     <dl class="dl-image">
                         <dt>
-                            <img src="${$i.item_image || ''}">
+                            <img src="${$i.image || ''}">
                             <p>
-                                ${$i.item_link ? `<a href="${$i.item_link}" target="_blank"><span>연결주소 : ${$i.item_linktxt || ''}</span></a>` : ''}
-                                <span>넓이 : ${$i.item_width || '0'}px / 높이 : ${$i.item_height || '0'}px</span>
+                                ${$i.link ? `<a href="${$i.link}" target="_blank"><span>연결주소 : ${$i.link || ''}</span></a>` : ''}
                             </p>
                         </dt>
                     </dl>
@@ -1482,7 +1482,7 @@ $(document).ready(function() {
 });
 
 // 폼 제출 함수 (전역 함수로 유지, PHP에서 호출됨)
-function ftemplateform_submit() {
+function frm_submit() {
   return true;
 }
 </script>

@@ -1,20 +1,20 @@
 <h1 class="sound-only">사이트 제목</h1>
 <header id="header">
-    <div class="header-inner" style="max-width:<?= $this->config_domain['cf_layout_max_width']; ?>px;">
+    <div class="header-inner" style="max-width:<?= $config_domain['cf_layout_max_width'] ?? '1200' ?>px;">
         <div class="header-logo">
-            <div class="logo"><a href="/"><?= $this->config_domain['cf_title']; ?></a></div>
+            <div class="logo"><a href="/"><?= $config_domain['cf_title'] ?? 'Site Title' ?></a></div>
         </div>
-        <div class="header-gnb swiper-container"><?= $menu; ?></div>
+        <div class="header-gnb swiper-container"><?= $menu ?? '' ?></div>
         <div class="header-snb">
             <div class="header-search"></div>
             <div class="header-ico">
-                <?php if($this->isLogin) { ?>
+                <?php if($isLogin ?? false): ?>
                 <a href="/member/mypage">마이페이지</a>
                 <a href="/auth/logout">로그아웃</a>
-                <?php } else { ?>
+                <?php else: ?>
                 <a href="/member/register">회원가입</a>
                 <a href="/auth/login">로그인</a>
-                <?php } ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -27,5 +27,5 @@ const menuSwiper = new Swiper('.header-gnb', {
     observeParents: true,
 });
 </script>
-<?= $subContent; ?>
-<main id="main" class="<?= $mainStyle; ?>">
+<?= $subContent ?? '' ?>
+<main id="main" class="<?= $mainStyle ?? '' ?>">

@@ -25,12 +25,12 @@ class LayoutManager
 
         $leftTemplate = [];
         if ($layout['left']['display']) {
-            $leftTemplate = $this->templateService->getSideTemplateData('template', 'left', $me_code, 'menu');
+            $leftTemplate = $this->templateService->getPageTemplateData('template', 'left', $me_code, 'menu');
         }
 
         $rightTemplate = [];
         if ($layout['right']['display']) {
-            $rightTemplate = $this->templateService->getSideTemplateData('template', 'right', $me_code, 'menu');
+            $rightTemplate = $this->templateService->getPageTemplateData('template', 'right', $me_code, 'menu');
         }
 
         $pageTopTemplate = [];
@@ -62,7 +62,6 @@ class LayoutManager
         }
 
         if (!$isIndex) {
-            echo 'test pagetop Content';
             echo !empty($pageTopTemplate) ? $this->templateViewHelper->render($pageTopTemplate) : '';
         }
 
@@ -81,7 +80,6 @@ class LayoutManager
         echo '</div><!-- End container--->'.PHP_EOL;
 
         if (!$isIndex) {
-            echo 'test pagefoot Content';
             echo !empty($pageFootTemplate) ? $this->templateViewHelper->render($pageFootTemplate) : '';
         }
 
@@ -98,7 +96,6 @@ class LayoutManager
         ob_start();
             
         if (!$isIndex) {
-            echo 'test ' . $position . ' Content';
             echo !empty($contentTemplate) ? $this->templateViewHelper->render($contentTemplate) : '';
         }
 
