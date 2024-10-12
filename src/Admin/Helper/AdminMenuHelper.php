@@ -171,44 +171,9 @@ class AdminMenuHelper
                 $boards[$key]['me_link'] = '/board/'.$val['board_id'].'/list';
             }
         }
-        
-        /*
-         * 문제은행 메뉴 생성
-         */
-        $subject = [];
-        $result = $this->db->sqlBindQuery('select', 'trial_subject',[],[]);
-        $n = 0;
-        if (!empty($result)) {
-            foreach($result as $key=>$val) {
-                $subject[$n]['me_cate2'] = $val['no'];
-                $subject[$n]['me_name'] = $val['subject_name'];
-                $subject[$n]['me_title'] = $val['subject_name'];
-                $subject[$n]['me_link'] = '/trial/list?subject='.$val['subject_name'];
-                $n++;
-                // 과목 카테고리
-                $param = [];
-                $where['subject_no'] = ['i', $val['no']];
-                $option = ['order' => 'category asc'];
-
-                $sub = $this->db->sqlBindQuery('select', 'trial_category', $param, $where, $option);
-                if (!empty($sub)) {
-                    foreach($sub as $subKey => $subVal) {
-                        $subject[$n]['me_cate2'] = $subVal['category'];
-                        $subject[$n]['me_name'] = $val['subject_name'].' > '.$subVal['category_name'];
-                        $subject[$n]['me_title'] = $subVal['category_name'];
-                        $subject[$n]['me_link'] = '/trial/list?subject='.$val['subject_name'].'&category='.$subVal['category_name'];
-                        $n++;
-                    }
-                }
-                unset($param);
-                unset($where);
-                unset($option);
-            }
-        }
 
         $menuCategory = [
             'boards' => ['title' => '게시판', 'children' => $boards],
-            'trial' => ['title' => '문제은행', 'children' => $subject],
             'page' => ['title' => '페이지', 'children' => []],
             'direct' => ['title' => '직접입력', 'children' => []],
         ];

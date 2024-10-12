@@ -3,41 +3,40 @@
 
 namespace Web\Admin\Controller;
 
+use Web\PublicHtml\Core\DependencyContainer;
+
 use Web\PublicHtml\Helper\CommonHelper;
-use Web\Admin\Helper\AdminSettingsHelper;
+//use Web\Admin\Helper\AdminSettingsHelper;
 use Web\Admin\Model\AdminSettingsModel;
 use Web\Admin\Service\AdminSettingsService;
 use Web\Admin\Helper\AdminMenuHelper;
-
-use Web\PublicHtml\Core\DependencyContainer;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
 use Web\PublicHtml\Helper\MenuHelper;
 
 class SettingsController
 {
     protected DependencyContainer $container;
-    protected adminSettingsModel $adminSettingsModel;
-    protected adminSettingsService $adminSettingsService;
-    protected adminMenuHelper $adminMenuHelper;
-    protected FormDataMiddleware $formDataMiddleware;
-    protected menuHelper $menuHelper;
-    protected array $config_domain;
-    protected int $cf_id;
+    protected $adminSettingsModel;
+    protected $adminSettingsService;
+    protected $adminMenuHelper;
+    protected $formDataMiddleware;
+    protected $menuHelper;
+    protected $config_domain;
+    protected $cf_id;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+        $this->cf_id = (int)$this->config_domain['cf_id'];
+
         $this->adminSettingsModel = new AdminSettingsModel($this->container);
         $this->adminSettingsService = new AdminSettingsService($this->container);
         $this->adminMenuHelper = new AdminMenuHelper($this->container);
         $this->menuHelper = new MenuHelper();
         
-        $csrfTokenHandler = new CsrfTokenHandler($container->get('SessionManager'));
-        $this->formDataMiddleware = new FormDataMiddleware($csrfTokenHandler);
+        $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
 
-        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
-        $this->cf_id = (int)$this->config_domain['cf_id'];
+        
     }
 
     /**

@@ -22,7 +22,8 @@ class AdminSettingsService
     {
         $this->container = $container;
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
-        $this->adminSettingsModel = $this->container->get('AdminSettingsModel');
+        $this->adminSettingsModel = new AdminSettingsModel($this->container);
+
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 

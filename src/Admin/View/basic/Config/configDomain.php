@@ -838,7 +838,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fillFormLayout() {
-    console.log(configDomain);
     if (configDomain.cf_layout === 2) {
         document.getElementById('left_width2').value = configDomain.cf_left_width;
     }
@@ -854,6 +853,8 @@ function fillFormLayout() {
 }
 
 App.registerCallback('updateConfigDomain', function(data) {
-
+    if (data.message) {
+        alert(data.message);
+    }
 });
 </script>

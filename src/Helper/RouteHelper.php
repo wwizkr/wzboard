@@ -26,26 +26,38 @@ class RouteHelper
 
     public function handleWebRoute($handler, $vars, $viewRenderer)
     {
-        // ÇÃ·¯±×ÀÎ °æ·Î Ã³¸® Ãß°¡
+        // í”ŒëŸ¬ê·¸ì¸ ê²½ë¡œ ì²˜ë¦¬
         if (strpos($handler, 'Plugins\\') === 0) {
-            list($controller, $method) = $this->extractControllerAndMethod($handler, $vars, 'Plugins');
-            $this->executeControllerMethod($controller, $method, $vars, $viewRenderer);
+            $parts = explode('\\', $handler);
+            $pluginName = $parts[1] ?? '';
+            $controllerName = $parts[3] ?? '';
+            
+            $isAdmin = ($controllerName === 'AdminController');
+            $method = $vars['method'] ?? 'index';
+            $param = $vars['param'] ?? null;
+            
+            // Admin ì¸ì¦ ì²˜ë¦¬
+            if ($isAdmin) {
+                if (!isset($_COOKIE['jwtToken']) || !CryptoHelper::verifyJwtToken($_COOKIE['jwtToken'])) {
+                    header('Location: /auth/login');
+                    exit;
+                }
+                $viewRenderer = $this->container->get('AdminViewRenderer');
+            }
+            
+            // ì»¨íŠ¸ë¡¤ëŸ¬ ë©”ì†Œë“œ ì‹¤í–‰
+            $this->executeControllerMethod($handler, $method, [$param], $viewRenderer);
             return;
         }
-        #######################################################
-
+        
+        // ê¸°ì¡´ì˜ ì›¹ ë¼ìš°íŠ¸ ì²˜ë¦¬
         list($controller, $method) = $this->extractControllerAndMethod($handler, $vars, 'PublicHtml');
         $this->executeControllerMethod($controller, $method, $vars, $viewRenderer);
     }
 
     protected function extractControllerAndMethod($handler, $vars, $namespace = '')
     {
-        if (strpos($handler, 'Plugins\\') === 0) {
-            // ÇÃ·¯±×ÀÎ ÄÁÆ®·Ñ·¯ Ã³¸®
-            $parts = explode('\\', $handler);
-            $method = $vars['method'] ?? 'index';
-            return [$handler, $method];
-        } elseif (isset($vars['boardId']) && $handler === "Web\\{$namespace}\\Controller\\BoardController@comment") {
+        if (isset($vars['boardId']) && $handler === "Web\\{$namespace}\\Controller\\BoardController@comment") {
             return ["Web\\{$namespace}\\Controller\\BoardController", 'comment'];
         } elseif (isset($vars['boardId'])) {
             return ["Web\\{$namespace}\\Controller\\BoardController", $vars['method'] ?? 'index'];
@@ -59,20 +71,20 @@ class RouteHelper
         }
     }
 
-    protected function executeControllerMethod($controller, $method, $vars, $renderer)
+    protected function executeControllerMethod($controller, $method, $params, $renderer)
     {
         if (!class_exists($controller)) {
-            echo 'Controller not found';
+            echo "Controller not found: $controller";
             return;
         }
 
         $controllerInstance = new $controller($this->container);
         if (!method_exists($controllerInstance, $method)) {
-            echo 'Method not found';
+            echo "Method not found: $method in $controller";
             return;
         }
 
-        $response = $controllerInstance->$method($vars);
+        $response = $controllerInstance->$method($params);
 
         if (!empty($response)) {
             $renderer->renderPage(

@@ -24,8 +24,8 @@ class AdminSettingsHelper
             'Admin' => '관리자 스킨, 관리자 스킨에 대한 설명',
         ];
 
-        $base_view_path = __DIR__ . '/../../View';
-        $admin_view_path = __DIR__ . '/../../Admin/View';
+        $base_view_path = WZ_SRC_PATH . '/View';
+        $admin_view_path = WZ_SRC_PATH . '/Admin/View';
 
         $result = [];
 
