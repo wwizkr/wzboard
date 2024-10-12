@@ -47,6 +47,8 @@ $schema = [
                                 `cf_skin_layout` VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 `cf_skin_content` VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 `cf_skin_home` VARCHAR(25) NOT NULL DEFAULT 'basic',
+                                `cf_skin_home` VARCHAR(25) NOT NULL DEFAULT 'basic',
+                                `cf_color_set` TEXT,
                                 `cf_mobile_fix_widget` TINYINT(4) NOT NULL DEFAULT 1,
                                 `cf_mobile_fix_widget_skin` VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 `cf_mobile_panel_widget` TINYINT(4) NOT NULL DEFAULT 0,
@@ -63,6 +65,7 @@ $schema = [
                                 `cf_pc_page_nums` INT(11) NOT NULL DEFAULT 10,
                                 `cf_mo_page_nums` INT(11) NOT NULL DEFAULT 5,
                                 `cf_cert_use` TINYINT(4) NOT NULL DEFAULT 0,
+                                `cf_auto_register` TINYINT(4) NOT NULL DEFAULT 0,
                                 `cf_use_email_certify` TINYINT(4) NOT NULL DEFAULT 0,
                                 `cf_register_level` TINYINT(4) NOT NULL DEFAULT 2,
                                 `cf_register_allow` TINYINT(4) NOT NULL DEFAULT 0,
@@ -110,7 +113,7 @@ $schema = [
                                 `cf_sns_channel_url` TEXT DEFAULT NULL,
                                 `cf_naver_visit` VARCHAR(255) DEFAULT NULL,
                                 `cf_google_visit` VARCHAR(255) DEFAULT NULL,
-                                `cf_use_naver_ad` CHAR(1) NOT NULL DEFAULT 'Y',
+                                `cf_use_naver_ad` CHAR(1) NOT NULL DEFAULT 'N',
                                 `cf_use_naver_ad_key` VARCHAR(25) DEFAULT NULL,
                                 `cf_use_naver_ad_type` VARCHAR(100) DEFAULT NULL
                             ) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

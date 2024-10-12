@@ -3,7 +3,7 @@
 
 namespace Web\Admin\Helper;
 
-class ConfigHelper
+class AdminConfigHelper
 {
     public static function getSkin()
     {
@@ -24,8 +24,8 @@ class ConfigHelper
             'Admin' => '관리자 스킨, 관리자 스킨에 대한 설명',
         ];
 
-        $base_view_path = __DIR__ . '/../../View';
-        $admin_view_path = __DIR__ . '/../../Admin/View';
+        $base_view_path = WZ_SRC_PATH.'/View';
+        $admin_view_path = WZ_SRC_PATH.'/Admin/View';
 
         $result = [];
 
@@ -48,6 +48,58 @@ class ConfigHelper
         }
 
         return $result;
+    }
+
+    public static function getWidgetSkin(array $positions)
+    {
+        $result = [];
+        
+        foreach ($positions as $key => $position) {
+            $widget_view_path = WZ_SRC_PATH . '/View/Widget/' . $key;
+            $subdirectories = [];
+            
+            if (is_dir($widget_view_path)) {
+                $subdirectories = array_filter(scandir($widget_view_path), function($item) use ($widget_view_path) {
+                    return $item != '.' && $item != '..' && is_dir($widget_view_path . '/' . $item);
+                });
+                sort($subdirectories);
+            }
+            
+            $result[$key] = [
+                'title' => $position['title'],
+                'field' => $position['field'],
+                'skin' => $subdirectories
+            ];
+        }
+        
+        return $result;
+    }
+
+    public static function getSnsLogin()
+    {
+        $sns = [
+            'naver' => [
+                'title' => '네이버 로그인',
+                'callBackUrl' => '',
+                'guideUrl' => '',
+                'usefield' => [
+                    'naver_clientid' => '네이버 Client Id',
+                    'naver_secret' => '네이버 Client Secret',
+                ],
+            ],
+            'kakao' => [
+                'title' => '카카오 로그인',
+                'callBackUrl' => '',
+                'guideUrl' => '',
+                'usefield' => [
+                    'kakao_rest_key' => '카카오 REST API 키',
+                    'kakao_client_key' => '카카오 Admin 키',
+                    'kakao_js_apikey' => '카카오 JavaScript 키',
+                ],
+            ],
+        ];
+
+        return $sns;
     }
 
     public static function getSnsSeo()

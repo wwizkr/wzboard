@@ -11,21 +11,32 @@ use Web\PublicHtml\Traits\DatabaseHelperTrait;
 class AdminMenuHelper
 {
     private $container;
+    private $db;
+    private $cacheHelper;
     private $adminSettingsModel;
     private $adminBoardsModel;
-    private $db;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
         $this->db = $this->container->get('db');
+        $this->cacheHelper = $this->container->get('CacheHelper');
+        $this->adminBoardsModel = $this->container->get('AdminBoardsModel');
+
         $this->adminSettingsModel = new AdminSettingsModel($this->container);
-        $this->adminBoardsModel = new AdminBoardsModel($this->container);
     }
 
-    public static function getAdminMenu()
+    public function getAdminMenu()
     {
-        return [
+        $cacheKey = 'admin_menu_cache';
+    
+        // 캐시된 메뉴가 있는지 확인
+        $cachedMenu = $this->cacheHelper->getCache($cacheKey);
+        if ($cachedMenu !== null) {
+            return $cachedMenu;
+        }
+
+        $adminMenu = [
             'dashboard' => [
                 'label' => '대쉬보드',
                 'url' => '/admin',
@@ -88,29 +99,6 @@ class AdminMenuHelper
                     ],
                 ],
             ],
-            'trial' => [
-                'label' => '문제 관리',
-                'url' => '/admin/trialadmin/configs',
-                'icon' => 'bi-people',
-                'submenu' => [
-                    'subject' => [
-                        'label' => '문제 과목 관리',
-                        'url' => '/admin/trialadmin/subject',
-                    ],
-                    'categories' => [
-                        'label' => '카테고리 관리',
-                        'url' => '/admin/trialadmin/category',
-                    ],
-                    'list' => [
-                        'label' => '문제 관리',
-                        'url' => '/admin/trialadmin/list',
-                    ],
-                    'gichul' => [
-                        'label' => '기출문제 관리',
-                        'url' => '/admin/trialadmin/gichulList',
-                    ],
-                ],
-            ],
             'design' => [
                 'label' => '디자인 관리',
                 'url' => '/admin/template/templateList',
@@ -140,6 +128,32 @@ class AdminMenuHelper
                 'icon' => 'bi-bar-chart',  // Bootstrap Icons 리포트 아이콘
             ],
         ];
+
+        // 플러그인 디렉토리를 스캔하여, adminMenu를 추가하고, adminMenu를 캐쉬화 함
+        // 플러그인 디렉토리 스캔
+        $pluginsDir = WZ_SRC_PATH . '/Plugins';
+        if (is_dir($pluginsDir)) {
+            $plugins = scandir($pluginsDir);
+
+            foreach ($plugins as $plugin) {
+                if ($plugin === '.' || $plugin === '..') {
+                    continue;
+                }
+
+                $pluginMenuFile = $pluginsDir . '/' . $plugin . '/adminMenu.php';
+                if (file_exists($pluginMenuFile)) {
+                    $pluginMenu = include $pluginMenuFile;
+                    if (is_array($pluginMenu)) {
+                        $adminMenu = array_merge($adminMenu, $pluginMenu);
+                    }
+                }
+            }
+        }
+
+        // 메뉴를 캐시에 저장
+        $this->cacheHelper->setCache($cacheKey, $adminMenu, 3600 * 24); // 1시간 동안 캐시
+
+        return $adminMenu;
     }
 
     public function setMenuCategory()

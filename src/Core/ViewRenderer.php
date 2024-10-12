@@ -76,6 +76,50 @@ class ViewRenderer
         });
     }
 
+    private function loadHeadData(array $config_domain, array $headData): array
+    {
+        $protocol = $protocol = $_SERVER['REQUEST_SCHEME'] ?? 'http';
+        $host = $config_domain['cf_domain'];
+        $uri = $_SERVER['REQUEST_URI'];
+        $uri = strtok($uri, '?');
+        $fullUrl = $protocol . "://" . $host . $uri;
+
+        $icoImage = '';
+        if (file_exists(WZ_STORAGE_PATH.'/common/'.$config_domain['cf_id'].'/favicon.ico')) {
+            $icoImage = '/storage/common/'.$config_domain['cf_id'].'/favicon.ico';
+        }
+
+        $ogImage = '';
+        if (file_exists(WZ_STORAGE_PATH.'/common/'.$config_domain['cf_id'].'/og.image.jpg')) {
+            $ogImage = '/storage/common/'.$config_domain['cf_id'].'/favicon.ico';
+        }
+
+        $addMeta = $config_domain['cf_add_meta'] ? explode("\n", $config_domain['cf_add_meta']) : [];
+        $data = [
+            'seoTitle' => $headData['title'] ?? $config_domain['cf_title'],
+            'canonical' => htmlspecialchars($fullUrl),
+            'seoKeyword' => $headData['seoKeyword'] ?? $config_domain['cf_seo_keyword'],
+            'seoDescription' => $headData['seoDescription'] ?? $config_domain['cf_seo_description'],
+            'icoImage' => $icoImage,
+            'ogImage' => $headData['ogImage'] ?? $ogImage,
+            'addMeta' => $addMeta,
+        ];
+
+        return $data;
+    }
+
+    private function loadfootData(array $config_domain, array $headData): array
+    {
+        $addScript = $config_domain['cf_add_script'] ? explode("\n", $config_domain['cf_add_script']) : [];
+        $data = [
+            'addScript' => $addScript,
+            'analytics' => $config_domain['cf_analytics'],
+            'snsChannel' => $config_domain['cf_sns_channel_url'] ? unserialize($config_domain['cf_sns_channel_url']) : [],
+        ];
+
+        return $data;
+    }
+
     private function loadLayoutManager(): void
     {
         $this->lazyLoad('layoutManager', function() {
@@ -324,6 +368,7 @@ class ViewRenderer
         $this->loadConfig();
         $this->loadPageInfo();
 
+        $headData = $this->loadHeadData($this->get('config_domain'), $headData);
         $this->render(WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/head', $headData ?? []);
 
         if ($fullPage === false) {
@@ -337,7 +382,8 @@ class ViewRenderer
         if ($fullPage === false) {
             $this->renderFooter($footerData ?? []);
         }
-
+        
+        $footData = $this->loadFootData($this->get('config_domain'), $footData);
         $this->render(WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/foot', $footData ?? []);
     }
 }

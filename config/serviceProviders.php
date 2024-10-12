@@ -32,6 +32,7 @@ use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\ComponentsViewHelper;
+use Web\PublicHtml\Helper\CacheHelper;
 
 // Middleware
 use Web\PublicHtml\Middleware\AuthMiddleware;
@@ -107,6 +108,9 @@ function registerServices(DependencyContainer $container)
     });
     $container->addFactory('ComponentsViewHelper', function($c) {
         return new ComponentsViewHelper();
+    });
+    $container->addFactory('CacheHelper', function($c) {
+        return new CacheHelper();
     });
 
     // Middleware

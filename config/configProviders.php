@@ -156,10 +156,80 @@ class ConfigProvider
     private function getWidgetPositions()
     {
         return [
-            'PC-LEFT' => 'PC용 왼쪽',
-            'PC-RIGHT' => 'PC용 오른쪽',
-            'MOBILE-FIX' => '모바일하단',
-            'MOBILE-PANEL' => '모바일판넬'
+            'PC-LEFT' => ['title' => 'PC용 왼쪽', 'field' => 'left_widget'],
+            'PC-RIGHT' => ['title' => 'PC용 오른쪽', 'field' => 'right_widget'],
+            'MOBILE-FIX' => ['title' => '모바일 하단', 'field' => 'mobile_fix_widget'],
+        ];
+    }
+
+    private function getColorSet()
+    {
+        return [
+            'bgColor' => [
+                'title' => '기본배경색상',
+                'desc' => '홈페이지에 기본 적용되는 배경색상입니다.',
+                'default' => 'colorwhite',
+            ],
+            'basicFontColor' => [
+                'title' => '기본 글자색상',
+                'desc' => '기본 글자 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'mainColor' => [
+                'title' => '메인색상',
+                'desc' => '글자 강조, 버튼 색상 등, 중요 부분에 사용되는 메인색상입니다.',
+                'default' => 'colorred',
+            ],
+            'pcHeaderBgColor' => [
+                'title' => 'PC 상단 배경 색상',
+                'desc' => 'PC에 사용되는 상단의 배경색상입니다.',
+                'default' => 'colorwhite',
+            ],
+            'pcHeaderFtColor' => [
+                'title' => 'PC 상단 글자 색상',
+                'desc' => 'PC 상단의 메뉴 등에 사용되는 글자 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'pcFooterBgColor' => [
+                'title' => 'PC 하단 배경 색상',
+                'desc' => 'PC에 사용되는 하단의 배경색상입니다.',
+                'default' => 'colorwhite',
+            ],
+            'pcFooterFtColor' => [
+                'title' => 'PC 하단 글자 색상',
+                'desc' => 'PC 하단의 메뉴 등에 사용되는 글자 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'moHeaderBgColor' => [
+                'title' => '모바일 상단 배경 색상',
+                'desc' => '모바일 상단의 배경 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'moHeaderFtColor' => [
+                'title' => '모바일 상단 글자 색상',
+                'desc' => '모바일 상단에 사용되는 글자 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'moMenuBgColor' => [
+                'title' => '모바일 메뉴 배경 색상',
+                'desc' => '모바일 메뉴 배경 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'moMenuFtColor' => [
+                'title' => '모바일 상단 글자 색상',
+                'desc' => '모바일 상단의 메뉴 등에 사용되는 글자 색상입니다.',
+                'default' => 'colorblack',
+            ],
+            'moFooterBgColor' => [
+                'title' => '모바일 하단 배경 색상',
+                'desc' => 'PC에 사용되는 하단의 배경색상입니다.',
+                'default' => 'colorwhite',
+            ],
+            'moFooterFtColor' => [
+                'title' => '모바일 하단 글자 색상',
+                'desc' => '모바일 하단의 메뉴 등에 사용되는 글자 색상입니다.',
+                'default' => 'colorblack',
+            ],
         ];
     }
 }
