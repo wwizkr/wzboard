@@ -29,7 +29,8 @@ class BoardsModel
             $where['board_no'] = ['i', $board_no];
         }
 
-        [$addWhere, $bindValues] = $this->buildSearchConditions($searchQuery ?? '', $filters);
+        //[$addWhere, $bindValues] = $this->buildSearchConditions($searchQuery ?? '', $filters);
+        [$addWhere, $bindValues] = CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
         $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
         
         $options = [
@@ -49,7 +50,8 @@ class BoardsModel
             'board_no' => ['i', $board_no]
         ];
 
-        [$addWhere, $bindValues] = $this->buildSearchConditions($searchQuery, $filters);
+        //[$addWhere, $bindValues] = $this->buildSearchConditions($searchQuery, $filters);
+        [$addWhere, $bindValues] = CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
         $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
 
         $options = [
@@ -253,21 +255,6 @@ class BoardsModel
         return $comment;
     }
 
-    private function buildSearchConditions(?string $searchQuery, array $filters): array
-    {
-        $addWhere = [];
-        $bindValues = [];
-        if (!empty($searchQuery) && !empty($filters)) {
-            $searchConditions = [];
-            foreach ($filters as $field) {
-                $searchConditions[] = "$field LIKE ?";
-                $bindValues[] = "%$searchQuery%";
-            }
-            $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
-        }
-        return [$addWhere, $bindValues];
-    }
-
     private function updateCommentPath(int $commentId, string $newPath): void
     {
         $this->db->sqlBindQuery('update', 'board_comments', ['path' => ['s', $newPath]], ['no' => ['i', $commentId]]);
@@ -425,4 +412,21 @@ class BoardsModel
 
         return $result;
     }
+    
+    /*
+    private function buildSearchConditions(?string $searchQuery, array $filters): array
+    {
+        $addWhere = [];
+        $bindValues = [];
+        if (!empty($searchQuery) && !empty($filters)) {
+            $searchConditions = [];
+            foreach ($filters as $field) {
+                $searchConditions[] = "$field LIKE ?";
+                $bindValues[] = "%$searchQuery%";
+            }
+            $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
+        }
+        return [$addWhere, $bindValues];
+    }
+    */
 }

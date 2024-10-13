@@ -3,10 +3,11 @@
 
 namespace Web\PublicHtml\Model;
 
-use PDO;
-use PDOException;
+//use PDO;
+//use PDOException;
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class MembersModel
 {
@@ -93,66 +94,46 @@ class MembersModel
      * 회원 목록을 가져옴.
      * @param level 
      */
-    public function getMemberListData($currentPage, $page_rows, $searchQuery, $filters = [], $sort = [])
+    public function getMemberListData(int $currentPage, int $page_rows, ?string $searchQuery = null, array $filters = [], array $sort = [], array $additionalQueries = []): array
     {
         $offset = ($currentPage - 1) * $page_rows;
 
         // WHERE 조건 생성
-        $where = [];
-        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
+        $where = [
+            'cf_id' => ['i', $this->config_domain['cf_id']],
+        ];
 
-        if (!empty($searchQuery)) {
-            $where['nickName'] = ['like', $searchQuery, 'AND'];
-            $where['email'] = ['like', $searchQuery, 'OR'];
-        }
-
-        foreach ($filters as $key => $value) {
-            $where[$key] = ['=', $value, 'AND'];
-        }
-
-        // ORDER BY 조건 생성
-        $order = '';
-        if (!empty($sort)) {
-            $order = implode(', ', array_map(function ($key, $value) {
-                return "{$key} {$value}";
-            }, array_keys($sort), $sort));
-        } else {
-            $order = 'signup_date DESC'; // 기본 정렬
-        }
-
-        // LIMIT 조건 생성
-        $limit = "$offset, $page_rows";
-
-        // SQL 실행
+        [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
+        
         $options = [
-            'order' => $order,
-            'limit' => $limit
+            'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'mb_no DESC',
+            'limit' => "$offset, $page_rows",
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
         ];
 
         return $this->db->sqlBindQuery('select', 'members', [], $where, $options);
     }
 
-    public function getTotalMemberCount($searchQuery, $filters = [])
+    public function getTotalMemberCount(?string $searchQuery = null, array $filters = [], array $additionalQueries = []): int
     {
         // WHERE 조건 생성
-        $where = [];
+        $where = [
+            'cf_id' => ['i', $this->config_domain['cf_id']],
+        ];
 
-        if (!empty($searchQuery)) {
-            $where['name'] = ['like', $searchQuery, 'AND'];
-            $where['email'] = ['like', $searchQuery, 'OR'];
-        }
+        [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
 
-        foreach ($filters as $key => $value) {
-            $where[$key] = ['=', $value, 'AND'];
-        }
-
-        // SQL 실행
         $options = [
-            'field' => 'COUNT(*) AS totalCount'
+            'field' => 'COUNT(*) AS totalCount',
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
         ];
 
         $result = $this->db->sqlBindQuery('select', 'members', [], $where, $options);
-        return $result[0]['totalCount'] ?? 0;
+        return (int)($result[0]['totalCount'] ?? 0);
     }
 
     public function findBySocialId($providerName, $identifier)

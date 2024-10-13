@@ -3,15 +3,16 @@
 
 namespace Web\PublicHtml\Service;
 
-use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Core\DependencyContainer;
-use Web\PublicHtml\Model\MembersModel;
-use Web\PublicHtml\Helper\MembersHelper;
-use Web\PublicHtml\Helper\SessionManager;
-use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\CommonHelper;
-use Web\PublicHtml\Helper\CryptoHelper;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
+
+//use Web\PublicHtml\Traits\DatabaseHelperTrait;
+//use Web\PublicHtml\Model\MembersModel;
+//use Web\PublicHtml\Helper\MembersHelper;
+//use Web\PublicHtml\Helper\SessionManager;
+//use Web\PublicHtml\Helper\CookieManager;
+//use Web\PublicHtml\Helper\CryptoHelper;
+//use Web\PublicHtml\Middleware\FormDataMiddleware;
 
 class MembersService
 {
@@ -78,14 +79,70 @@ class MembersService
         return $this->membersModel->getMemberLevelData();
     }
 
-    public function getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort)
+    public function getMemberList()
     {
-        return $this->membersModel->getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
+        // 기본 설정 로드
+        $config = [
+            'cf_page_rows' => $this->config_domain['cf_page_rows'],
+            'cf_page_nums' => $this->config_domain['cf_page_nums']
+        ];
+
+        // 허용된 필터와 정렬 필드 정의
+        $allowedFilters = ['nickName', 'phone', 'email'];
+        $allowedSortFields = ['mb_no', 'signup_date'];
+        
+        // 추가 파라미터 설정
+        $additionalParams = [
+        ];
+
+        // 목록 파라미터 가져오기
+        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
+
+        error_log("Params:::".print_r($params, true));
+
+        // 총회원수
+        $totalItems = $this->getTotalMemberCount($params['search'], $params['filter'], $params['additionalQueries']);
+
+        // 회원 목록 데이터 조회
+        $memberList = $this->getMemberListData(
+            $params['page'],
+            $params['page_rows'],
+            $params['search'],
+            $params['filter'],
+            $params['sort'],
+            $params['additionalQueries']
+        );
+
+        return [
+            'params' => $params,
+            'totalItems' => $totalItems,
+            'memberList' => $memberList,
+        ];
     }
 
-    public function getTotalMemberCount($searchQuery, $filters)
+    public function getTotalMemberCount($searchQuery, $filters, $additionalQueries)
     {
-        return $this->membersModel->getTotalMemberCount($searchQuery, $filters);
+        return $this->membersModel->getTotalMemberCount($searchQuery, $filters, $additionalQueries);
+    }
+
+    public function getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort, $additionalQueries)
+    {
+        $data = $this->membersModel->getMemberListData(
+            $currentPage,
+            $page_rows,
+            $searchQuery,
+            $filters,
+            $sort,
+            $additionalQueries
+        );
+
+        foreach ($data as $key => $memberData) {
+            if (isset($memberData['password'])) {
+                unset($data[$key]['password']);
+            }
+        }
+
+        return $data;
     }
     
     public function insertMemberData(array $memberData = [])

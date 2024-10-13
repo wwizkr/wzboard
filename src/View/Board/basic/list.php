@@ -59,7 +59,7 @@
         </div>
         </form>
     </div>
-    <?php if (isset($paginationData)) { echo $this->renderPagination($paginationData); } ?>
+    <?= $this->renderPagination($paginationData); ?>
 </div>
 
 

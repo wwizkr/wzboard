@@ -34,10 +34,14 @@ class TemplateService
         
         return $processedTemplates;
     }
-
+    //getPageTemplateData('template', 'left', $me_code, 'menu');
     public function getPageTemplateData(string $table = 'template', string $position = '', string $positionCode = '', string $positionSub = ''): array
     {
+        $positionCode = !$positionCode ? 'all' : $positionCode;
+        $positionSub = $positionSub ?? '';
+
         $templateList = $this->adminTemplateModel->getTemplateList($table, $this->config_domain['cf_id'], $position, 0, $positionCode, $positionSub);
+        
         $processedTemplates = [];
         foreach ($templateList as $template) {
             $processedTemplate = $this->processTemplate($template, $table);

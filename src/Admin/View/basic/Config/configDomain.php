@@ -14,7 +14,7 @@
     <div class="fixed-top-inner">
         <h3 class="page-title"><?= $title ? $title : '' ?></h3>
         <div class="fixed-top-btn">
-            <button type="button" value="확인" class="btn btn-fill-accent btn-form-submit-ajax" data-target="/admin/config/configDomainUpdate" data-callback="updateConfigDomain">확인</button>
+            <button type="button" value="확인" class="btn btn-fill-accent" onclick="javascript:handleAjaxFormSubmit(this);" data-target="/admin/config/configDomainUpdate" data-callback="updateConfigDomain">확인</button>
         </div>
     </div>
 </div>

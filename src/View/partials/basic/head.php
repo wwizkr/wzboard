@@ -35,6 +35,7 @@ foreach($addMeta as $meta) {
 <link href="/assets/basic/css/common-custom.css?<?=time();?>" rel="stylesheet">
 <link href="/assets/basic/css/style.css?<?=time();?>" rel="stylesheet">
 <link href="/assets/css/components/button.css?<?=time();?>" rel="stylesheet">
+<link href="/assets/css/components/svgicon.css?<?=time();?>" rel="stylesheet">
 <?php
 foreach ($this->getAssets('css') as $cssFile) {
     echo '<link href="' . htmlspecialchars($cssFile, ENT_QUOTES, 'UTF-8') . '?'.time().'" rel="stylesheet">' . PHP_EOL;

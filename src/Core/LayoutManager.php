@@ -55,10 +55,10 @@ class LayoutManager
                 echo '</aside>';
             }
             
-            echo '<div id="container_wrap">'.PHP_EOL;
+            echo "<div id=\"container_wrap\" style=\"max-width:{$layout['content']['width']};\">".PHP_EOL;
         } else {
-            echo '<div id="container">'.PHP_EOL;
-            echo '<div id="container_wrap">'.PHP_EOL;
+            echo "<div id=\"container\">".PHP_EOL;
+            echo "<div id=\"container_wrap\" style=\"max-width:{$layout['content']['width']};\">".PHP_EOL;
         }
 
         if (!$isIndex) {
@@ -133,7 +133,7 @@ class LayoutManager
                 break;
         }
 
-        // 너비 설정
+        // 너비 설정 // 픽셀로만 계산
         if ($layout['left']['display']) {
             $layout['left']['width'] = (int)$this->config_domain['cf_left_width'];
         }
@@ -142,8 +142,8 @@ class LayoutManager
         }
 
         // 컨텐츠 영역의 너비 조정
-        $contentWidth = 100 - $layout['left']['width'] - $layout['right']['width'];
-        $layout['content']['width'] = $contentWidth . '%';
+        $contentWidth = 'calc( 100% - '.$layout['left']['width'] + $layout['right']['width'].'px )';
+        $layout['content']['width'] = $contentWidth;
 
         return $layout;
     }

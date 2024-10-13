@@ -406,6 +406,25 @@ class CommonHelper
     }
     
     /**
+     * 리스트 페이지의 추가 파라미터 매핑 및 정리 Model
+     * 
+     */
+    public static function buildSearchConditions(?string $searchQuery, array $filters): array
+    {
+        $addWhere = [];
+        $bindValues = [];
+        if (!empty($searchQuery) && !empty($filters)) {
+            $searchConditions = [];
+            foreach ($filters as $field) {
+                $searchConditions[] = "$field LIKE ?";
+                $bindValues[] = "%$searchQuery%";
+            }
+            $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
+        }
+        return [$addWhere, $bindValues];
+    }
+
+    /**
      * 추가 쿼리 조건을 처리하여 WHERE 절과 바인딩 값을 생성합니다.
      *
      * @param array $additionalQueries 추가 쿼리 조건 배열 ([필드명, 값] 형식)

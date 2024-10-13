@@ -9,11 +9,12 @@
             <div class="header-search"></div>
             <div class="header-ico">
                 <?php if($isLogin ?? false): ?>
-                <a href="/member/mypage">마이페이지</a>
-                <a href="/auth/logout">로그아웃</a>
+                <a href="/auth/logout" class="btn btn-outline-darkgray"><span>로그아웃</span></a>
+                <a href="/member/mypage" class="btn btn-fill-darkgray"><span>마이페이지</span><span class="svg svg-arrow rotate-r90"></span>
+                </a>
                 <?php else: ?>
-                <a href="/member/register">회원가입</a>
-                <a href="/auth/login">로그인</a>
+                <a href="/auth/login" class="btn btn-outline-darkgray"><span>로그인</span></a>
+                <a href="/member/register" class="btn btn-fill-darkgray"><span class="svg svg-arrow rotate-r90"></a>
                 <?php endif; ?>
             </div>
         </div>

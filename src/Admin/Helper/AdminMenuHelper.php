@@ -22,14 +22,13 @@ class AdminMenuHelper
         $this->db = $this->container->get('db');
         $this->cacheHelper = $this->container->get('CacheHelper');
         $this->adminBoardsModel = $this->container->get('AdminBoardsModel');
-
         $this->adminSettingsModel = new AdminSettingsModel($this->container);
     }
 
     public function getAdminMenu()
     {
         $cacheKey = 'admin_menu_cache';
-    
+
         // 캐시된 메뉴가 있는지 확인
         $cachedMenu = $this->cacheHelper->getCache($cacheKey);
         if ($cachedMenu !== null) {
@@ -128,27 +127,9 @@ class AdminMenuHelper
                 'icon' => 'bi-bar-chart',  // Bootstrap Icons 리포트 아이콘
             ],
         ];
-
-        // 플러그인 디렉토리를 스캔하여, adminMenu를 추가하고, adminMenu를 캐쉬화 함
-        // 플러그인 디렉토리 스캔
-        $pluginsDir = WZ_SRC_PATH . '/Plugins';
-        if (is_dir($pluginsDir)) {
-            $plugins = scandir($pluginsDir);
-
-            foreach ($plugins as $plugin) {
-                if ($plugin === '.' || $plugin === '..') {
-                    continue;
-                }
-
-                $pluginMenuFile = $pluginsDir . '/' . $plugin . '/adminMenu.php';
-                if (file_exists($pluginMenuFile)) {
-                    $pluginMenu = include $pluginMenuFile;
-                    if (is_array($pluginMenu)) {
-                        $adminMenu = array_merge($adminMenu, $pluginMenu);
-                    }
-                }
-            }
-        }
+        
+        // 플러그인 메뉴 로드
+        $adminMenu = $this->loadPluginMenus($adminMenu);
 
         // 메뉴를 캐시에 저장
         $this->cacheHelper->setCache($cacheKey, $adminMenu, 3600 * 24); // 1시간 동안 캐시
@@ -156,28 +137,82 @@ class AdminMenuHelper
         return $adminMenu;
     }
 
-    public function setMenuCategory()
+    private function loadPluginMenus($adminMenu)
     {
-        /*
-         * 게시판 메뉴 생성
-         */
-        $boards = [];
-        $boardData = $this->adminBoardsModel->getBoardsConfig(null);
-        if (!empty($boardData)) {
-            foreach($boardData as $key=>$val) {
-                $boards[$key]['me_cate2'] = $val['board_id'];
-                $boards[$key]['me_name'] = $val['board_name'];
-                $boards[$key]['me_title'] = $val['board_name'];
-                $boards[$key]['me_link'] = '/board/'.$val['board_id'].'/list';
+        $pluginsDir = WZ_SRC_PATH . '/Plugins';
+        if (is_dir($pluginsDir)) {
+            $plugins = scandir($pluginsDir);
+            foreach ($plugins as $plugin) {
+                if ($plugin === '.' || $plugin === '..') {
+                    continue;
+                }
+                $pluginMenuFile = $pluginsDir . '/' . $plugin . '/adminMenu.php';
+                if (file_exists($pluginMenuFile)) {
+                    require_once $pluginMenuFile;
+                    $className = "Plugins\\{$plugin}\\AdminMenu";
+                    if (class_exists($className)) {
+                        $pluginMenu = new $className($this->container);
+                        $adminMenu = array_merge($adminMenu, $pluginMenu->getMenu());
+                    }
+                }
             }
         }
+        return $adminMenu;
+    }
 
+    public function setMenuCategory()
+    {
         $menuCategory = [
-            'boards' => ['title' => '게시판', 'children' => $boards],
+            'boards' => ['title' => '게시판', 'children' => $this->getBoardMenus()],
             'page' => ['title' => '페이지', 'children' => []],
             'direct' => ['title' => '직접입력', 'children' => []],
         ];
 
+        // 플러그인 메뉴 카테고리 로드
+        $menuCategory = $this->loadPluginMenuCategories($menuCategory);
+
+        return $menuCategory;
+    }
+
+    private function getBoardMenus()
+    {
+        $boards = [];
+        $boardData = $this->adminBoardsModel->getBoardsConfig(null);
+        if (!empty($boardData)) {
+            foreach($boardData as $key => $val) {
+                $boards[$key] = [
+                    'me_cate2' => $val['board_id'],
+                    'me_name' => $val['board_name'],
+                    'me_title' => $val['board_name'],
+                    'me_link' => '/board/'.$val['board_id'].'/list',
+                ];
+            }
+        }
+        return $boards;
+    }
+
+    private function loadPluginMenuCategories($menuCategory)
+    {
+        $pluginsDir = WZ_SRC_PATH . '/Plugins';
+        if (is_dir($pluginsDir)) {
+            $plugins = scandir($pluginsDir);
+            foreach ($plugins as $plugin) {
+                if ($plugin === '.' || $plugin === '..') {
+                    continue;
+                }
+                $pluginMenuFile = $pluginsDir . '/' . $plugin . '/adminMenu.php';
+                if (file_exists($pluginMenuFile)) {
+                    require_once $pluginMenuFile;
+                    $className = "Plugins\\{$plugin}\\AdminMenu";
+                    if (class_exists($className)) {
+                        $pluginMenu = new $className($this->container);
+                        if (method_exists($pluginMenu, 'getMenuCategory')) {
+                            $menuCategory = array_merge($menuCategory, $pluginMenu->getMenuCategory());
+                        }
+                    }
+                }
+            }
+        }
         return $menuCategory;
     }
 }

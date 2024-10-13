@@ -10,7 +10,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="/assets/basic/css/admin-style.css?<?=time();?>">
-<link rel="stylesheet" href="/assets/basic/css/custom-bootstrap.css?<?=time();?>">
 <link rel="stylesheet" href="/assets/basic/css/common-custom.css?<?=time();?>">
 <link rel="stylesheet" href="/assets/css/components/button.css?<?=time();?>">
 <?php
@@ -21,6 +20,7 @@ foreach ($this->getAssets('css') as $cssFile) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/common.js"></script>
 <script src="/assets/js/admin-ajax.js"></script>
+<script src="/assets/js/admin.js"></script>
 <script>
 window.API_FULL_BASE_URL = '<?php echo $_ENV['API_FULL_BASE_URL'] ?? '/api/v1'; ?>';
 </script>

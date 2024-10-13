@@ -34,7 +34,7 @@ class AdminTemplateModel
             $where['ct_position_sub'] = ['s', $positionCode];
         }
 
-        if ($positionSub) {
+        if ($positionCode != 'all' && $positionSub) {
             $where['ct_position_subtype'] = ['s', $positionSub];
         }
 
@@ -47,7 +47,6 @@ class AdminTemplateModel
         ];
 
         $result = $this->db->sqlBindQuery('select', $tablename, $param, $where, $options);
-
         return $result;
     }
 

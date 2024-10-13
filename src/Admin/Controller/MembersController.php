@@ -10,32 +10,28 @@
 
 namespace Web\Admin\Controller;
 
-use Web\PublicHtml\Model\MembersModel;
+//use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class MembersController
 {
     protected $container;
-    protected $membersModel;
     protected $membersService;
     protected $config_domain;
     protected $cf_id;
     protected $formDataMiddleware;
+    protected $componentsViewHelper;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
-        $this->config_domain = $this->container->get('config_domain');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->cf_id = $this->config_domain['cf_id'];
-
-        $this->membersModel = $this->container->get('MembersModel');
         $this->membersService = $this->container->get('MembersService');
-
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
+        $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
     }
 
     protected function getLevelData()
@@ -45,44 +41,51 @@ class MembersController
 
     public function list($vars)
     {
-        $page_rows = $this->config_domain['cf_page_rows'];
-        $page_nums = $this->config_domain['cf_page_nums'];
+        $memberData = $this->membersService->getMemberList();
+        
+        $params = $memberData['params'];
+        // pagination
+        $queryString = CommonHelper::getQueryString($params);
+        $paginationData = CommonHelper::getPaginationData(
+            $memberData['totalItems'],
+            $params['page'],
+            $params['page_rows'],
+            $params['page_nums'],
+            $queryString
+        );
 
-        // 현재 페이지 받아오기
-        $currentPage = isset($_GET['page']) ? CommonHelper::pickNumber($_GET['page'],1) : 1;
-        // 검색 조건과 정렬 조건 받아오기 (쿼리 스트링에서 배열 형태로 받아옴)
-        $searchQuery = isset($_GET['search']) ? $_GET['search'] : '';
-        $filters = isset($_GET['filter']) ? $_GET['filter'] : [];
-        $sort = isset($_GET['sort']) ? $_GET['sort'] : [];
-
-
-        $memberData = $this->membersService->getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort);
-        $totalItems = $this->membersService->getTotalMemberCount($searchQuery, $filters);
-
-        // 페이징 데이터 계산
-        $paginationData = [
-            'totalItems' => $totalItems,
-            'currentPage' => $currentPage,
-            'totalPages' => ceil($totalItems / $page_rows),
-            'itemsPerPage' => $page_rows,
-            'pageNums' => $page_nums,
-            'searchQuery' => $searchQuery, // 검색 조건을 페이징 URL에 포함
-            'filters' => $filters,
-            'sort' => $sort,
-        ];
+        $pagination = $this->componentsViewHelper->renderComponent('pagination', $paginationData);
 
         // 뷰에 전달할 데이터 구성
         $viewData = [
             'title' => '회원 관리',
             'content' => '',
             'levelData' => $this->getLevelData(),
-            'memberData' => $memberData,
-            'paginationData' => $paginationData, // 페이징 데이터 추가
-            'searchQuery' => $searchQuery, // 검색어를 뷰에 전달
-            'filters' => $filters,
-            'sort' => $sort,
+            'memberData' => $memberData['memberList'],
+            'paginationData' => $paginationData,
         ];
 
-        return ['Members/list', $viewData];
+        return [
+            'viewPath' => 'Members/list',
+            'viewData' => $viewData,
+        ];
+    }
+
+    public function memberListModify()
+    {
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '',
+            'data' => [],
+        ]);
+    }
+
+    public function memberListDelete()
+    {
+        return CommonHelper::jsonResponse([
+            'result' => 'success',
+            'message' => '',
+            'data' => [],
+        ]);
     }
 }

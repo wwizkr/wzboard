@@ -12,7 +12,7 @@
         <!-- 메뉴 트리 영역 -->
         <div class="col-12 col-md-6 order-2 order-md-1 mb-3 mb-md-0 table-container">
             <h2>목록</h2>
-            <div class="p-3 table-list table-list-md table-roll">
+            <div class="table-list table-list-md table-roll">
                 <ul id="menuTree" class="ztree" style="max-height:560px;overflow-y:auto;"></ul>
             </div>
             <div class="dtable-button-wrap button-right">
@@ -26,55 +26,57 @@
         </div>
 
         <!-- 입력폼 영역 -->
-        <div class="col-12 col-md-4 order-1 order-md-2 mb-3 mb-md-0 table-container">
-            <h2>입력폼</h2>
+        <div class="col-12 col-md-4 order-1 order-md-2 mb-md-0 table-container">
             <form name="frm" id="frm">
-                <input type="hidden" name="no" value="" id="no">
-                <input type="hidden" name="me_code" value="" id="me_code">
-                <div class="p-3 table-form table-form-md">
-                    <div class="table-row row mb-3">
-                        <div class="table-th col-md-4">
-                            <label for="me_cate1" class="form-label">그룹아이디</label>
-                        </div>
-                        <div class="table-td col-md-8">
-                            <select name="formData[me_cate1]" id="me_cate1" class="form-select">
-                                <option value="">메뉴 분류 선택</option>
-                                <?php
-                                foreach($menuCategory as $key=>$val) {
-                                    echo '<option value="'.$key.'">'.$val['title'].'</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
+            <input type="hidden" name="no" value="" id="no">
+            <input type="hidden" name="me_code" value="" id="me_code">
+            <h2>입력폼</h2>
+            <div class="table-form table-form-md">
+                <div class="table-row">
+                    <div class="table-th col-md-4">
+                        <label for="me_cate1" class="form-label">그룹아이디</label>
                     </div>
-                    <div class="table-row row mb-3">
-                        <div class="table-th col-md-4">
-                            <label for="me_cate2" class="form-label">메뉴 선택</label>
-                        </div>
-                        <div class="table-td col-md-8">
-                            <select name="formData[me_cate2]" id="me_cate2" class="form-select">
-                                <option value="">메뉴 선택</option>
-                            </select>
-                        </div>
+                    <div class="table-td col-md-8">
+                        <select name="formData[me_cate1]" id="me_cate1" class="form-select">
+                            <option value="">메뉴 분류 선택</option>
+                            <?php
+                            foreach($menuCategory as $key=>$val) {
+                                echo '<option value="'.$key.'">'.$val['title'].'</option>';
+                            }
+                            ?>
+                        </select>
                     </div>
-                    <div class="table-row row mb-3">
-                        <div class="table-th col-md-4">
-                            <label for="me_name" class="form-label">메뉴명</label>
-                        </div>
-                        <div class="table-td col-md-8">
-                            <input type="text" name="formData[me_name]" id="me_name" class="form-control require" value="" data-type="text" data-message="메뉴명은 필수입니다.">
-                        </div>
-                    </div>
-                    <div class="table-row row mb-3">
-                        <div class="table-th col-md-4">
-                            <label for="me_link" class="form-label">메뉴 연결주소</label>
-                        </div>
-                        <div class="table-td col-md-8">
-                            <input type="text" name="formData[me_link]" id="me_link" class="form-control require" value="" data-type="text" data-message="연결주소는 필수입니다.">
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-form-submit-ajax" data-target="/admin/settings/menuUpdate" data-callback="updateMenuTree">Submit</button>
                 </div>
+                <div class="table-row">
+                    <div class="table-th col-md-4">
+                        <label for="me_cate2" class="form-label">메뉴 선택</label>
+                    </div>
+                    <div class="table-td col-md-8">
+                        <select name="formData[me_cate2]" id="me_cate2" class="form-select">
+                            <option value="">메뉴 선택</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="table-th col-md-4">
+                        <label for="me_name" class="form-label">메뉴명</label>
+                    </div>
+                    <div class="table-td col-md-8">
+                        <input type="text" name="formData[me_name]" id="me_name" class="form-control require" value="" data-type="text" data-message="메뉴명은 필수입니다.">
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="table-th col-md-4">
+                        <label for="me_link" class="form-label">메뉴 연결주소</label>
+                    </div>
+                    <div class="table-td col-md-8">
+                        <input type="text" name="formData[me_link]" id="me_link" class="form-control require" value="" data-type="text" data-message="연결주소는 필수입니다.">
+                    </div>
+                </div>
+            </div>
+            <div class="table-flex justify-end">
+                <button type="button" class="btn btn-fill-accent" onclick="javascript:handleAjaxFormSubmit(this);" data-target="/admin/settings/menuUpdate" data-callback="updateMenuTree">Submit</button>
+            </div>
             </form>
         </div>
     </div>
