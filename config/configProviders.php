@@ -29,6 +29,10 @@ class ConfigProvider
             'kinds' => $this->getWidgetKinds(),
             'positions' => $this->getWidgetPositions(),
         ];
+        $this->config['clauseType'] = $this->getClauseType();
+        $this->config['clauseKind'] = $this->getClauseKind();
+        $this->config['memberStatus'] = $this->getMemberStatus();
+        $this->config['emailDoamin'] = $this->getEmailDomain();
         // 추가 설정들을 여기에 로드...
     }
 
@@ -159,6 +163,37 @@ class ConfigProvider
             'PC-LEFT' => ['title' => 'PC용 왼쪽', 'field' => 'left_widget'],
             'PC-RIGHT' => ['title' => 'PC용 오른쪽', 'field' => 'right_widget'],
             'MOBILE-FIX' => ['title' => '모바일 하단', 'field' => 'mobile_fix_widget'],
+        ];
+    }
+
+    private function getClauseType()
+    {
+        return [
+            'site'=>'이용약관',
+            'member'=>'회원가입',
+            'order'=>'신청서작성',
+            'call'=>'상담신청',
+        ];
+    }
+
+    private function getClauseKind()
+    {
+        return [
+            1 => '필수',
+            2 => '선택',
+            3 => '안내',
+        ];
+    }
+
+    private function getMemberStatus()
+    {
+        return [
+        ];
+    }
+
+    private function getEmailDomain()
+    {
+        return [
         ];
     }
 

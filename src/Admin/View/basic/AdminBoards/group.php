@@ -1,28 +1,29 @@
-<div class="page-container container-fluid">
-    <div class="row">
-        <div class="col-12 col-md-6 order-2 order-md-1 mb-3 mb-md-0 table-container">
-            <h2>목록</h2>
-            <div class="p-3 table-list table-list-md">
-                <ul class="list-group">
-                    <li class="list-group-item list-group-head">
-                        <div class="row list-group-row">
-                            <div class="col-1 list-group-col text-center">번호</div>
-                            <div class="col-3 list-group-col text-center">그룹아이디</div>
-                            <div class="col list-group-col text-center">그룹명</div>
-                            <div class="col-3 list-group-col list-group-button text-center">관리</div>
+<div class="page-container">
+    <div class="table-flex justify-between flex-wrap">
+        <div class="col-12 col-md-6 order-2 order-md-1 table-container">
+            <h2 class="form-title">목록</h2>
+            <div class="table-list-container">
+                <ul class="table-list-wrapper">
+                    <li class="table-list-row list-head">
+                        <div class="list-row">
+                            <div class="list-col col-custom-60 text-center">번호</div>
+                            <div class="list-col col-custom-120 text-center">그룹아이디</div>
+                            <div class="list-col col-custom-auto text-center">그룹명</div>
+                            <div class="list-col col-custom-100 text-center">관리</div>
                         </div>
                     </li>
                     <?php
                     if(!empty($groupData)) {
                         $num = count($groupData);
                         foreach($groupData as $key=>$val) {
-                            echo '<li class="list-group-item list-group-body">';
-                                echo '<div class="row list-group-row">';
-                                    echo '<div class="col-1 list-group-col text-center">'.$num.'</div>';
-                                    echo '<div class="col-3 list-group-col text-center">'.$val['group_id'].'</div>';
-                                    echo '<div class="col list-group-col text-center">'.$val['group_name'].'</div>';
-                                    echo '<div class="col-3 list-group-col list-group-button text-center">';
-                                        echo '<button type="button" class="btn btn-sm btn-success" data-data=\''.json_encode($val).'\' onclick="loaderData(this);">수정</button>';
+                            echo '<li class="table-list-row list-body" data-bunch="'.$key.'">';
+                                echo '<div class="list-row">';
+                                    echo '<div class="list-col col-custom-60 text-center">'.$num.'</div>';
+                                    echo '<div class="list-col col-custom-120 text-center">'.$val['group_id'].'</div>';
+                                    echo '<div class="list-col col-custom-auto text-center">'.$val['group_name'].'</div>';
+                                    echo '<div class="list-col col-custom-100 text-center">';
+                                        echo '<button type="button" class="btn btn-ssm btn-fill-accent" data-data=\''.json_encode($val).'\' onclick="loaderData(this);">수정</button>';
+                                        echo '<button type="button" class="btn btn-ssm btn-fill-darkgray ml-1" onclick="confirmDeleteBefore(this);" data-target="/admin/boardadmin/boardGroupDelete" data-no="'.$val['no'].'" data-callback="updateGroupDelete" data-message="그룹내에 게시판이 생성되어 있을 경우 삭제가 불가합니다. 삭제하시겠습니까?">삭제</button>';
                                     echo '</div>';
                                 echo '</div>';
                             echo '</li>';
@@ -33,8 +34,8 @@
                 </ul>
             </div>
         </div>
-        <div class="col-12 col-md-4 order-1 order-md-2 mb-3 mb-md-0 table-container">
-            <h2>입력폼</h2>
+        <div class="col-12 col-md-4 order-1 order-md-2 mb-md-0 table-container">
+            <h2 class="form-title">입력폼</h2>
             <form name="frm" id="frm">
             <input type="hidden" name="action" value="" id="action">
             <input type="hidden" name="group_no" value="" id="group_no">

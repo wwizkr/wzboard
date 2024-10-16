@@ -1,19 +1,12 @@
 <?php
 // 파일 위치: /src/Admin/Controller/MemberController.php
-/*
- * Json 응답값
- * @param result = "success" : "failure"
- * @param message = "text"
- * @param gotoUrl = "url" 있을 경우 해당 URL로 이동
- * @param refresh = true 이면 새로 고침
- */
 
 namespace Web\Admin\Controller;
 
-//use Web\PublicHtml\Model\MembersModel;
 use Web\PublicHtml\Service\MembersService;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
+use Web\Admin\Helper\AdminCommonHelper;
 
 class MembersController
 {
@@ -42,6 +35,26 @@ class MembersController
     public function list($vars)
     {
         $memberData = $this->membersService->getMemberList();
+
+        $levelData = $memberData['levelData'];
+        
+        $searchSelectBox = [
+            'pagenum' => CommonHelper::makeSelectBox(
+                'pagenum',
+                CommonHelper::pagingOption(),
+                (string)(CommonHelper::pickNumber($_GET['pagenum'] ?? 0)),
+                'pagenum',
+                'frm_input list-search-item'
+            ),
+            'member_level' => CommonHelper::makeSelectBox(
+                'searchData[member_level]',
+                $levelData ?? [],
+                $_GET['searchData']['member_level'] ?? '',
+                'member_level',
+                'frm_input list-search-item',
+                '회원등급'
+            )
+        ];
         
         $params = $memberData['params'];
         // pagination
@@ -56,19 +69,56 @@ class MembersController
 
         $pagination = $this->componentsViewHelper->renderComponent('pagination', $paginationData);
 
+        // 목록 쿼리스트링
+        $queryString = '?page='.$params['page'].$queryString;
+
         // 뷰에 전달할 데이터 구성
         $viewData = [
             'title' => '회원 관리',
             'content' => '',
-            'levelData' => $this->getLevelData(),
-            'memberData' => $memberData['memberList'],
+            'totalItems' => $memberData['totalItems'],
+            'searchSelectBox' => $searchSelectBox,
+            'memberList' => $memberData['memberList'],
+            'queryString' => $queryString,
             'paginationData' => $paginationData,
         ];
 
         return [
-            'viewPath' => 'Members/list',
+            'viewPath' => 'Members/memberList',
             'viewData' => $viewData,
         ];
+    }
+
+    public function memberForm($vars)
+    {
+        $mbNo = isset($vars['param']) ? CommonHelper::pickNumber($vars['param']) : 0;
+
+        $memberData = $this->membersService->getMemberDataByNo($mbNo, true);
+
+        $level = $this->getLevelData();
+        $levelData = $this->membersService->formatLevelDataArray($level);
+
+        $levelSelect = CommonHelper::makeSelectBox(
+            'searchData[member_level]',
+            $levelData ?? [],
+            (string)$memberData['member_level'] ?? '',
+            'member_level',
+            'frm_input frm_full',
+            '회원등급'
+        );
+
+        // 뷰에 전달할 데이터 구성
+        $viewData = [
+            'title' => '회원 관리',
+            'levelSelect' => $levelSelect,
+            'memberData' => $memberData,
+        ];
+
+        return [
+            'viewPath' => 'Members/memberForm',
+            'viewData' => $viewData,
+        ];
+
     }
 
     public function memberListModify()

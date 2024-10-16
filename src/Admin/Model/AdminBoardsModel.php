@@ -5,6 +5,7 @@ namespace Web\Admin\Model;
 
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class AdminBoardsModel
 {
@@ -31,6 +32,7 @@ class AdminBoardsModel
     {
         $param = [];
         $where = [];
+        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
         if ($group_id) {
             $where['group_id'] = ['s', $group_id];
         }
@@ -56,6 +58,7 @@ class AdminBoardsModel
     public function insertBoardsGroup($data)
     {
         $param = $data;
+        $param['cf_id'] = ['i', $config_domain['cf_id']];
         $where = [];
         $options = [];
         $result = $this->db->sqlBindQuery('insert', 'board_groups', $param, $where, $options);
@@ -85,6 +88,7 @@ class AdminBoardsModel
     {
         $param = [];
         $where = [];
+        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
         if ($category_no) {
             $where['no'] = ['i', $category_no];
         }
@@ -93,14 +97,16 @@ class AdminBoardsModel
         ];
 
         $result = $this->db->sqlBindQuery('select', 'board_categories', $param, $where, $options);
-
+        
+        /*
         if($category_no) {
             $categoryData = $result[0] ?? null;
         } else {
             $categoryData = $result;
         }
+        */
 
-        return $categoryData;
+        return $result;
     }
 
     /*
@@ -112,6 +118,7 @@ class AdminBoardsModel
     {
         // 카테고리명 중복확인
         $param = [];
+        $where['cf_id'] = ['i', $this->config_domain['cf_id']];
         $where['category_name'] = ['s',$category_name];
         $options = ['field'=>'count(*) as cnt'];
         $result = $this->db->sqlBindQuery('select', 'board_categories', $param, $where, $options);
@@ -124,6 +131,7 @@ class AdminBoardsModel
     public function insertBoardsCategory($data)
     {
         $param = $data;
+        $param['cf_id'] = ['i', $this->config_domain['cf_id']];
         $where = [];
         $options = [];
         $result = $this->db->sqlBindQuery('insert', 'board_categories', $param, $where, $options);
@@ -145,6 +153,59 @@ class AdminBoardsModel
 
     }
 
+    public function getTotalBoardCount(?string $searchQuery = null, array $filters = [], array $additionalQueries = []): int
+    {
+        // WHERE 조건 생성
+        $where = [
+            'cf_id' => ['i', $this->config_domain['cf_id']],
+        ];
+
+        [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
+
+        $options = [
+            'field' => 'COUNT(*) AS totalCount',
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'board_configs', [], $where, $options);
+        return (int)($result[0]['totalCount'] ?? 0);
+    }
+
+    /*
+     * 게시판 목록을 가져옴.
+     * 
+     */
+    public function getBoardListData(int $currentPage, int $page_rows, ?string $searchQuery = null, array $filters = [], array $sort = [], array $additionalQueries = []): array
+    {
+        $offset = ($currentPage - 1) * $page_rows;
+
+        // WHERE 조건 생성
+        $where = [
+            'cf_id' => ['i', $this->config_domain['cf_id']],
+        ];
+
+        [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
+
+        // 추가 검색 쿼리를 생성
+        $searchType = [
+            
+        ];
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, $searchType);
+        
+        $options = [
+            'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'no DESC',
+            'limit' => "$offset, $page_rows",
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
+        ];
+
+        return $this->db->sqlBindQuery('select', 'board_configs', [], $where, $options);
+    }
+
+
+
     /*
      * 생성된 게시판 목록을 가져옴
      * @param ?$board_id
@@ -154,6 +215,7 @@ class AdminBoardsModel
     {
         $param = [];
         $where = [];
+        $where[$this->getTableName('board_configs').'.cf_id'] = ['i', $this->config_domain['cf_id']];
         if ($board_id) {
             $where[$this->getTableName('board_configs') . '.board_id'] = ['s', $board_id];
         }
@@ -225,6 +287,7 @@ class AdminBoardsModel
     public function insertBoardsConfig($data)
     {
         $param = $data;
+        $param['cf_id'] = ['i', $this->config_domain['cf_id']];
         $where = [];
         $options = [];
         $result = $this->db->sqlBindQuery('insert', 'board_configs', $param, $where, $options);

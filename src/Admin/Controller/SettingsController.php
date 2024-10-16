@@ -6,7 +6,7 @@ namespace Web\Admin\Controller;
 use Web\PublicHtml\Core\DependencyContainer;
 
 use Web\PublicHtml\Helper\CommonHelper;
-//use Web\Admin\Helper\AdminSettingsHelper;
+use Web\Admin\Helper\AdminCommonHelper;
 use Web\Admin\Model\AdminSettingsModel;
 use Web\Admin\Service\AdminSettingsService;
 use Web\Admin\Helper\AdminMenuHelper;
@@ -22,12 +22,15 @@ class SettingsController
     protected $menuHelper;
     protected $config_domain;
     protected $cf_id;
+    protected $configProvider;
+    protected $componentsViewHelper;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->cf_id = (int)$this->config_domain['cf_id'];
+        $this->configProvider = $this->container->get('ConfigProvider');
 
         $this->adminSettingsModel = new AdminSettingsModel($this->container);
         $this->adminSettingsService = new AdminSettingsService($this->container);
@@ -35,73 +38,8 @@ class SettingsController
         $this->menuHelper = new MenuHelper();
         
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
-
-        
+        $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
     }
-
-    /**
-     * 환경설정 페이지 표시
-     *
-     * @return array
-     
-    public function general(): array
-    {
-        $anchor = [
-            'anc_cf_basic' => '홈페이지 정보',
-            'anc_cf_layout' => '레이아웃 설정',
-            'anc_cf_member' => '회원 설정',
-            'anc_cf_seo' => 'SEO/스크립트 설정',
-            'anc_cf_etc' => '기타 설정',
-        ];
-
-        $skin = AdminSettingsHelper::getSkin();
-        $sns_seo = AdminSettingsHelper::getSnsSeo();
-
-        $viewData = [
-            'title' => '기본환경 설정',
-            'content' => '',
-            'config_domain' => $this->config_domain,
-            'anchor' => $anchor,
-            'skin' => $skin,
-            'sns_seo' => $sns_seo,
-        ];
-
-        return [
-            'viewPath' => 'Settings/general',
-            'viewData' => $viewData,
-        ];
-    }
-    */
-    /**
-     * 환경설정 업데이트
-     *
-     * @return array
-     
-    public function update(): array
-    {
-        $cf_id = CommonHelper::pickNumber($_POST['cf_id'] ?? 1, 1);
-        $formData = $_POST['formData'] ?? null;
-
-        if (empty($formData)) {
-            return CommonHelper::jsonResponse([
-                'result' => 'failure',
-                'message' => '입력정보가 비어 있습니다. 잘못된 접속입니다.'
-            ]);
-        }
-        
-        $numericFields = ['cf_max_width'];
-        $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
-        
-        $updateData = $this->adminSettingsService->updateGeneralSettings($cf_id, $data);
-
-        // 캐시 설정.
-
-        return CommonHelper::jsonResponse([
-            'result' => $updateData ? 'success' : 'failure',
-            'message' => $updateData ? '환경설정을 업데이트 하였습니다' : '환경설정 업데이트에 실패 하였습니다'
-        ]);
-    }
-    */
 
     /**
      * 메뉴설정 페이지 표시
@@ -274,5 +212,164 @@ class SettingsController
 
         $menuTree = $this->menuHelper->getMenuTree();
         $this->container->set('menu_datas', $menuTree);
+    }
+
+    // ----------------------------------------
+    // 이용 약관
+    // ----------------------------------------
+
+    public function clauseList()
+    {
+        $clauseType = $this->configProvider->get('clauseType');
+
+        $clauseData = $this->adminSettingsService->getClauseList();
+
+        $params = $clauseData['params'];
+
+        // pagination
+        $queryString = CommonHelper::getQueryString($params);
+        $paginationData = CommonHelper::getPaginationData(
+            $clauseData['totalItems'],
+            $params['page'],
+            $params['page_rows'],
+            $params['page_nums'],
+            $queryString
+        );
+
+        $pagination = $this->componentsViewHelper->renderComponent('pagination', $paginationData);
+
+        $searchSelectBox = [
+            'pagenum' => CommonHelper::makeSelectBox(
+                'pagenum',
+                CommonHelper::pagingOption(),
+                (string)(CommonHelper::pickNumber($_GET['pagenum'] ?? 0)),
+                'pagenum',
+                'frm_input list-search-item'
+            ),
+            'ct_page_type' => CommonHelper::makeSelectBox(
+                'searchData[ct_page_type]',
+                $clauseType ?? [],
+                $_GET['searchData']['ct_page_type'] ?? '',
+                'ct_page_type',
+                'frm_input list-search-item',
+                '페이지분류'
+            )
+        ];
+
+        // 목록 쿼리스트링
+        $queryString = '?page='.$params['page'].$queryString;
+
+        $viewData = [
+            'title' => '이용약관 관리',
+            'totalItems' => $clauseData['totalItems'],
+            'clauseType' => $clauseType,
+            'clauseList' => $clauseData['clauseList'],
+            'searchSelectBox' => $searchSelectBox,
+            'queryString' => $queryString,
+            'paginationData' => $paginationData,
+        ];
+
+        return [
+            'viewPath' => 'Settings/clauseList',
+            'viewData' => $viewData,
+        ];
+    }
+
+    public function clauseForm($vars)
+    {
+        
+        $ctId = isset($vars['param']) ? CommonHelper::pickNumber($vars['param']) : '';
+        
+        $clauseItem = $this->adminSettingsService->getClauseDataById((int)$ctId);
+
+        $clauseType = $this->configProvider->get('clauseType');
+        $clauseTypeCheckBox = CommonHelper::makeCheckBox(
+            'formData[ct_page_type]',
+            $clauseType ?? [],
+            $clauseItem['ct_page_type'] ? explode(",",$clauseItem['ct_page_type']) : [],
+            'ct_page_type',
+            '',
+            '페이지 분류'
+        );
+
+        $clauseKind = $this->configProvider->get('clauseKind');
+        $clauseKindSelect = CommonHelper::makeSelectBox(
+            'formData[ct_kind]',
+            $clauseKind ?? [],
+            $clauseItem['ct_kind'] ?? '',
+            'ct_kind',
+            'frm_input frm_full',
+            '약관 분류'
+        );
+
+        $clauseUse = [1=>'사용함', 2=>'사용안함'];
+        $clauseUseSelect = CommonHelper::makeSelectBox(
+            'formData[ct_use]',
+            $clauseUse ?? [],
+            $clauseItem['ct_use'] ?? '',
+            'ct_use',
+            'frm_input frm_full',
+            '사용 선택'
+        );
+
+        // 에디터 스크립트
+        $editor =$this->config_domain['cf_editor'] ? $this->config_domain['cf_editor'] : 'tinymce';
+        $editorScript = CommonHelper::getEditorScript($editor);
+
+        $viewData = [
+            'title' => '이용약관 등록',
+            'clauseTypeCheckBox' => $clauseTypeCheckBox,
+            'clauseKindSelect' => $clauseKindSelect,
+            'clauseUseSelect' => $clauseUseSelect,
+            'clauseItem' => $clauseItem,
+            'ctId' => $ctId,
+            'editorScript' => $editorScript,
+        ];
+
+        return [
+            'viewPath' => 'Settings/clauseForm',
+            'viewData' => $viewData,
+        ];
+    }
+
+    public function clauseItemUpdate()
+    {
+        $ctId = CommonHelper::pickNumber($_POST['ctId']) ?? 0;
+
+        $this->formDataMiddleware->validateToken();
+
+        $result = $this->adminSettingsService->clauseItemUpdate($ctId);
+
+        return CommonHelper::jsonResponse($result);
+    }
+
+    public function clauseItemDelete()
+    {
+        //삭제할 고유번호 $no 변수로 전달됨.
+        $data = CommonHelper::getJsonInput();
+        
+        $this->formDataMiddleware->validateToken();
+
+        $ctId = $data['no'] ?? 0;
+        
+        if (!$ctId) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '잘못된 접속입니다.'
+            ]);
+        }
+
+        $clauseItem = $this->adminSettingsService->getClauseDataById((int)$ctId);
+
+        if (!$clauseItem['ct_id'] || (int)$clauseItem['cf_id'] !== (int)$this->config_domain['cf_id']) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '잘못된 접속입니다.'
+            ]);
+        }
+
+        $result = $this->adminSettingsService->clauseItemDelete($ctId);
+
+        return CommonHelper::jsonResponse($result);
     }
 }

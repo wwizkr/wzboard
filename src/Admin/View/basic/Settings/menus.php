@@ -7,44 +7,48 @@
         </div>
     </div>
 </div>
-<div class="page-container container-fluid">
-    <div class="row">
+<div class="page-container">
+    <div class="table-flex table-container">
         <!-- 메뉴 트리 영역 -->
-        <div class="col-12 col-md-6 order-2 order-md-1 mb-3 mb-md-0 table-container">
-            <h2>목록</h2>
-            <div class="table-list table-list-md table-roll">
+        <div class="col-12 col-md-4 order-2 order-md-1">
+            <h2 class="form-title">메뉴맵</h2>
+            <div class="table-roll">
                 <ul id="menuTree" class="ztree" style="max-height:560px;overflow-y:auto;"></ul>
             </div>
-            <div class="dtable-button-wrap button-right">
-                <button type="button" class="btn btn_submit" id="add_depth1">
+            <div class="table-flex justify-end mt-4">
+                <button type="button" class="btn btn-fill-accent" id="add_depth1">
                     <i class="fa fa-fw fa-lg fa-folder" aria-hidden="true"></i> 1단계 메뉴 추가
                 </button>
-                <button type="button" class="btn btn_append d-none" id="add_sub">
+                <button type="button" class="btn btn-fill-gray ml-3" id="add_sub">
                     <i class="fa fa-fw fa-lg fa-star" aria-hidden="true"></i> 하위 메뉴 추가
                 </button>
             </div>
         </div>
-
+        <div class="col-12 col-md-1 order-1 mobile-none"></div>
         <!-- 입력폼 영역 -->
-        <div class="col-12 col-md-4 order-1 order-md-2 mb-md-0 table-container">
+        <div class="col-12 col-md-4 order-1 order-md-2">
             <form name="frm" id="frm">
             <input type="hidden" name="no" value="" id="no">
             <input type="hidden" name="me_code" value="" id="me_code">
-            <h2>입력폼</h2>
             <div class="table-form table-form-md">
+                <h2 class="form-title">메뉴 설정</h2>
                 <div class="table-row">
                     <div class="table-th col-md-4">
                         <label for="me_cate1" class="form-label">그룹아이디</label>
                     </div>
                     <div class="table-td col-md-8">
-                        <select name="formData[me_cate1]" id="me_cate1" class="form-select">
-                            <option value="">메뉴 분류 선택</option>
-                            <?php
-                            foreach($menuCategory as $key=>$val) {
-                                echo '<option value="'.$key.'">'.$val['title'].'</option>';
-                            }
-                            ?>
-                        </select>
+                        <div class="frm-input-row">
+                            <div class="frm-input frm-input-full">
+                                <select name="formData[me_cate1]" id="me_cate1" class="frm_input frm_full">
+                                    <option value="">메뉴 분류 선택</option>
+                                    <?php
+                                    foreach($menuCategory as $key=>$val) {
+                                        echo '<option value="'.$key.'">'.$val['title'].'</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="table-row">
@@ -52,9 +56,13 @@
                         <label for="me_cate2" class="form-label">메뉴 선택</label>
                     </div>
                     <div class="table-td col-md-8">
-                        <select name="formData[me_cate2]" id="me_cate2" class="form-select">
-                            <option value="">메뉴 선택</option>
-                        </select>
+                        <div class="frm-input-row">
+                            <div class="frm-input frm-input-full">
+                                <select name="formData[me_cate2]" id="me_cate2" class="frm_input frm_full">
+                                    <option value="">메뉴 선택</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="table-row">
@@ -62,7 +70,11 @@
                         <label for="me_name" class="form-label">메뉴명</label>
                     </div>
                     <div class="table-td col-md-8">
-                        <input type="text" name="formData[me_name]" id="me_name" class="form-control require" value="" data-type="text" data-message="메뉴명은 필수입니다.">
+                        <div class="frm-input-row">
+                            <div class="frm-input frm-input-full">
+                                <input type="text" name="formData[me_name]" id="me_name" class="frm_input frm_full require" value="" data-type="text" data-message="메뉴명은 필수입니다.">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="table-row">
@@ -70,12 +82,16 @@
                         <label for="me_link" class="form-label">메뉴 연결주소</label>
                     </div>
                     <div class="table-td col-md-8">
-                        <input type="text" name="formData[me_link]" id="me_link" class="form-control require" value="" data-type="text" data-message="연결주소는 필수입니다.">
+                        <div class="frm-input-row">
+                            <div class="frm-input frm-input-full">
+                                <input type="text" name="formData[me_link]" id="me_link" class="frm_input frm_full require" value="" data-type="text" data-message="연결주소는 필수입니다.">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="table-flex justify-end">
-                <button type="button" class="btn btn-fill-accent" onclick="javascript:handleAjaxFormSubmit(this);" data-target="/admin/settings/menuUpdate" data-callback="updateMenuTree">Submit</button>
+            <div class="table-flex justify-end mt-3">
+                <button type="button" class="btn btn-fill-accent" onclick="javascript:handleAjaxFormSubmit(this);" data-target="/admin/settings/menuUpdate" data-callback="updateMenuTree">확인</button>
             </div>
             </form>
         </div>

@@ -17,6 +17,7 @@ class BoardadminController
     protected $membersService;
     protected $config_domain;
     protected $formDataMiddleware;
+    protected $componentsViewHelper;
 
     public function __construct(DependencyContainer $container)
     {
@@ -28,6 +29,7 @@ class BoardadminController
         $this->membersService = $this->container->get('MembersService');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
+        $this->componentsViewHelper = $this->container->get('ComponentsViewHelper');
     }
 
     public function group(): array
@@ -77,12 +79,17 @@ class BoardadminController
 
     public function category(): array
     {
+        $level = $this->membersService->getLevelData();
+        $levelData = $this->membersService->formatLevelDataArray($level);
+        $levelSelect = $this->adminBoardsHelper->getLevelSelectBox('listData');
+
+        $categoryList = $this->adminBoardsService->getCategoryData(null, $levelData);
+
         $viewData = [
             'title' => '게시판 카테고리 관리',
-            'content' => '',
             'config_domain' => $this->config_domain,
-            'categoryData' => $this->adminBoardsService->getCategoryData(),
-            'levelData' => $this->membersService->getLevelData(),
+            'categoryList' => $categoryList,
+            'levelSelect' => $levelSelect,
         ];
 
         return [
@@ -104,7 +111,7 @@ class BoardadminController
             ]);
         }
 
-        $numericFields = ['allow_level', 'order_num'];
+        $numericFields = ['list_level', 'read_level', 'write_level', 'comment_level', 'download_level', 'order_num'];
         $data = $this->formDataMiddleware->handle('admin', $formData, $numericFields);
 
         if ($action === 'update') {
@@ -121,12 +128,34 @@ class BoardadminController
 
     public function boards(): array
     {
+        $boardData = $this->adminBoardsService->getBoardsList();
+
+        $params = $boardData['params'];
+
+        // pagination
+        $queryString = CommonHelper::getQueryString($params);
+        $paginationData = CommonHelper::getPaginationData(
+            $boardData['totalItems'],
+            $params['page'],
+            $params['page_rows'],
+            $params['page_nums'],
+            $queryString
+        );
+
+        $pagination = $this->componentsViewHelper->renderComponent('pagination', $paginationData);
+        
+        $searchSelectBox = [];
+
+        // 목록 쿼리스트링
+        $queryString = '?page='.$params['page'].$queryString;
+
         $viewData = [
             'title' => '게시판 관리',
-            'content' => '',
-            'config_domain' => $this->config_domain,
-            'boardsConfig' => $this->adminBoardsService->getBoardsConfig(),
-            'levelData' => $this->membersService->getLevelData(),
+            'totalItems' => $boardData['totalItems'],
+            'boardList' => $boardData['boardList'],
+            'searchSelectBox' => $searchSelectBox,
+            'queryString' => $queryString,
+            'paginationData' => $paginationData,
         ];
 
         return [
@@ -139,6 +168,7 @@ class BoardadminController
     {
         $board_id = $vars['param'] ?? '';
         $boardConfig = $board_id ? $this->adminBoardsService->getBoardsConfig($board_id) : [];
+        $levelSelect = $this->adminBoardsHelper->getLevelSelectBox('formData');
         
         $viewData = [
             'title' => !empty($boardConfig) ? $boardConfig['board_name'].' 수정' : '게시판 생성',
@@ -150,6 +180,7 @@ class BoardadminController
             'levelData' => $this->membersService->getLevelData(),
             'skinData' => $this->adminBoardsHelper->getBoardSkinDir(),
             'boardConfig' => $boardConfig,
+            'levelSelect' => $levelSelect,
         ];
 
         return [
@@ -183,7 +214,7 @@ class BoardadminController
         }
 
         $numericFields = [
-            'group_no', 'read_level', 'write_level', 'download_level', 'comment_level',
+            'group_no', 'list_level', 'read_level', 'write_level', 'download_level', 'comment_level',
             'read_point', 'write_point', 'download_point', 'comment_point',
             'is_use_comment', 'board_list_type',
             'is_use_file', 'file_size_limit', 'use_separate_table'

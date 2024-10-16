@@ -18,9 +18,15 @@ $schema = [
                         'board_groups' => "
                             CREATE TABLE IF NOT EXISTS board_groups (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT NOT NULL DEFAULT 1,
                                 group_id VARCHAR(25) NOT NULL DEFAULT '',
                                 group_name VARCHAR(100) NOT NULL DEFAULT '',
-                                allow_level INT DEFAULT 0,
+                                group_admin VARCHAR(255) DEFAULT NULL,
+                                list_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                read_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                write_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                comment_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                download_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
                                 order_num INT DEFAULT 0
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
@@ -28,11 +34,14 @@ $schema = [
                         'board_configs' => "
                             CREATE TABLE IF NOT EXISTS board_configs (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT NOT NULL DEFAULT 1,
                                 group_no INT NOT NULL DEFAULT 0,
+                                board_admin VARCHAR(255) DEFAULT NULL,
                                 board_name VARCHAR(100) NOT NULL DEFAULT '',
                                 board_id VARCHAR(25) NOT NULL DEFAULT '',
                                 board_skin VARCHAR(25) NOT NULL DEFAULT 'basic',
                                 board_editor VARCHAR(25),
+                                list_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
                                 read_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
                                 write_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
                                 comment_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -59,9 +68,14 @@ $schema = [
                         'board_categories' => "
                             CREATE TABLE IF NOT EXISTS board_categories (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT NOT NULL DEFAULT 1,
                                 category_name VARCHAR(25) NOT NULL DEFAULT '',
                                 category_desc VARCHAR(255) NOT NULL DEFAULT '',
-                                allow_level INT DEFAULT 0,
+                                list_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                read_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                write_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                comment_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                                download_level TINYINT UNSIGNED NOT NULL DEFAULT 0,
                                 order_num INT DEFAULT 0,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -81,6 +95,7 @@ $schema = [
                         'board_articles' => "
                             CREATE TABLE IF NOT EXISTS board_articles (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT NOT NULL DEFAULT 1,
                                 group_no INT NOT NULL DEFAULT 0,
                                 board_no INT NOT NULL DEFAULT 0,
                                 category_no INT NOT NULL DEFAULT 0,

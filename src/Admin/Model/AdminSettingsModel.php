@@ -5,13 +5,14 @@ namespace Web\Admin\Model;
 
 use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class AdminSettingsModel
 {
     use DatabaseHelperTrait;
 
     private $db;
-    //private $config;
+    private $config_domain;
 
     /**
      * 생성자: 의존성 주입을 통해 데이터베이스 연결을 설정합니다.
@@ -19,7 +20,7 @@ class AdminSettingsModel
     public function __construct(DependencyContainer $container)
     {
         $this->db = $container->get('db');
-        //$this->config = $container->get('config');
+        $this->config_domain = $container->get('ConfigHelper')->getConfig('config_domain');
     }
 
     /**
@@ -205,5 +206,133 @@ class AdminSettingsModel
     {
         $param = [];
         return $this->db->sqlBindQuery('delete', 'menus', $param, $whereData);
+    }
+
+    public function getTotalClauseCount(?string $searchQuery = null, array $filters = [], array $additionalQueries = []): int
+    {
+        // WHERE 조건 생성
+        $where = [
+            'cf_id' => ['i', $this->config_domain['cf_id']],
+        ];
+
+        [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
+
+        // 추가 검색 쿼리를 생성
+        $searchType = [
+            'ct_page_type' => 'LIKE',
+        ];
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, $searchType);
+
+        $options = [
+            'field' => 'COUNT(*) AS totalCount',
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
+        ];
+
+        $result = $this->db->sqlBindQuery('select', 'clause_table', [], $where, $options);
+        return (int)($result[0]['totalCount'] ?? 0);
+    }
+
+    /*
+     * 이용약관 목록을 가져옴.
+     * 
+     */
+    public function getClauseListData(int $currentPage, int $page_rows, ?string $searchQuery = null, array $filters = [], array $sort = [], array $additionalQueries = []): array
+    {
+        $offset = ($currentPage - 1) * $page_rows;
+
+        // WHERE 조건 생성
+        $where = [
+            'cf_id' => ['i', $this->config_domain['cf_id']],
+        ];
+
+        [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
+
+        // 추가 검색 쿼리를 생성
+        $searchType = [
+            'ct_page_type' => 'LIKE',
+        ];
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, $searchType);
+        
+        $options = [
+            'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'ct_id DESC',
+            'limit' => "$offset, $page_rows",
+            'addWhere' => implode(' AND ', $addWhere),
+            'values' => $bindValues
+        ];
+
+        return $this->db->sqlBindQuery('select', 'clause_table', [], $where, $options);
+    }
+
+    public function getClauseDataById(int $ctId = null, int $cf_id = 1): array
+    {
+        $tablename = 'clause_table';
+
+        if (!$ctId) {
+            $result = $this->db->getTableFieldsWithNull($tablename);
+            return $result;
+        }
+
+        $param = [];
+        $where['ct_id'] = ['i', $ctId];
+        $where['cf_id'] = ['i', $cf_id];
+        $result = $this->db->sqlBindQuery('select', $tablename, $param, $where);
+
+        if (isset($result[0]) && !empty($result[0])) {
+            return $result[0];
+        }
+
+        $result = $this->db->getTableFieldsWithNull($tablename);
+        return $result;
+    }
+
+    public function clauseItemUpdate(?int $cf_id, int $ctId, array $data): array
+    {
+        if ($ctId) {
+            $param = $data;
+            $where = ['ct_id' => ['i', $ctId]];
+            $result = $this->db->sqlBindQuery('update', 'clause_table', $param, $where);
+            return $result['result'] === 'success' 
+                ? [
+                    'result' => 'success',
+                    'message' => '이용약관을 수정하였습니다.',
+                    'view' => '/admin/settings/clauseForm/'.$ctId,
+                    'data' => ['ctId' => $ctId]
+                  ]
+                : [
+                    'result' => 'failure',
+                    'message' => '오류가 발생하였습니다.'
+                  ];
+        } else {
+            $param = $data;
+            $param['cf_id'] = ['i', $cf_id];
+            $result = $this->db->sqlBindQuery('insert', 'clause_table', $data, []);
+            return $result['ins_id']
+                ? [
+                    'result' => 'success',
+                    'message' => '이용약관 등록하였습니다.',
+                    'view' => '/admin/settings/clauseForm/'.$result['ins_id'],
+                    'data' => ['ctId' => $result['ins_id']]
+                  ]
+                : [
+                    'result' => 'failure',
+                    'message' => '오류가 발생하였습니다.'
+                  ];
+        }
+    }
+
+    public function clauseItemDelete(?int $cf_id, int $ctId): array
+    {
+        $where = [
+            'cf_id' => ['i', $cf_id],
+            'ct_id' => ['i', $ctId],
+        ];
+        
+        $result = $this->db->sqlBindQuery('delete', 'clause_table', [], $where);
+
+        return [
+            'result' => 'success',
+            'message' => '이용약관을 삭제하였습니다.'
+        ];
     }
 }

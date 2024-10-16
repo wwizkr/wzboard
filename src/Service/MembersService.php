@@ -5,14 +5,7 @@ namespace Web\PublicHtml\Service;
 
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
-
-//use Web\PublicHtml\Traits\DatabaseHelperTrait;
-//use Web\PublicHtml\Model\MembersModel;
-//use Web\PublicHtml\Helper\MembersHelper;
-//use Web\PublicHtml\Helper\SessionManager;
-//use Web\PublicHtml\Helper\CookieManager;
-//use Web\PublicHtml\Helper\CryptoHelper;
-//use Web\PublicHtml\Middleware\FormDataMiddleware;
+use Web\Admin\Helper\AdminCommonHelper;
 
 class MembersService
 {
@@ -41,21 +34,22 @@ class MembersService
      * @param int $mb_no 회원 번호
      * @return array 회원 정보
      */
-    public function getMemberDataByNo($mb_no = null)
+    public function getMemberDataByNo($mb_no = null, $null = false)
     {
-        if (!$mb_no) {
+        if (!$mb_no && $null === false) {
             $ss_mb = $this->sessionManager->get('auth');
             $mb_no = $ss_mb['mb_no'] ?? null;
-        }
-        
-        if (!$mb_no) {
-            return null;
+
+            if (!$mb_no) {
+                return null;
+            }
         }
         
         // 결과값에 is_super, is_admin 추가
-        $result = $this->membersModel->getMemberDataByNo($mb_no);
-        $result['is_admin'] = $ss_mb['is_admin'];
-        $result['is_super'] = $ss_mb['is_super'];
+        $result = $this->membersModel->getMemberDataByNo($mb_no, $null);
+        $result['is_admin'] = $ss_mb['is_admin'] ?? 0;
+        $result['is_super'] = $ss_mb['is_super'] ?? 0;
+        
         return $result;
     }
 
@@ -78,6 +72,19 @@ class MembersService
     {
         return $this->membersModel->getMemberLevelData();
     }
+    
+    /**
+     * 회원 레벨데이터를 level_id => level_name 배열로 가공
+     *
+     */
+    public function formatLevelDataArray(array $level): array
+    {
+        $levelData = [];
+        foreach ($level as $val) {
+            $levelData[$val['level_id']] = $val['level_name'];
+        }
+        return $levelData;
+    }
 
     public function getMemberList()
     {
@@ -87,24 +94,36 @@ class MembersService
             'cf_page_nums' => $this->config_domain['cf_page_nums']
         ];
 
+        $level = $this->getLevelData();
+        $levelData = $this->formatLevelDataArray($level);
+
         // 허용된 필터와 정렬 필드 정의
         $allowedFilters = ['nickName', 'phone', 'email'];
         $allowedSortFields = ['mb_no', 'signup_date'];
         
-        // 추가 파라미터 설정
-        $additionalParams = [
-        ];
+        // 추가 파라미터 설정 'status' => ['string', 'all', ['all', 'active', 'inactive']]
+        $additionalParams = [];
+        if (isset($_GET['searchData']) && is_array($_GET['searchData'])) {
+            foreach($_GET['searchData'] as $key => $val) {
+                $type = 'string'; // 기본 타입을 string으로 설정
+                $allowed = []; // 기본적으로 빈 배열로 설정
+
+                if ($key === 'member_level') {
+                    $allowed = !empty($levelData) ? array_keys($levelData) : [];
+                }
+
+                $additionalParams[$key] = [$type, $val, $allowed];
+            }
+        }
 
         // 목록 파라미터 가져오기
         $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
-
-        error_log("Params:::".print_r($params, true));
 
         // 총회원수
         $totalItems = $this->getTotalMemberCount($params['search'], $params['filter'], $params['additionalQueries']);
 
         // 회원 목록 데이터 조회
-        $memberList = $this->getMemberListData(
+        $memberData = $this->membersModel->getMemberListData(
             $params['page'],
             $params['page_rows'],
             $params['search'],
@@ -112,37 +131,34 @@ class MembersService
             $params['sort'],
             $params['additionalQueries']
         );
+        
+        $memberList = [];
+        foreach ($memberData as $key => $member) {
+            if (isset($member['password'])) {
+                unset($memberData[$key]['password']);
+            }
+            $memberList[$key] = $member;
+            $memberList[$key]['levelSelect'] = CommonHelper::makeSelectBox(
+                'listData[member_level]['.$key.']',
+                $levelData ?? [],
+                $member['member_level'] ?? '',
+                'member_level_'.$key,
+                'frm_input frm_full',
+                '선택'
+            );
+        }
 
         return [
             'params' => $params,
             'totalItems' => $totalItems,
             'memberList' => $memberList,
+            'levelData' => $levelData,
         ];
     }
 
     public function getTotalMemberCount($searchQuery, $filters, $additionalQueries)
     {
         return $this->membersModel->getTotalMemberCount($searchQuery, $filters, $additionalQueries);
-    }
-
-    public function getMemberListData($currentPage, $page_rows, $searchQuery, $filters, $sort, $additionalQueries)
-    {
-        $data = $this->membersModel->getMemberListData(
-            $currentPage,
-            $page_rows,
-            $searchQuery,
-            $filters,
-            $sort,
-            $additionalQueries
-        );
-
-        foreach ($data as $key => $memberData) {
-            if (isset($memberData['password'])) {
-                unset($data[$key]['password']);
-            }
-        }
-
-        return $data;
     }
     
     public function insertMemberData(array $memberData = [])

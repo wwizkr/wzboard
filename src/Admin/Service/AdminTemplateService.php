@@ -50,7 +50,7 @@ class AdminTemplateService
         $result = [];
         foreach($data as $key=>$val) {
             $result[$key] = $val;
-            $result[$key]['useSelect'] = AdminCommonHelper::makeSelectBox('ct_use['.$key.']', [0=>'사용함', 1=>'사용안함'], $val['ct_use']);
+            $result[$key]['useSelect'] = CommonHelper::makeSelectBox('ct_use['.$key.']', [0=>'사용함', 1=>'사용안함'], $val['ct_use']);
         }
 
         return $result;

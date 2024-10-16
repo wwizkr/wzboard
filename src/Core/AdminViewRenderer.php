@@ -82,17 +82,27 @@ class AdminViewRenderer
         $csrfToken = $this->sessionManager->getCsrfToken($csrfTokenKey);
 
         if (empty($csrfToken)) {
-            /*
             $cookieManager = $this->container->get('CookieManager');
+            $cryptoHelper = $this->container->get('CryptoHelper');
             
             $jwtToken = $cookieManager->get('jwtToken');
             $refreshToken = $cookieManager->get('refreshToken');
 
-            if ($jwtToken && $decodedJwtToken = CryptoHelper::verifyJwtToken($jwtToken)) {
-                return
+            if ($jwtToken && $cryptoHelper->verifyJwtToken($jwtToken)) {
+                // JWT 토큰이 유효하면 CSRF 토큰 생성 후 계속 진행
+                $this->sessionManager->generateCsrfToken($csrfTokenKey);
+                return;
+            } elseif ($refreshToken) {
+                // 리프레시 토큰이 있으면 AuthController를 통해 로그인 연장 시도
+                $authController = $this->container->get('AuthController');
+                if ($authController->extendLoginWithRefreshToken($refreshToken)) {
+                    // 로그인 연장 성공, 새로운 CSRF 토큰 생성
+                    $this->sessionManager->generateCsrfToken($csrfTokenKey);
+                    return;
+                }
             }
-            */
             
+            // CSRF 토큰이 없고, JWT나 리프레시 토큰으로도 인증 불가능한 경우 로그아웃
             $this->logoutAndRedirect();
         }
     }

@@ -3,20 +3,8 @@
 
 namespace Web\Admin\Controller;
 
-use Web\Admin\Helper\AdminBoardsHelper;
-use Web\PublicHtml\Helper\SessionManager;
-use Web\PublicHtml\Helper\BoardsHelper;
-use Web\PublicHtml\Helper\MembersHelper;
-use Web\Admin\Model\AdminBoardsModel;
-use Web\Admin\Service\AdminBoardsService;
-use Web\PublicHtml\Model\MembersModel;
-use Web\PublicHtml\Service\MembersService;
-use Web\PublicHtml\Service\BoardsService;
-use Web\PublicHtml\Model\BoardsModel;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
 
 class BoardController
 {
@@ -24,9 +12,9 @@ class BoardController
     protected $sessionManager;
     protected $boardsHelper;
     protected $adminBoardsService;
-    protected $membersHelper;
+    protected $membersService;
     protected $boardsService;
-    protected $configDomain;
+    protected $config_domain;
     protected $formDataMiddleware;
 
     public function __construct(DependencyContainer $container)
@@ -35,9 +23,9 @@ class BoardController
         $this->sessionManager = $this->container->get('SessionManager');
         $this->adminBoardsService = $this->container->get('AdminBoardsService');
         $this->boardsHelper = $this->container->get('BoardsHelper');
-        $this->membersHelper = $this->container->get('MembersHelper');
+        $this->membersService = $this->container->get('MembersService');
         $this->boardsService = $this->container->get('BoardsService');
-        $this-config_domain = $this->container->get('config_domain');
+        $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
     }
 
@@ -46,8 +34,8 @@ class BoardController
         $boardId = $vars['boardId'] ?? null;
     
         $config = [
-            'cf_page_rows' => $this-config_domain['cf_page_rows'],
-            'cf_page_nums' => $this-config_domain['cf_page_nums']
+            'cf_page_rows' => $this->config_domain['cf_page_rows'],
+            'cf_page_nums' => $this->config_domain['cf_page_nums']
         ];
 
         $allowedFilters = ['nickName']; // 검색어와 매칭시킬 필드
@@ -132,21 +120,21 @@ class BoardController
 
         // 현재 인증된 회원 ID 가져오기
         $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        $memberData = $this->membersService->getMemberDataByNo($mb_no);
         /*
          * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
          * 관리자는 필요없음.
          */
 
         // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this-config_domain['cf_editor'];
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
         $editor = 'tinymce';
         $editorScript = CommonHelper::getEditorScript($editor);
 
         // 글 정보
         $articleData = [];
         if($article_no) {
-            $articleData = $this->boardsService->getArticleDataByNo($boardConfig['group_no'], $article_no);
+            $articleData = $this->boardsService->getArticleDataByNo($boardConfig, $article_no);
         }
         if(empty($articleData)) {
             return CommonHelper::jsonResponse([

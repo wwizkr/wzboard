@@ -70,7 +70,7 @@ class ConfigController
         foreach($memberLevel as $key=>$val) {
             $memberOption[$val['level_id']] = $val['level_name'];
         }
-        $memberSelect = AdminCommonHelper::makeSelectBox('formData[cf_register_level]', $memberOption, $this->config_domain['cf_register_level'], 'cf_register_level', 'frm_full');
+        $memberSelect = CommonHelper::makeSelectBox('formData[cf_register_level]', $memberOption, $this->config_domain['cf_register_level'], 'cf_register_level', 'frm_full');
 
         $snsLogin = AdminConfigHelper::getSnsLogin();
         $snsSeo = AdminConfigHelper::getSnsSeo();

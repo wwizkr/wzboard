@@ -49,8 +49,14 @@ class MembersModel
      * 회원의 개별 정보를 가져옴
      * @param mb_no [mb_no]
      */
-    public function getMemberDataByNo($mb_no)
+    public function getMemberDataByNo($mb_no, $null)
     {
+        if (!$mb_no && $null === true) {
+            $result = $this->db->getTableFieldsWithNull('members');
+            return $result;
+        }
+
+
         $param = [];
         $where = [];
         $where['cf_id'] = ['i', $this->config_domain['cf_id']];
@@ -104,7 +110,12 @@ class MembersModel
         ];
 
         [$addWhere, $bindValues] =  CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
-        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
+        
+        // 추가 검색 쿼리를 생성
+        $searchType = [
+            'member_level' => '=',
+        ];
+        $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues, $searchType);
         
         $options = [
             'order' => !empty($sort) ? "{$sort['field']} {$sort['order']}" : 'mb_no DESC',

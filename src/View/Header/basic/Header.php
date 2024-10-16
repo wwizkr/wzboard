@@ -14,7 +14,7 @@
                 </a>
                 <?php else: ?>
                 <a href="/auth/login" class="btn btn-outline-darkgray"><span>로그인</span></a>
-                <a href="/member/register" class="btn btn-fill-darkgray"><span class="svg svg-arrow rotate-r90"></a>
+                <a href="/member/register" class="btn btn-fill-darkgray"><span>회원가입</span><span class="svg svg-arrow rotate-r90"></a>
                 <?php endif; ?>
             </div>
         </div>

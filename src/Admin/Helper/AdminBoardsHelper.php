@@ -4,6 +4,7 @@
 namespace Web\Admin\Helper;
 
 use Web\PublicHtml\Core\DependencyContainer;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class AdminBoardsHelper
 {
@@ -42,5 +43,56 @@ class AdminBoardsHelper
             return file_get_contents($desc_file);
         }
         return '설명 없음';
+    }
+
+    public function getLevelSelectBox($dataType = 'formData')
+    {
+        $membersService = $this->container->get('MembersService');
+        $level = $membersService->getLevelData();
+        $levelData = $membersService->formatLevelDataArray($level);
+        $levelSelect = [
+            'list_level' => CommonHelper::makeSelectBox(
+                $dataType.'[list_level]',
+                $levelData ,
+                '',
+                'list_level',
+                'frm_input frm_full',
+                '비회원'
+            ),
+            'read_level' => CommonHelper::makeSelectBox(
+                $dataType.'[read_level]',
+                $levelData ,
+                '',
+                'read_level',
+                'frm_input frm_full',
+                '비회원'
+            ),
+            'write_level' => CommonHelper::makeSelectBox(
+                $dataType.'[write_level]',
+                $levelData ,
+                '',
+                'write_level',
+                'frm_input frm_full',
+                '비회원'
+            ),
+            'comment_level' => CommonHelper::makeSelectBox(
+                $dataType.'[comment_level]',
+                $levelData ,
+                '',
+                'comment_level',
+                'frm_input frm_full',
+                '비회원'
+            ),
+            'download_level' => CommonHelper::makeSelectBox(
+                $dataType.'[download_level]',
+                $levelData ,
+                '',
+                'download_level',
+                'frm_input frm_full',
+                '비회원'
+            ),
+        ];
+
+        return $levelSelect;
     }
 }

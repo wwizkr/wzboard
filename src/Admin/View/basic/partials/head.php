@@ -9,9 +9,11 @@
 <title><?= isset($title) ? $title : 'Default Title'; ?></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="/assets/basic/css/admin-style.css?<?=time();?>">
+<link rel="stylesheet" href="/assets/basic/css/common.css?<?=time();?>">
 <link rel="stylesheet" href="/assets/basic/css/common-custom.css?<?=time();?>">
 <link rel="stylesheet" href="/assets/css/components/button.css?<?=time();?>">
+<link rel="stylesheet" href="/assets/css/components/svgicon.css?<?=time();?>">
+<link rel="stylesheet" href="/assets/basic/css/admin-style.css?<?=time();?>">
 <?php
 foreach ($this->getAssets('css') as $cssFile) {
     echo '<link href="' . htmlspecialchars($cssFile, ENT_QUOTES, 'UTF-8') . '?'.time().'" rel="stylesheet">' . PHP_EOL;

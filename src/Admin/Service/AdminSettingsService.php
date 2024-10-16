@@ -7,9 +7,8 @@ use Web\PublicHtml\Core\DependencyContainer;
 use Web\Admin\Model\AdminSettingsModel;
 use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Helper\MenuHelper;
-use Web\PublicHtml\Helper\ConfigHelper;
-use Web\PublicHtml\Helper\CacheHelper;
-use Web\PublicHtml\Helper\CryptoHelper;
+use Web\PublicHtml\Helper\CommonHelper;
+use Web\Admin\Helper\AdminCommonHelper;
 
 class AdminSettingsService
 {
@@ -25,41 +24,6 @@ class AdminSettingsService
         $this->adminSettingsModel = new AdminSettingsModel($this->container);
 
         $this->formDataMiddleware = $this->container->get('FormDataMiddleware');
-    }
-
-    /**
-     * 특정 cf_id에 해당하는 일반 설정을 가져옵니다.
-     *
-     * @param int $cf_id
-     * @return array 설정 데이터
-     */
-    public function getGeneralSettings($cf_id)
-    {
-        return $this->adminSettingsModel->getConfigByCfId($cf_id);
-    }
-
-    /**
-     * 특정 cf_id에 해당하는 일반 설정을 업데이트합니다.
-     *
-     * @param int $cf_id
-     * @param array $data 업데이트할 데이터
-     * @return bool 업데이트 성공 여부
-     */
-    public function updateGeneralSettings($cf_id, array $data)
-    {
-        /*
-         * 데이터 업데이트 후 캐시 갱신
-         */
-        $result = $this->adminSettingsModel->updateConfigByCfId($cf_id, $data);
-
-        $updated = $this->adminSettingsModel->getConfigByCfId($cf_id);
-
-        $configCacheKey = 'config_domain_' . $updated['cf_domain'];
-
-        $encryptedData = CryptoHelper::encryptJson($updated);
-        CacheHelper::setCache($configCacheKey, $encryptedData);
-
-        return $updated;
     }
 
     /**
@@ -147,11 +111,12 @@ class AdminSettingsService
      */
     public function updateMenuData($cf_id, $no, $me_code, $data)
     {
+        $cacheHelper = $this->container->get('CacheHelper');
         $result = $this->adminSettingsModel->updateMenuData($cf_id, $no, $me_code, $data);
         
         // 메뉴 수정 후 캐시 초기화
         $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
-        CacheHelper::setCache($cacheKey, null);
+        $cacheHelper->setCache($cacheKey, null);
 
         return $this->adminSettingsModel->getMenuByCode($cf_id, $me_code);
     }
@@ -161,6 +126,7 @@ class AdminSettingsService
      */
     public function menuDelete($data)
     {
+        $cacheHelper = $this->container->get('CacheHelper');
         $numericFields = ['cf_id', 'no'];
         $whereData = $this->formDataMiddleware->processFormData($data, $numericFields);
 
@@ -170,9 +136,132 @@ class AdminSettingsService
 
         if ($result['result'] === 'success') {
             $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
-            CacheHelper::setCache($cacheKey, null);
+            $cacheHelper->setCache($cacheKey, null);
         }
 
         return $result;
+    }
+
+    public function getClauseList()
+    {
+        // 기본 설정 로드
+        $config = [
+            'cf_page_rows' => isset($_GET['pagenum']) && $_GET['pagenum'] > 0 ? CommonHelper::pickNumber($_GET['pagenum']) : $this->config_domain['cf_page_rows'],
+            'cf_page_nums' => $this->config_domain['cf_page_nums']
+        ];
+
+        $configProvider = $this->container->get('ConfigProvider');
+        $clauseType = $configProvider->get('clauseType');
+        $clauseKind = $configProvider->get('clauseKind');
+
+        // 허용된 필터와 정렬 필드 정의
+        $allowedFilters = [];
+        $allowedSortFields = ['ct_id',];
+
+        // 추가 파라미터 설정 'status' => ['string', 'all', ['all', 'active', 'inactive']]
+        $additionalParams = [];
+        if (isset($_GET['searchData']) && is_array($_GET['searchData'])) {
+            foreach($_GET['searchData'] as $key => $val) {
+                $type = 'string'; // 기본 타입을 string으로 설정
+                $allowed = []; // 기본적으로 빈 배열로 설정
+
+                if ($key === 'ct_page_type') {
+                    $allowed = !empty($clauseType) ? array_keys($clauseType) : []; // $clauseType이 정의되지 않았을 경우를 대비
+                }
+
+                $additionalParams[$key] = [$type, $val, $allowed];
+            }
+        }
+
+        // 목록 파라미터 가져오기
+        $params = CommonHelper::getListParameters($config, $allowedFilters, $allowedSortFields, $additionalParams);
+
+        // 총 약관수
+        $totalItems = $this->getTotalClauseCount($params['search'], $params['filter'], $params['additionalQueries']);
+
+        // 약관 목록 데이터 조회
+        $clauseData = $this->adminSettingsModel->getClauseListData(
+            $params['page'],
+            $params['page_rows'],
+            $params['search'],
+            $params['filter'],
+            $params['sort'],
+            $params['additionalQueries']
+        );
+        
+        $clauseList = [];
+        foreach($clauseData as $key => $val) {
+            $clauseList[$key] = $val;
+            $pageType = $val['ct_page_type'] ? explode(",", $val['ct_page_type']) : [];
+            $type = [];
+            foreach($pageType as $index => $page) {
+                $type[] = $clauseType[$page] ?? '';
+            }
+            $clauseList[$key]['ct_page_type'] = $type;
+            $clauseList[$key]['kindSelect'] = CommonHelper::makeSelectBox('listData[ct_kind]['.$key.']', $clauseKind ?? [], $val['ct_kind'] ?? '', 'ct_kind_'.$key, 'frm_input frm_full', '선택');
+            $clauseList[$key]['useSelect'] = CommonHelper::makeSelectBox('listData[ct_use]['.$key.']', [1=>'사용', 2=>'사용안함'], $val['ct_use'] ?? '', 'ct_use_'.$key, 'frm_input frm_full', '선택');
+        }
+
+        return [
+            'params' => $params,
+            'totalItems' => $totalItems,
+            'clauseList' => $clauseList,
+        ];
+    }
+
+    public function getTotalClauseCount($searchQuery, $filters, $additionalQueries)
+    {
+        return $this->adminSettingsModel->getTotalClauseCount($searchQuery, $filters, $additionalQueries);
+    }
+
+    public function getClauseDataById(int $ctId = null)
+    {
+        $result = $this->adminSettingsModel->getClauseDataById($ctId, $this->config_domain['cf_id']);
+        return $result;
+    }
+
+    public function clauseItemUpdate($ctId)
+    {
+        if ($ctId) {
+            $clause = $this->adminSettingsModel->getClauseDataById($ctId, $this->config_domain['cf_id']);
+            if ($clause['ct_id'] === '') {
+                return [
+                    'result' => 'failure',
+                    'message' => '약관정보를 찾을 수 없습니다.',
+                    'data' => [],
+                ];
+            }
+        }
+
+        // POST 데이터는 formData 배열로 전송 됨
+        $formData = $_POST['formData'] ?? null;
+        if (empty($formData)) {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '입력 정보가 비어 있습니다. 잘못된 접속입니다.'
+            ]);
+        }
+
+        // 이미지 저장 디렉토리
+        $storagePath = "/storage/editor/";
+        
+        $content = $formData['ct_content'];
+        unset($formData['ct_content']);
+        $content = CommonHelper::updateStorageImages($content, $storagePath);
+        $pageType = isset($formData['ct_page_type']) && $formData['ct_page_type'] ? implode(",", $formData['ct_page_type']) : '';
+        unset($formData['ct_page_type']);
+
+        $formData['ct_content'] = $content;
+        $formData['ct_page_type'] = $pageType;
+
+        $numericFields = ['ct_kind', 'ct_order', 'ct_use'];
+        $data = $this->formDataMiddleware->processFormData($formData, $numericFields);
+
+        return $this->adminSettingsModel->clauseItemUpdate($this->config_domain['cf_id'], $ctId, $data);
+    }
+
+    public function clauseItemDelete($ctId)
+    {
+        return $this->adminSettingsModel->clauseItemDelete($ctId, $this->config_domain['cf_id']);
     }
 }
