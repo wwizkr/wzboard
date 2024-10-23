@@ -41,6 +41,38 @@ $schema = [
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
                         ",
 
+                        'cashs' => "
+                            CREATE TABLE IF NOT EXISTS cashs (
+                                no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT UNSIGNED NOT NULL DEFAULT 1,
+                                mb_id VARCHAR(50) NOT NULL DEFAULT '',
+                                cash INT NOT NULL DEFAULT 0,
+                                cash_content VARCHAR(255) NOT NULL DEFAULT '',
+                                cash_expire TINYINT NOT NULL DEFAULT 0,
+                                cash_expire_date DATE NOT NULL DEFAULT '9999-12-31',
+                                cash_type VARCHAR(25) NOT NULL DEFAULT '적립',
+                                cash_rel_type VARCHAR(25) NOT NULL DEFAULT '',
+                                cash_rel_id VARCHAR(100) NOT NULL DEFAULT '',
+                                cash_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                KEY idx_user_id (cf_id, mb_id),
+                                KEY idx_cash_type (cash_type),
+                                UNIQUE KEY idx_point_rel (cash_rel_type, cash_rel_id)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                        ",
+                        
+                        'cashs_compress' => "
+                            CREATE TABLE IF NOT EXISTS cashs_compress (
+                                no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT UNSIGNED NOT NULL DEFAULT 1,
+                                mb_id VARCHAR(50) NOT NULL DEFAULT '',
+                                cash INT NOT NULL DEFAULT 0,
+                                compress_start_date DATE NOT NULL,
+                                compress_end_date DATE NOT NULL,
+                                cash_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                KEY idx_user_id (cf_id, mb_id)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                        ",
+
                         'initial_data' => [
                             'points' => [
                                 'data' => [

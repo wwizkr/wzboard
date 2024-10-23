@@ -200,12 +200,42 @@ class AdminSettingsModel
     }
 
     /**
-     * 카테고리 삭제
+     * 메뉴 삭제
      */
     public function menuDelete($whereData)
     {
         $param = [];
         return $this->db->sqlBindQuery('delete', 'menus', $param, $whereData);
+    }
+
+    /**
+     * 메뉴 순서 업데이트
+     */
+    public function updateMenuOrder($menuData)
+    {
+        if (empty($menuData)) {
+            return false;
+        }
+
+        $order = 0;
+        foreach($menuData as $key => $val) {
+            if (!$val['no']) {
+                continue;
+            }
+            
+            $param = [
+                'me_order' => ['i', $order],
+            ];
+            $where = [
+                'cf_id' => ['i', $this->config_domain['cf_id']],
+                'no' => ['i', $val['no']],
+            ];
+            
+            $this->db->sqlBindQuery('update', 'menus', $param, $where);
+            $order++;
+        }
+
+        return true;
     }
 
     public function getTotalClauseCount(?string $searchQuery = null, array $filters = [], array $additionalQueries = []): int

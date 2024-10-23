@@ -61,7 +61,7 @@ class BoardsService
         ];
 
         // 허용된 필터와 정렬 필드 정의
-        $allowedFilters = ['nickName','title','content'];
+        $allowedFilters = ['nickName', 'title','content'];
         $allowedSortFields = ['no', 'create_at'];
         
         // 추가 파라미터 설정 (예: 카테고리)
@@ -95,6 +95,7 @@ class BoardsService
 
     public function getTotalArticleCount($board_no, $searchQuery, $filters, $additionalQueries)
     {   
+        // 카테고리명을 카테고리 번호로 매핑
         $this->categoryMapping = $this->getCategoryMapping($board_no);
         $processedQueries = CommonHelper::additionalServiceQueries($additionalQueries, 'category', 'category_no', $this->categoryMapping);
         return $this->boardsModel->getTotalArticleCount($board_no, $searchQuery, $filters, $processedQueries);

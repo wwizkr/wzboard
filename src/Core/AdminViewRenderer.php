@@ -136,11 +136,14 @@ class AdminViewRenderer
     {
         $this->lazyLoadAdminMenuHelper();
         $data['menu'] = $this->adminMenuHelper->getAdminMenu();
-        $this->render('Header', $data);
+
+        $headerPath = isset($data['headerPath']) && $data['headerPath'] ? $data['headerPath'] : 'Header';
+        $this->render($headerPath, $data);
     }
 
     public function renderFooter(array $data = []): void
     {
+        $footerPath = isset($data['footerPath']) && $data['footerPath'] ? $data['footerPath'] : 'Footer';
         $this->render('Footer', $data);
     }
 

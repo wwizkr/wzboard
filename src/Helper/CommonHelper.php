@@ -290,15 +290,20 @@ class CommonHelper
             $searchParams['sort'] = [];
         }
 
+        $searchQuery = self::validateParam('search', 'string', '', null, INPUT_GET) ?: 
+                       self::validateParam('search', 'string', '', null, INPUT_POST) ?: 
+                       ($_GET['search'] ?? $_POST['search'] ?? $searchParams['search']);
+        if ($searchQuery && strpos($searchQuery, " ") !== false) {
+            $searchQeury = explode(" ", $searchQuery);
+        }
+
         $params = [
             'page' => max(1, $page ?? 
                 self::validateParam('page', 'int', $_GET['page'] ?? 0, null, INPUT_GET) ?? 
                 self::validateParam('page', 'int', $_POST['page'] ?? 0, null, INPUT_POST) ?? 
                 ($_GET['page'] ?? $_POST['page'] ?? 1)
             ),
-            'search' => self::validateParam('search', 'string', '', null, INPUT_GET) ?: 
-                       self::validateParam('search', 'string', '', null, INPUT_POST) ?: 
-                       ($_GET['search'] ?? $_POST['search'] ?? $searchParams['search']),
+            'search' => $searchQuery,
             'filter' => self::validateArrayParam(
                 $allowedFilters, 
                 $_GET['filter'] ?? $_POST['filter'] ?? $searchParams['filter']
@@ -409,18 +414,33 @@ class CommonHelper
      * 리스트 페이지의 추가 파라미터 매핑 및 정리 Model
      * 
      */
-    public static function buildSearchConditions(?string $searchQuery, array $filters): array
+    public static function buildSearchConditions($searchQuery, array $filters): array
     {
         $addWhere = [];
         $bindValues = [];
+
         if (!empty($searchQuery) && !empty($filters)) {
             $searchConditions = [];
-            foreach ($filters as $field) {
-                $searchConditions[] = "$field LIKE ?";
-                $bindValues[] = "%$searchQuery%";
+
+            if (is_array($searchQuery)) {
+                foreach ($searchQuery as $query) {
+                    $subConditions = [];
+                    foreach ($filters as $field) {
+                        $subConditions[] = "$field LIKE ?";
+                        $bindValues[] = "%$query%";
+                    }
+                    $searchConditions[] = '(' . implode(' OR ', $subConditions) . ')';
+                }
+            } else {
+                foreach ($filters as $field) {
+                    $searchConditions[] = "$field LIKE ?";
+                    $bindValues[] = "%$searchQuery%";
+                }
             }
-            $addWhere[] = '(' . implode(' OR ', $searchConditions) . ')';
+
+            $addWhere[] = '(' . implode(' AND ', $searchConditions) . ')';
         }
+
         return [$addWhere, $bindValues];
     }
 

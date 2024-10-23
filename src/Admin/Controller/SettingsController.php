@@ -90,10 +90,25 @@ class SettingsController
      */
     public function menuOrder(): array
     {
-        return CommonHelper::jsonResponse([
-            'result' => 'success',
-            'message' => '메뉴 순서를 변경합니다.'
-        ]);
+        $data = CommonHelper::getJsonInput();
+
+        $menuData = $data['menuData'];
+
+        $result = $this->adminSettingsService->updateMenuOrder($menuData);
+        
+        if ($result === true) {
+            return CommonHelper::jsonResponse([
+                'result' => 'success',
+                'message' => '메뉴 순서를 변경하였습니다.',
+                'data' => $menuData,
+            ]);
+        } else {
+            return CommonHelper::jsonResponse([
+                'result' => 'failure',
+                'message' => '메뉴 순서 변경에 실패하였습니다.',
+                'data' => $menuData,
+            ]);
+        }
     }
 
     /**

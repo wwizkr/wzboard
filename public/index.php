@@ -69,7 +69,7 @@ $dispatcher = simpleDispatcher(function (RouteCollector $r) use ($configProvider
     });
     
     // DB 설치 라우트
-    $r->addRoute('GET', '/install', 'Web\\PublicHtml\\Controller\\DatabaseInstallerController@install');
+    $r->addRoute('GET', '/install[/{method}[/{param}]]', 'Web\\PublicHtml\\Controller\\InstallerController@index');
     
     // **사용자 댓글 라우터 먼저 추가**
     $r->addRoute($httpMethods, '/board/comment/{boardId}[/{articleNo}]', 'Web\\PublicHtml\\Controller\\BoardController@comment');

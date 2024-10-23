@@ -30,7 +30,7 @@ class AuthMiddleware
     {
         // 모든 페이지에서 로그인 상태를 확인합니다.
         $this->checkAuthStatus();
-        // 보호된 페이지에 대한 추가 검증
+        // 로그인이 필요한 페이지에 대해서만 로그인 여부를 검증
         if ($this->isProtectedPath($uri)) {
             $this->validateProtectedAccess($uri);
         }
@@ -75,7 +75,7 @@ class AuthMiddleware
                 CookieManager::delete('refreshToken');
                 $this->sessionManager->delete('auth');
             }
-        } elseif ($auth) {
+        } elseif ($auth) { // 비로그인 상태
             // JWT 토큰과 리프레시 토큰이 모두 없지만 auth 세션이 있는 경우
             $this->sessionManager->delete('auth');
         }

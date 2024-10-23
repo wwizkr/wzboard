@@ -7,12 +7,11 @@ use Web\PublicHtml\Traits\DatabaseHelperTrait;
 use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CryptoHelper;
 
-class DatabaseInstallerController
+class InstallerController
 {
     use DatabaseHelperTrait;
 
     private $db;
-    //private $config;
     private $schema;
 
     /**
@@ -21,25 +20,31 @@ class DatabaseInstallerController
     public function __construct(DependencyContainer $container)
     {
         $this->db = $container->get('db');
-        //$this->config = $container->get('config');
+    }
+
+    function index($vars = [])
+    {
+        if (isset($vars['method']) && $vars['method'] === 'databaseCreate') {
+            return $this->databaseCreate($vars);
+        }
     }
 
     /**
      * 스키마 설치를 실행합니다.
      * 지정된 스키마 파일을 로드하고 각 테이블을 처리합니다.
      */
-    public function install($vars = [])
+    public function databaseCreate($vars = [])
     {
         $schemaName = $_GET['schema'] ?? 'default';
         $isPlugin = $_GET['plugin'] ?? '';
-        $schemaPath = WZ_ROOT_PATH . "/config/schemas/{$schemaName}.php";
+        $schemaPath = WZ_ROOT_PATH . "/config/schemas/{$schemaName}_schema.php";
 
         if ($isPlugin) {
-            $schemaPath = WZ_SRC_PATH . "/Plugins/" . ucfirst($isPlugin) . "/{$schemaName}.php";
+            $schemaPath = WZ_SRC_PATH . "/Plugins/" . ucfirst($isPlugin) . "/{$schemaName}_schema.php";
         }
         
         if (!file_exists($schemaPath)) {
-            echo json_encode(["success" => false, "message" => "스키마 파일을 찾을 수 없습니다: {$schemaName}"]);
+            echo json_encode(["result" => 'failure', "message" => "스키마 파일을 찾을 수 없습니다: {$schemaName}"]);
             return;
         }
 
@@ -61,7 +66,7 @@ class DatabaseInstallerController
             }
         }
 
-        echo json_encode(["success" => true, "results" => $results]);
+        echo json_encode(["result" => 'success', "results" => $results]);
 
         return;
     }

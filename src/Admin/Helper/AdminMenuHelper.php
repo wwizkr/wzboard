@@ -29,6 +29,9 @@ class AdminMenuHelper
     {
         $cacheKey = 'admin_menu_cache';
 
+        // 임시로 캐시 강제 삭제
+        $this->cacheHelper->clearCache($cacheKey);
+
         // 캐시된 메뉴가 있는지 확인
         $cachedMenu = $this->cacheHelper->getCache($cacheKey);
         if ($cachedMenu !== null) {
@@ -140,10 +143,25 @@ class AdminMenuHelper
     private function loadPluginMenus($adminMenu)
     {
         $pluginsDir = WZ_SRC_PATH . '/Plugins';
+        $pluginOrder = require WZ_PROJECT_ROOT . '/config/pluginOrder.php';
+
+        foreach ($pluginOrder as $plugin) {
+            $pluginMenuFile = $pluginsDir . '/' . $plugin . '/adminMenu.php';
+            if (file_exists($pluginMenuFile)) {
+                require_once $pluginMenuFile;
+                $className = "Plugins\\{$plugin}\\AdminMenu";
+                if (class_exists($className)) {
+                    $pluginMenu = new $className($this->container);
+                    $adminMenu = array_merge($adminMenu, $pluginMenu->getMenu());
+                }
+            }
+        }
+
+        // 설정에 없는 추가 플러그인들을 로드
         if (is_dir($pluginsDir)) {
             $plugins = scandir($pluginsDir);
             foreach ($plugins as $plugin) {
-                if ($plugin === '.' || $plugin === '..') {
+                if ($plugin === '.' || $plugin === '..' || in_array($plugin, $pluginOrder)) {
                     continue;
                 }
                 $pluginMenuFile = $pluginsDir . '/' . $plugin . '/adminMenu.php';
@@ -157,6 +175,7 @@ class AdminMenuHelper
                 }
             }
         }
+
         return $adminMenu;
     }
 

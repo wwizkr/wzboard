@@ -142,6 +142,24 @@ class AdminSettingsService
         return $result;
     }
 
+    /**
+     * 메뉴 순서 업데이트
+     */
+    public function updateMenuOrder($menuData)
+    {
+        $cacheHelper = $this->container->get('CacheHelper');
+
+        $result = $this->adminSettingsModel->updateMenuOrder($menuData);
+
+        if ($result) {
+            $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
+            error_log("CacheKey:::".print_r($cacheKey, true));
+            $cacheHelper->setCache($cacheKey, null);
+        }
+
+        return $result;
+    }
+
     public function getClauseList()
     {
         // 기본 설정 로드

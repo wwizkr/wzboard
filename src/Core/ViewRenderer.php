@@ -239,7 +239,9 @@ class ViewRenderer
         $data['mainStyle'] = $this->get('isIndex') && $this->get('config_domain')['cf_index_wide'] === 0 ? '' : 'max-layout';
         $data['subContent'] = $this->get('layoutManager')->renderSubContent('subtop', $this->get('isIndex'), $this->get('meCode'));
 
-        $this->render($this->get('headerSkinDirectory') . 'Header', $data);
+        $headerPath = isset($data['headerPath']) && $data['headerPath'] ? $data['headerPath'] : $this->get('headerSkinDirectory') . 'Header';
+
+        $this->render($headerPath, $data);
     }
     
     /**
@@ -254,7 +256,9 @@ class ViewRenderer
         $this->loadPageInfo();
 
         $data['subContent'] = $this->get('layoutManager')->renderSubContent('subfoot', $this->get('isIndex'), $this->get('meCode'));
-        $this->render($this->get('footerSkinDirectory') . 'Footer', $data);
+
+        $footerPath = isset($data['footerPath']) && $data['footerPath'] ? $data['footerPath'] : $this->get('footerSkinDirectory') . 'Footer';
+        $this->render($footerPath, $data);
     }
     
     /**
@@ -369,7 +373,8 @@ class ViewRenderer
         $this->loadPageInfo();
 
         $headData = $this->loadHeadData($this->get('config_domain'), $headData);
-        $this->render(WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/head', $headData ?? []);
+        $headPath = isset($headData['headPath']) && $headData['headPath'] ? $headData['headPath'] : WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/head';
+        $this->render($headPath, $headData ?? []);
 
         if ($fullPage === false) {
             $this->renderHeader($headerData ?? []);
@@ -384,6 +389,7 @@ class ViewRenderer
         }
         
         $footData = $this->loadFootData($this->get('config_domain'), $footData);
-        $this->render(WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/foot', $footData ?? []);
+        $footPath = isset($footData['footPath']) && $footData['footPath'] ? $headData['footPath'] : WZ_SRC_PATH.'/View/partials/'.$this->get('layoutSkin').'/foot';
+        $this->render($footPath, $footData ?? []);
     }
 }

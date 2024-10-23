@@ -340,8 +340,16 @@ App.registerCallback('deleteMenu', function(data) {
     console.log(data);
 });
 
+App.registerCallback('updateMenuOrder', function(data) {
+    console.log(data);
+    if (data.result === 'success') {
+        document.location.reload();
+    } else {
+        alert(data.message);
+    }
+});
 
-function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
+async function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
     var zTree = $.fn.zTree.getZTreeObj(treeId);
     var nodes = zTree.transformToArray(zTree.getNodes());
 
@@ -349,21 +357,31 @@ function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy) {
         return {
             type: node.type,
             no: node.no,
-            me_code: node.code,
-            me_parent: node.parent,
-            me_depth: node.depth,
+            me_code: node.me_code,
             level: node.level
         };
     });
 
+    var requestData = {
+        menuData: menuData,
+    };
+
+    try {
+        const data = await sendCustomAjaxRequest('POST', '/admin/settings/menuOrder', requestData, false, 'updateMenuOrder');
+    } catch (error) {
+        console.error("Error:", error);
+    }
+    
+    /*
     $.ajax({
         type: "POST",
         url: "/admin/settings/menuOrder",
         data: { act: "menuorder", menu: menuData },
         success: function(response) {
-            //console.log(response);
+            console.log(response);
         }
     });
+    */
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -409,45 +427,118 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// 노드 삭제 버튼 표시 여부를 결정하는 함수
+// 루트 노드(level 0)를 제외한 모든 노드에 대해 삭제 버튼을 표시
 function showRemoveBtn(treeId, treeNode) {
     return treeNode.level > 0;
 }
 
+// 노드 이름 변경 버튼 표시 여부를 결정하는 함수
+// 모든 노드에 대해 이름 변경 버튼을 숨김
 function showRenameBtn(treeId, treeNode) {
     return false;
 }
 
+// 노드 드래그 시작 전 호출되는 함수
+// 드래그 가능 여부를 확인하고, 가능한 경우 현재 드래그 중인 노드들을 저장
 function beforeDrag(treeId, treeNodes) {
-    for (var i = 0; i < treeNodes.length; i++) {
-        if (treeNodes[i].drag === false) return false;
+    for (var i=0,l=treeNodes.length; i<l; i++) {
+        if (treeNodes[i].drag === false) {
+            curDragNodes = null;
+            return false;
+        } else if (treeNodes[i].parentTId && treeNodes[i].getParentNode().childDrag === false) {
+            curDragNodes = null;
+            return false;
+        }
     }
+    curDragNodes = treeNodes || new Array();
     return true;
 }
 
+// 노드 드롭 전 호출되는 함수
+// 대상 노드가 드롭을 허용하는지 확인
 function beforeDrop(treeId, treeNodes, targetNode, moveType, isCopy) {
     return targetNode ? targetNode.drop !== false : true;
 }
 
+// 노드를 다른 노드 이전에 드롭할 때 호출되는 함수
+// 같은 부모 내에서만 이동 가능하도록 제한
 function dropPrev(treeId, nodes, targetNode) {
-    return true; 
+    var is_break = false;
+    try {
+        var pNode = targetNode.getParentNode();
+        if (pNode && pNode.dropInner === false) {
+            //return false;
+        } else {
+            for (var i=0,l=curDragNodes.length; i<l; i++) {
+                var curPNode = curDragNodes[i].getParentNode();
+                // 다른 부모로 이동 불가
+                if (curPNode && curPNode !== targetNode.getParentNode()) {
+                    is_break = true;
+                    return false;
+                }
+                // 다른 레벨로 이동 불가
+                if (curPNode && curPNode.level !== targetNode.getParentNode().level) {
+                    is_break = true;
+                    return false;
+                }
+            }
+        }
+        //console.log(is_break);
+        return true;
+    } catch (e) {
+    }
 }
 
+// 노드를 다른 노드 다음에 드롭할 때 호출되는 함수
+// 같은 레벨 내에서만 이동 가능하도록 제한
 function dropNext(treeId, nodes, targetNode) {
-    return true; 
+    try {
+        var pNode = targetNode.getParentNode();
+        if (pNode && pNode.dropInner === false) {
+            return false;
+        } else {
+            for (var i=0, l=curDragNodes.length; i<l; i++) {
+                var curPNode = curDragNodes[i].getParentNode();
+                
+                // 같은 레벨이 아닌 경우 드롭 불가
+                if (curPNode && curPNode.level !== targetNode.getParentNode().level) {
+                    return false;
+                }
+                
+                // 같은 부모가 아닌 경우 드롭 불가
+                if (curPNode !== targetNode.getParentNode()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    } catch (e) {
+        console.error("Error in dropNext:", e);
+        return false;
+    } 
 }
 
+// 노드를 다른 노드 내부로 드롭할 때 호출되는 함수
 function dropInner(treeId, nodes, targetNode) {
-    return true; 
+    // 모든 내부 드롭을 방지
+    return false;
 }
 
+// 노드 더블클릭 시 확장/축소 여부를 결정하는 함수
+// 루트 노드가 아닌 경우에만 확장/축소 가능
 function dblClickExpand(treeId, nodes, targetNode) {
-    return true; 
+    return treeNode.level > 0;
 }
 
+// 노드 이름 편집 전 호출되는 함수
+// 항상 편집을 허용
 function beforeEditName(treeId, nodes, targetNode) {
     return true; 
 }
 
+// 노드 제거 전 호출되는 함수
+// 항상 제거를 허용
 function beforeRemove(treeId, nodes, targetNode) {
     return true; 
 }

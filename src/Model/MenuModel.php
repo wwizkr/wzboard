@@ -25,11 +25,11 @@ class MenuModel
         $cacheKey = 'menu_cache_' . $this->config_domain['cf_domain'];
         $menuData = $useCache ? CacheHelper::getCache($cacheKey) : null;
 
-        if ($menuData === null) {
+        if ($menuData === null || $menuData == '') {
             // DB에서 메뉴 데이터를 가져옴
             $query = "SELECT * FROM " . (new class {
                 use DatabaseHelperTrait;
-            })->getTableName('menus') . " WHERE cf_id = :cf_id";
+            })->getTableName('menus') . " WHERE cf_id = :cf_id ORDER BY me_order ASC, me_code ASC";
             $stmt = $this->db->query($query, ['cf_id' => $this->config_domain['cf_id']]);
             $menuData = $this->db->fetchAll($stmt);
 
