@@ -13,31 +13,31 @@ $showFirstLast = $totalPages > 10;
     <ul class="pagination">
         <?php if ($showFirstLast && $currentPage > 1): ?>
             <li class="page-item page-start">
-                <a class="page-link" href="?page=1<?= $queryString ?>">&laquo; 처음</a>
+                <a class="page-link" href="?page=1&<?= $queryString ?>">&laquo; 처음</a>
             </li>
         <?php endif; ?>
 
         <?php if ($currentPage > 1): ?>
             <li class="page-item page-prev">
-                <a class="page-link" href="?page=<?= $currentPage - 1 ?><?= $queryString ?>">이전</a>
+                <a class="page-link" href="?page=<?= $currentPage - 1 ?>&<?= $queryString ?>">이전</a>
             </li>
         <?php endif; ?>
 
         <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
             <li class="page-item page-count <?= ($i == $currentPage) ? 'active' : '' ?>">
-                <a class="page-link" href="?page=<?= $i ?><?= $queryString ?>"><?= $i ?></a>
+                <a class="page-link" href="?page=<?= $i ?>&<?= $queryString ?>"><?= $i ?></a>
             </li>
         <?php endfor; ?>
 
         <?php if ($currentPage < $totalPages): ?>
             <li class="page-item page-next">
-                <a class="page-link" href="?page=<?= $currentPage + 1 ?><?= $queryString ?>">다음</a>
+                <a class="page-link" href="?page=<?= $currentPage + 1 ?>&<?= $queryString ?>">다음</a>
             </li>
         <?php endif; ?>
 
         <?php if ($showFirstLast && $currentPage < $totalPages): ?>
             <li class="page-item page-end">
-                <a class="page-link" href="?page=<?= $totalPages ?><?= $queryString ?>">끝 &raquo;</a>
+                <a class="page-link" href="?page=<?= $totalPages ?>&<?= $queryString ?>">끝 &raquo;</a>
             </li>
         <?php endif; ?>
     </ul>

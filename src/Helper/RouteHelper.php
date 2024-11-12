@@ -46,7 +46,7 @@ class RouteHelper
             }
             
             // 컨트롤러 메소드 실행
-            $this->executeControllerMethod($handler, $method, [$param], $viewRenderer);
+            $this->executeControllerMethod($handler, $method, ['param' => $param], $viewRenderer);
             return;
         }
         

@@ -1344,7 +1344,66 @@ const TemplateHtmls = {
             const mo_oldimg = item.mo_image_name || '';
             const link_url = item.link_url || '';
             const link_win = item.link_win || '';
+            
+            html += `
+                <div class="template_image_box">
+                    <div class="image-box">
+                        <input type="hidden" name="image_items[${idx}][${i}]" value="${i}">
+                        <div class="image-box-inner">
+                            <div class="image-card image-card-${idx}-${i}">
+                                <a class="card-img-label card-img-top" style="background-image:url('${pc_temp_image}');"><img src="${noimg}" alt="" style="width:100%;opacity:0;"></a>
+                                <div class="image-card-body">
+                                    <input type="hidden" name="pc_old_image[${idx}][${i}]" value="${pc_oldimg}">
+                                    <div class="image-card-file">
+                                        <input type="file" name="temp_pc_image[${idx}][${i}]" class="custom-file-input temp_image_file" id="custom-pc-file-${idx}-${i}">
+                                        <label class="custom-file-label" for="custom-pc-file-${idx}-${i}">PC용 이미지 선택</label>
+                                    </div>
+                                    ${pc_oldimg ? `<div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="pc_del_image[${idx}][${i}]" id="pc_del_image[${idx}][${i}]"value="1">
+                                        <label for="pc_del_image[${idx}][${i}]" class="form-check-label">기존 이미지 삭제</label>
+                                    </div>` : ''}
+                                </div>
+                            </div>
+                            <div class="image-card image-card-${idx}-${i}">
+                                <a class="card-img-label card-img-top" style="background-image:url('${mo_temp_image}');"><img src="${noimg}" alt="" style="width:100%;opacity:0;"></a>
+                                <div class="image-card-body">
+                                    <input type="hidden" name="mo_old_image[${idx}][${i}]" value="${mo_oldimg}">
+                                    <div class="image-card-file">
+                                        <input type="file" name="temp_mo_image[${idx}][${i}]" class="custom-file-input temp_image_file" id="custom-mobile-file-${idx}-${i}">
+                                        <label class="custom-file-label" for="custom-mobile-file-${idx}-${i}">MOBILE용 이미지 선택</label>
+                                    </div>
+                                    ${mo_oldimg ? `<div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="mo_del_image[${idx}][${i}]" id="mo_del_image[${idx}][${i}]" value="1">
+                                        <label for="mo_del_image[${idx}][${i}]" class="form-check-label">기존 이미지 삭제</label>
+                                    </div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="frm-input-row">
+                            <div class="frm-input input-prepend wfpx-100">
+                                <span class="frm_text">연결 URL</span>
+                            </div>
+                            <div class="frm-input frm-input-full">
+                                <input type="text" name="item_link[${idx}][${i}]" value="${link_url}" class="frm_input frm_full">
+                            </div>
+                        </div>
+                        <div class="frm-input-row">
+                            <div class="frm-input input-prepend wfpx-100">
+                                <span class="frm_text">새창사용</span>
+                            </div>
+                            <div class="frm-input">
+                                <select name="item_win[${idx}][${i}]" class="frm_input">
+                                    <option value="">새창사용선택</option>
+                                    <option value="0" ${link_win == 0 ? 'selected' : ''}>사용안함</option>
+                                    <option value="1" ${link_win == 1 ? 'selected' : ''}>사용함</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
 
+            /*
             html += `
                 <div class="template_image_box">
                     <div class="image-box">
@@ -1396,6 +1455,7 @@ const TemplateHtmls = {
                     </div>
                 </div>
             `;
+            */
         }
         html += '</div>';
 

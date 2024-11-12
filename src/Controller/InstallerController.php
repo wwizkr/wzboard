@@ -51,6 +51,11 @@ class InstallerController
         $this->schema = require $schemaPath;
         $results = [];
 
+        //echo '<pre>';
+        //var_dump($this->schema);
+        //echo '</pre>';
+        //exit;
+
         foreach ($this->schema['schema_content'] as $tableName => $createTableQuery) {
             if ($tableName === 'initial_data') continue;
 
@@ -66,7 +71,13 @@ class InstallerController
             }
         }
 
+        echo '<pre>';
+        var_dump($results);
+        echo '</pre>';
+
         echo json_encode(["result" => 'success', "results" => $results]);
+
+        
 
         return;
     }

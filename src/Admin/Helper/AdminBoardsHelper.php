@@ -48,7 +48,7 @@ class AdminBoardsHelper
     public function getLevelSelectBox($dataType = 'formData')
     {
         $membersService = $this->container->get('MembersService');
-        $level = $membersService->getLevelData();
+        $level = $membersService->getMemberLevelData();
         $levelData = $membersService->formatLevelDataArray($level);
         $levelSelect = [
             'list_level' => CommonHelper::makeSelectBox(

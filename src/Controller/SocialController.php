@@ -62,7 +62,7 @@ class SocialController
 
         if ($provider === 'naver') {
             $baseConfig['wrapper'] = [
-                'path' => '/home/web/public_html/vendor/hybridauth/hybridauth/src/Provider/Naver.php',
+                'path' => WZ_ROOT_PATH.'/vendor/hybridauth/hybridauth/src/Provider/Naver.php',
                 'class' => 'Hybridauth\\Provider\\Naver',
             ];
         }

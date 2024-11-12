@@ -19,6 +19,11 @@ foreach ($this->getAssets('css') as $cssFile) {
     echo '<link href="' . htmlspecialchars($cssFile, ENT_QUOTES, 'UTF-8') . '?'.time().'" rel="stylesheet">' . PHP_EOL;
 }
 ?>
+<style>
+:root { 
+--coloraccent: #dc3545;
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/common.js"></script>
 <script src="/assets/js/admin-ajax.js"></script>

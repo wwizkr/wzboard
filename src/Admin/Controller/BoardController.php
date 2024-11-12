@@ -175,14 +175,14 @@ class BoardController
 
         // 현재 인증된 회원 ID 가져오기
         $mb_no = $_SESSION['auth']['mb_no'] ?? null;
-        $memberData = $this->membersHelper->getMemberDataByNo($mb_no);
+        $memberData = $this->membersService->getMemberDataByNo($mb_no);
         /*
          * 게시판 설정의 글쓰기 레벨에 따라 검증할 것
          */
 
 
         // 에디터 스크립트
-        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this-config_domain['cf_editor'];
+        $editor = $boardConfig['board_editor'] ? $boardConfig['board_editor'] : $this->config_domain['cf_editor'];
         $editor = 'tinymce';
         $editorScript = CommonHelper::getEditorScript($editor);
 

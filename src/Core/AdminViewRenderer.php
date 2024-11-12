@@ -7,6 +7,7 @@ use Web\PublicHtml\Core\ComponentsView;
 use Web\PublicHtml\Service\AuthService;
 use Web\Admin\Helper\AdminMenuHelper;
 use Web\PublicHtml\Middleware\CsrfTokenHandler;
+use Web\PublicHtml\Helper\CommonHelper;
 
 class AdminViewRenderer
 {
@@ -136,6 +137,8 @@ class AdminViewRenderer
     {
         $this->lazyLoadAdminMenuHelper();
         $data['menu'] = $this->adminMenuHelper->getAdminMenu();
+        $data['activeCode'] = commonHelper::validateParam('activeCode', 'string', null, null, INPUT_GET);
+        $data['activeCode'] = $data['activeCode'] ?? '000';
 
         $headerPath = isset($data['headerPath']) && $data['headerPath'] ? $data['headerPath'] : 'Header';
         $this->render($headerPath, $data);
@@ -143,6 +146,9 @@ class AdminViewRenderer
 
     public function renderFooter(array $data = []): void
     {
+        $data['activeCode'] = commonHelper::validateParam('activeCode', 'string', null, null, INPUT_GET);
+        $data['activeCode'] = $data['activeCode'] ?? '000';
+
         $footerPath = isset($data['footerPath']) && $data['footerPath'] ? $data['footerPath'] : 'Footer';
         $this->render('Footer', $data);
     }

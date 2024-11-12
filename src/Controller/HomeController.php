@@ -10,15 +10,17 @@ class HomeController
     protected $config_domain;
     protected $templateService;
     protected $templateViewHelper;
+    protected $viewRenderer;
 
     public function __construct(DependencyContainer $container)
     {
         $this->container = $container;
         $this->config_domain = $this->container->get('ConfigHelper')->getConfig('config_domain');
+        $this->viewRenderer = $this->container->get('ViewRenderer');
         $this->templateService = $this->container->get('TemplateService');
         $this->templateViewHelper = new TemplateViewHelper($container);
     }
-
+    
     public function index()
     {
         $skin = $this->config_domain['cf_skin_home'] ?? 'basic';

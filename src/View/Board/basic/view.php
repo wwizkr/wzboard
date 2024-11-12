@@ -338,7 +338,7 @@ function processedLikeAction(el) {
         return false;
     }
     
-    var data = {table: table, action: action, no: no};
+    var data = {table: table, action: action, no: no, article_no: articleNo};
     var url = '/board/' + boardId + '/like';
     
     sendCustomAjaxRequest('POST', url, data, false)

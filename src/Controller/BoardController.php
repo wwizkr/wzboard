@@ -239,8 +239,12 @@ class BoardController
 
         // 글 정보
         $articleData = [];
+        $articleFile = [];
+        $articleLink = [];
         if($article_no) {
             $articleData = $this->boardsService->getArticleDataByNo($this->boardConfig, $article_no);
+            $articleFile = $this->boardsService->getArticleFileData($this->boardConfig, $article_no);
+            $articleLink = $this->boardsService->getArticleLinkData($this->boardConfig, $article_no);
         }
 
         /*
@@ -267,6 +271,8 @@ class BoardController
             'boardsCategory' => $boardsCategory,
             'editorScript' => $editorScript,
             'articleData' => $articleData,
+            'articleFile' => $articleFile,
+            'articleLink' => $articleLink,
             'memberData' => $memberData,
         ];
 
@@ -387,6 +393,8 @@ class BoardController
         $table = CommonHelper::validateParam('table', 'string', '', $data['table'], null);
         $action = CommonHelper::validateParam('action', 'string', '', $data['action'], null);
         $no = CommonHelper::validateParam('no', 'int', '', $data['no'], null);
+        $articleNo = CommonHelper::validateParam('article_no', 'int', '', $data['article_no'], null);
+        $boardNo = $this->boardConfig['no'];
 
         if (!$table || !$action || !$no || ($table !== 'articles' && $table !== 'comments')) {
             return CommonHelper::jsonResponse([
@@ -405,7 +413,7 @@ class BoardController
             ]);
         }
 
-        $result = $this->boardsService->processedLikeAction($memberData['mb_id'], $table, $action, $no);
+        $result = $this->boardsService->processedLikeAction($memberData['mb_id'], $table, $action, $no, $articleNo, $boardNo);
 
         return CommonHelper::jsonResponse($result);
     }

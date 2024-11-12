@@ -7,6 +7,7 @@ use Web\PublicHtml\Core\DependencyContainer;
 use Web\PublicHtml\Helper\CommonHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
 use Web\PublicHtml\Helper\ImageHelper;
+use Web\PublicHtml\Helper\FileUploadManager;
 
 class BoardsService
 {
@@ -19,6 +20,7 @@ class BoardsService
     protected $formDataMiddleware;
     protected $sessionManager;
     protected $cookieManager;
+    protected $configProvider;
     protected array $categoryMapping = [];
     
     public function __construct(DependencyContainer $container)
@@ -32,6 +34,7 @@ class BoardsService
         $this->sessionManager = $container->get('SessionManager');
         $this->cookieManager = $container->get('CookieManager');
         $this->formDataMiddleware = $container->get('FormDataMiddleware');
+        $this->configProvider = $this->container->get('ConfigProvider');
     }
 
     private function getCategoryMapping($board_no)
@@ -235,12 +238,14 @@ class BoardsService
             return ['result' => 'failure', 'message' => '선택된 게시판 설정 정보가 없습니다.'];
         }
         
+        $mode = 'insert';
         // $article_no 가 있다면 실제 게시글이 있는 지 확인
         if ($article_no) {
-            $articleData = $this->getArticleDataByNo($boardConfig['group_no'], $article_no);
+            $articleData = $this->getArticleDataByNo($boardConfig, $article_no);
             if(empty($articleData)) {
                 return ['result' => 'failure', 'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'];
             }
+            $mode = 'update';
         }
 
         // 현재 인증된 회원 ID 가져오기
@@ -295,7 +300,85 @@ class BoardsService
         $data = $this->formDataMiddleware->processFormData($formData, $numericFields);
 
         // 실제 게시판 업데이트
-        return $this->boardsModel->writeBoardsUpdate($article_no, $board_id, $data);
+        $result = $this->boardsModel->writeBoardsUpdate($article_no, $board_id, $data);
+        
+        if ($result['result'] === 'success' && $result['data']['articleNo']) {
+            $articleNo = $result['data']['articleNo'];
+            
+            // 업로드 클래스 호출
+            $fileUploadManager = new FileUploadManager();
+
+            // 업데이트의 경우 기존 파일 삭제가 있다면, 먼저 파일을 삭제합니다.
+            if ($mode === 'update' && (isset($_POST['oldFilesDel']) && !empty($_POST['oldFilesDel']))) {
+                foreach($_POST['oldFilesDel'] as $fileNo) {
+                    $oldFile = $this->getArticleFileDataByNo($boardConfig, $articleNo, $fileNo);
+                    if (!empty($oldFile)) {
+                        $fileUploadManager->deleteOldFile($oldFile['filename'], $oldFile['filepath']);
+                        $this->getArticleFileDataDeleteByNo($boardConfig, $articleNo, $fileNo);
+                    }
+                }
+            }
+
+            // 첨부파일
+            $fileData = [];
+            $files = isset($_FILES['fileData']) ? $_FILES['fileData'] : [];
+            if (!empty($files)) {
+                $uploadPath = WZ_STORAGE_PATH . '/boardfile/'.$boardConfig['board_id'].'/'.date("Ymd");
+                $uploadUrl = '/storage/boardfile/'.$boardConfig['board_id'].'/'.date("Ymd");
+                
+                $fileArray = $fileUploadManager->arrayFiles($files);
+                $oldFiles = isset($_POST['oldFilesNo']) ? $_POST['oldFilesNo'] : [];
+
+                // 업로드 금지파일 설정
+                $fileUploadManager->setDisAllowedExtensions($this->configProvider->getDisAllowedFileSet());
+                $fileUploadResult = $fileUploadManager->handleFileUploads($uploadPath, $fileArray, $boardConfig['board_id']);
+                if (!empty($fileUploadResult)) {
+                    foreach($fileUploadResult as $key => $val) {
+                        $fileData[$key]['fileName'] = $val;
+                        $fileData[$key]['fileSize'] = $fileArray[$key]['size'];
+                        $fileData[$key]['filePath'] = $uploadPath;
+                        $fileData[$key]['fileUrl'] = $uploadUrl;
+                        $fileData[$key]['oldFile'] = $_POST['oldFilesNo'][$key] ?? 0;
+                    }
+                }
+                
+                if (!empty($fileData)) {
+                    foreach($fileData as $key => $val) {
+                        $param = [
+                            'board_no' => ['i', $boardConfig['no']],
+                            'article_no' => ['i', $articleNo],
+                            'filename' => ['s', $val['fileName']],
+                            'filesize' => ['i', $val['fileSize']],
+                            'filepath' => ['s', $val['filePath']],
+                            'fileurl' => ['s', $val['fileUrl']],
+                        ];
+
+                        $this->boardsModel->insertArticleFileData($param);
+                        // 이전 파일 삭제
+                        if ($val['oldFile'] > 0) {
+                            $oldFile = $this->getArticleFileDataByNo($boardConfig, $articleNo, $val['oldFile']);
+                            if (!empty($oldFile)) {
+                                $fileUploadManager->deleteOldFile($oldFile['filename'], $oldFile['filepath']);
+                                $this->getArticleFileDataDeleteByNo($boardConfig, $articleNo, $val['oldFile']);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //링크
+            $linkData = isset($_POST['linkData']) ? $_POST['linkData'] : [];
+            if (!empty($linkData)) {
+                foreach($linkData as $key=>$link) {
+                    if (!$link['url']) {
+                        continue;
+                    }
+                    $this->boardsModel->updateArticleLinkData($boardConfig['no'], $articleNo, $link);
+                }
+            }
+        }
+
+        return $result;
     }
 
     /*
@@ -316,7 +399,7 @@ class BoardsService
         // $article_no 가 있다면 실제 게시글이 있는 지 확인
         $articleData = [];
         if ($article_no) {
-            $articleData = $this->getArticleDataByNo($boardConfig['group_no'], $article_no);
+            $articleData = $this->getArticleDataByNo($boardConfig, $article_no);
             if(empty($articleData)) {
                 return ['result' => 'failure', 'message' => '게시글 정보를 찾을 수 없습니다. 잘못된 접속입니다.'];
             }
@@ -350,6 +433,26 @@ class BoardsService
         $articleData = $this->boardsHelper->processArticleViewData($boardConfig, $result);
 
         return $articleData;
+    }
+
+    public function getArticleFileData($boardConfig, $article_no)
+    {
+        return $result = $this->boardsModel->getArticleFileData($boardConfig['no'], $article_no);
+    }
+
+    public function getArticleFileDataByNo($boardConfig, $article_no, $file_no)
+    {
+        return $result = $this->boardsModel->getArticleFileDataByNo($boardConfig['no'], $article_no, $file_no);
+    }
+
+    public function getArticleFileDataDeleteByNo($boardConfig, $article_no, $file_no)
+    {
+        return $result = $this->boardsModel->getArticleFileDataDeleteByNo($boardConfig['no'], $article_no, $file_no);
+    }
+
+    public function getArticleLinkData($boardConfig, $article_no)
+    {
+        return $this->boardsModel->getArticleLinkData($boardConfig['no'], $article_no);
     }
 
     /**
@@ -798,9 +901,9 @@ class BoardsService
         ];
     }
 
-    public function processedLikeAction($mb_id, $table, $action, $no)
+    public function processedLikeAction($mb_id, $table, $action, $no, $articleNo, $boardNo)
     {
-        $result = $this->boardsModel->processedLikeAction($mb_id, $table, $action, $no);
+        $result = $this->boardsModel->processedLikeAction($mb_id, $table, $action, $no, $articleNo, $boardNo);
 
         return $result;
     }

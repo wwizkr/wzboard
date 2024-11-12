@@ -21,16 +21,28 @@ class AdminMenu
         return [
             'adversting' => [
                 'label' => '광고상품 관리',
-                'url' => '/adversting/admin/configs',
+                'url' => '/adversting/admin/itemList',
                 'icon' => 'bi-people',
+                'code' => '901',
+                'open' => true,
                 'submenu' => [
                     'config' => [
-                        'label' => '광고 관리 설정',
-                        'url' => '/adversting/admin/config',
+                        'label' => '광고 프로그램 관리',
+                        'url' => '/adversting/admin/programList',
+                        'code' => '901101',
+                        'open' => true,
                     ],
-                    'navershop' => [
-                        'label' => '네이버 쇼핑 상품 관리',
-                        'url' => '/adversting/admin/nshopList',
+                    'itemlist' => [
+                        'label' => '광고 상품 관리',
+                        'url' => '/adversting/admin/itemList',
+                        'code' => '901102',
+                        'open' => true,
+                    ],
+                    'periodlist' => [
+                        'label' => '광고 상품 집행목록',
+                        'url' => '/adversting/admin/periodList',
+                        'code' => '901103',
+                        'open' => true,
                     ],
                 ],
             ],

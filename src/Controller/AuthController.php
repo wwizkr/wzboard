@@ -55,15 +55,14 @@ class AuthController
                 header('Location: /');
             }
             exit();
-        } 
-        // 리프레시 토큰 유효성 검사
-        elseif ($refreshToken && $decodedRefreshToken = $cryptoHelper->verifyJwtToken($refreshToken)) {
+        } else if ($refreshToken && $decodedRefreshToken = $cryptoHelper->verifyJwtToken($refreshToken)) { // 리프레시 토큰 유효성 검사
             // 새로운 JWT 토큰 생성 및 저장
             $member = $membersService->getMemberDataById($decodedRefreshToken['mb_id']);
             $level  = $membersService->getMemberLevelData($member['member_level']) ?? 0;
 
             $payload = [
                 'mb_no' => $member['mb_no'],
+                'cf_class' => $member['cf_class'],
                 'mb_id' => $member['mb_id'],
                 'mb_level' => $member['member_level'],
                 'nickName' => $member['nickName'],
@@ -85,9 +84,27 @@ class AuthController
         // GET 요청 처리 (로그인 폼 표시)
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $viewData = [];
+
+            // social
             $socialProvider = $socialController->getProviderList();
             $socialItems = !empty($socialProvider) ? $componentsViewHelper->renderComponent('socialItems', $socialProvider, 'login') : '';
+            
+            // url
+            $referrer = '';
+            $url = isset($_GET['url']) ? strip_tags($_GET['url']) : '';
+            if (!$url && isset($_SERVER['REFERRER']) && $_SERVER['REFERRER']) {
+                $url = $_SERVER['REFERRER'];
+            }
+            if ($url) {
+                $parseUrl = parse_url($url);
+                if ($config_domain['cf_domain'] === $parseUrl['host']) {
+                    $referrer = $parseUrl['path'];
+                    $referrer.= isset($url['query']) ? '?'.$url['query'] : '';
+                }
+            }
+            
             $viewData['socialProvider'] = $socialItems;
+            $viewData['url'] = urlencode($referrer);
 
             return [
                 "viewPath" => $viewPath,
@@ -97,14 +114,22 @@ class AuthController
         } 
         // POST 요청 처리 (로그인 시도)
         elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = $_POST['email'] ?? '';
+            $id = $_POST['id'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            $member = $membersService->getMemberDataById($email);
+            $member = $membersService->getMemberDataById($id);
 
             // 비밀번호 검증
             if ($member && $cryptoHelper->verifyPassword($password, $member['password'])) {
+                echo '<pre>';
+                var_dump($member['member_level']);
+                echo '</pre>';
                 $level = $membersService->getMemberLevelData($member['member_level']) ?? [];
+                
+                echo '<pre>';
+                var_dump($level);
+                echo '</pre>';
+
                 $authService = $this->container->get('AuthService');
                 $authService->login($member, $level);
             } else { 
@@ -164,6 +189,7 @@ class AuthController
         // 새로운 JWT 토큰 생성
         $payload = [
             'mb_no' => $member['mb_no'],
+            'cf_class' => $member['cf_class'],
             'mb_id' => $member['mb_id'],
             'mb_level' => $member['member_level'],
             'nickName' => $member['nickName'],

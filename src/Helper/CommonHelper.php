@@ -3,8 +3,14 @@
 
 namespace Web\PublicHtml\Helper;
 
+use Web\PublicHtml\Core\DependencyContainer;
+
 class CommonHelper
 {
+    private static function getContainer()
+    {
+        return $container = DependencyContainer::getInstance();
+    }
     /*
      * 경고 메시지와 함께 특정 동작을 실행하는 메서드
      */
@@ -175,9 +181,11 @@ class CommonHelper
         // 예상되는 유형에 따라 파라미터 값을 유효성 검사 및 정리
         switch ($expected_type) {
             case 'int':
-                return filter_var($param_value, FILTER_VALIDATE_INT) !== false ? (int)$param_value : $default;
+                $cleanedValue = str_replace(',', '', $param_value);
+                return filter_var($cleanedValue, FILTER_VALIDATE_INT) !== false ? (int)$cleanedValue : $default;
             case 'float':
-                return filter_var($param_value, FILTER_VALIDATE_FLOAT) !== false ? (float)$param_value : $default;
+                $cleanedValue = str_replace(',', '', $param_value);
+                return filter_var($param_value, FILTER_VALIDATE_FLOAT) !== false ? (float)$cleanedValue : $default;
             case 'email':
                 return filter_var($param_value, FILTER_VALIDATE_EMAIL) !== false ? $param_value : $default;
             case 'url':
@@ -289,6 +297,16 @@ class CommonHelper
             $searchParams['filter'] = null;
             $searchParams['sort'] = [];
         }
+        
+        // $config 인자 삭제를 위해, container를 가져옴 :: 기존 Service 에서 $config 배열을 넘기지 않아도 됨.
+        $container = self::getContainer();
+        $config_domain = $container->get('ConfigHelper')->getConfig('config_domain');
+        // 기본 설정 로드
+        $config = [
+            'cf_page_rows' => $config_domain['cf_page_rows'],
+            'cf_page_nums' => $config_domain['cf_page_nums']
+        ];
+
 
         $searchQuery = self::validateParam('search', 'string', '', null, INPUT_GET) ?: 
                        self::validateParam('search', 'string', '', null, INPUT_POST) ?: 
@@ -561,7 +579,7 @@ class CommonHelper
      * @param array $params 파라미터 배열
      * @return string URL 쿼리 문자열
      */
-    public static function getQueryString(array $params): string
+    public static function getQueryString(array $params = []): string
     {
         $queryArray = [];
         $excludeParams = ['page', 'filter', 'sort', 'additionalQueries', 'page_rows', 'page_nums'];
@@ -605,8 +623,22 @@ class CommonHelper
             }
         }
 
+        // $_GET의 파라미터와 비교하여 누락된 항목 추가
+        foreach ($_GET as $key => $value) {
+            if (!array_key_exists($key, $params)) {
+                if (is_array($value)) {
+                    foreach ($value as $val) {
+                        $queryArray[] = urlencode($key . '[]') . '=' . urlencode((string) $val);
+                    }
+                } else {
+                    $queryArray[] = urlencode($key) . '=' . urlencode((string) $value);
+                }
+            }
+        }
+
         // 쿼리 문자열 생성 ('&'로 시작)
-        return $queryArray ? '&' . implode('&', $queryArray) : '';
+        return $queryArray ? implode('&', $queryArray) : '';
+        //return $queryArray ? '&' . implode('&', $queryArray) : '';
     }
 
     /**
@@ -1026,6 +1058,80 @@ class CommonHelper
         }
         
         return $str;
+    }
+    
+    /**
+     * cURL 요청을 보내는 공통 메서드입니다.
+     *
+     * @param string $url 요청할 URL
+     * @param string $method HTTP 메서드 (GET, POST, PUT, DELETE 등)
+     * @param array $data 전송할 데이터 (POST 또는 PUT 요청 시 사용)
+     * @param array $headers 요청에 추가할 헤더 배열
+     * @return array 요청 성공 여부, HTTP 상태 코드, 응답 또는 오류 메시지를 포함한 배열
+     * @sample $url = "https://api.example.com/data";
+     * $method = "POST";
+     * $data = ['param1' => 'value1', 'param2' => 'value2'];
+     * $headers = ["Content-Type: application/json"];
+     */
+    public static function sendCurlRequest($url, $method = 'GET', $data = [], $headers = []) {
+        // cURL 초기화
+        $ch = curl_init();
+        
+        // 기본 옵션 설정
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        // HTTP 메서드에 따른 옵션 설정
+        switch (strtoupper($method)) {
+            case 'POST':
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, is_array($data) ? json_encode($data) : $data);
+                break;
+            case 'PUT':
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+                break;
+            case 'DELETE':
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+                break;
+            case 'GET':
+            default:
+                curl_setopt($ch, CURLOPT_HTTPGET, true);
+                if (!empty($data)) {
+                    $url = sprintf("%s?%s", $url, http_build_query($data));
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                }
+                break;
+        }
+
+        // 헤더가 있으면 설정
+        if (!empty($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+
+        // cURL 실행 및 응답 수신
+        $response = curl_exec($ch);
+
+        // 오류 확인
+        if (curl_errno($ch)) {
+            $error_msg = curl_error($ch);
+            curl_close($ch);
+            return ['success' => false, 'error' => $error_msg];
+        }
+
+        // HTTP 상태 코드 가져오기
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        // cURL 종료
+        curl_close($ch);
+
+        // 응답 반환 (필요시 json_decode($response, true)로 배열로 변환 가능)
+        return [
+            'success' => true,
+            'status_code' => $httpCode,
+            'response' => $response
+        ];
     }
 
     // 추가적인 헬퍼 메소드들을 여기에 정의할 수 있음

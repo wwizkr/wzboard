@@ -1,5 +1,5 @@
 <?php
-//파일위치 src/Service/SettingService.php
+//파일위치 src/Service/AdminSettingService.php
 
 namespace Web\Admin\Service;
 

@@ -49,7 +49,7 @@ class FormDataMiddleware
                 $val = implode('-', $val);
             }
             if (in_array($key, $numericFields)) {
-                $value = $val ? $val : 0;
+                $value = $val ? str_replace(",", "", $val) : 0;
                 $data[$key] = ['i', $value];
             } else {
                 $value = $val ? $val : '';

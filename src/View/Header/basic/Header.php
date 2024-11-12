@@ -10,11 +10,11 @@
             <div class="header-ico">
                 <?php if($isLogin ?? false): ?>
                 <a href="/auth/logout" class="btn btn-outline-darkgray"><span>로그아웃</span></a>
-                <a href="/member/mypage" class="btn btn-fill-darkgray"><span>마이페이지</span><span class="svg svg-arrow rotate-r90"></span>
+                <a href="/member/mypage" class="btn btn-fill-darkgray"><span>마이페이지</span><span class="svg-icon svg-icon-arrow rotate-r90"></span></a>
                 </a>
                 <?php else: ?>
                 <a href="/auth/login" class="btn btn-outline-darkgray"><span>로그인</span></a>
-                <a href="/member/register" class="btn btn-fill-darkgray"><span>회원가입</span><span class="svg svg-arrow rotate-r90"></a>
+                <a href="/member/register" class="btn btn-fill-darkgray"><span>회원가입</span><span class="svg-icon svg-icon-arrow rotate-r90"></span></a>
                 <?php endif; ?>
             </div>
         </div>

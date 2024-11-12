@@ -166,7 +166,8 @@ class ViewRenderer
             '#^/index\.php$#',
         ];
 
-        $currentRoute = $_SERVER['REQUEST_URI'] ?? '/';
+        // 현재 경로에서 쿼리 문자열을 제거
+        $currentRoute = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
 
         foreach ($homePagePatterns as $pattern) {
             if (preg_match($pattern, $currentRoute)) {

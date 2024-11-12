@@ -28,7 +28,7 @@
             <div class="fixed-top-btn">
                 <a href="javascript:void(0)" class="btn btn-fill-gray" onclick="handleAjaxFormSubmit(this);" data-target="/admin/members/memberListModify" data-callback="updateMemberListModify">선택수정</a>
                 <a href="javascript:void(0)" class="btn btn-fill-gray" onclick="handleAjaxFormSubmit(this);" data-target="/admin/members/memberListDelete" data-callback="updateMemberListDelete">선택삭제</a>
-                <a href="/admin/members/add" class="btn btn-fill-accent">회원 등록</a>
+                <a href="/admin/members/memberForm" class="btn btn-fill-accent">회원 등록</a>
             </div>
         </div>
     </div>
@@ -63,7 +63,7 @@
                                 echo '<div class="list-col col-custom-120 text-center">'.$val['nickName'].'</div>';
                                 echo '<div class="list-col col-custom-160 text-center">'.$val['phone'].'</div>';
                                 echo '<div class="list-col col-custom-auto col text-center">'.$val['email'].'</div>';
-                                echo '<div class="list-col col-custom-100 text-center">';
+                                echo '<div class="list-col list-col-row col-custom-100 text-center">';
                                     echo '<a href="/admin/members/memberForm/'.$val['mb_no'].$queryString.'" class="btn btn-ssm btn-fill-accent">수정</a>';
                                     echo '<a href="javascript:void(0);" onclick="confirmDeleteBefore(this);" data-target="/admin/members/memberItemDelete" data-no="'.$val['mb_no'].'" data-callback="updateMemberDelete" class="btn btn-ssm btn-fill-darkgray ml-1">삭제</a>';
                                 echo '</div>';
@@ -79,7 +79,6 @@
     </form>
     <?= $this->renderPagination($paginationData); ?>
 </div>
-
 
 <script>
 App.registerCallback('updateMemberListDelete', function(data) {

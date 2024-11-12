@@ -7,57 +7,48 @@ use RuntimeException;
 
 class FileUploadManager
 {
-    private $tempFilePath;
     private $filePermission;
     private $allowedExtensions;
     private $directoryPermission;
+    private $disAllowedExtensions;
 
-    public function __construct($tempFilePath, $filePermission = 0644, $allowedExtensions = ['gif', 'png', 'jpg', 'jpeg', 'bmp', 'webp'], $directoryPermission = 0755)
+    public function __construct($filePermission = 0644, $allowedExtensions = ['gif', 'png', 'jpg', 'jpeg', 'bmp', 'webp'], $directoryPermission = 0755)
     {
-        $this->tempFilePath = rtrim($tempFilePath, '/');
         $this->filePermission = $filePermission;
         $this->allowedExtensions = $allowedExtensions;
         $this->directoryPermission = $directoryPermission;
-        $this->ensureDirectoryExists();
     }
 
-    private function ensureDirectoryExists()
+    private function ensureDirectoryExists($tempFilePath)
     {
-        if (!file_exists($this->tempFilePath)) {
-            if (!mkdir($this->tempFilePath, $this->directoryPermission, true)) {
-                throw new RuntimeException("Failed to create directory: {$this->tempFilePath}");
+        if (empty($tempFilePath)) {
+            throw new RuntimeException("Temporary file path must be specified.");
+        }
+
+        if (!file_exists($tempFilePath)) {
+            if (!mkdir($tempFilePath, $this->directoryPermission, true)) {
+                throw new RuntimeException("Failed to create directory: {$tempFilePath}");
             }
-        } elseif (!is_writable($this->tempFilePath)) {
-            throw new RuntimeException("Directory is not writable: {$this->tempFilePath}");
+        } elseif (!is_writable($tempFilePath)) {
+            throw new RuntimeException("Directory is not writable: {$tempFilePath}");
         }
     }
 
-    public function handleFileUploads($files, $oldFiles, $position, $deleteFlags = [])
+    public function setDisAllowedExtensions(array $extensions)
     {
-        $this->ensureDirectoryExists();
+        $this->disAllowedExtensions = $extensions;
+    }
+
+    public function handleFileUploads($uploadPath, $files, $prefix)
+    {
+        $this->ensureDirectoryExists($uploadPath);
         $result = [];
 
-        // 파일 배열 재구성
-        $files = $this->arrayFiles($files);
-
         foreach ($files as $key => $file) {
-            $oldFile = $oldFiles[$key] ?? '';
-            $deleteFlag = $deleteFlags[$key] ?? false;
-
             if ($this->isValidUploadedFile($file)) {
-                $newFileName = $this->uploadFile($file, $position . '_' . $key);
+                $newFileName = $this->uploadFile($file, $prefix . '_' . $key, $uploadPath);
                 if ($newFileName) {
                     $result[$key] = $newFileName;
-                    $this->deleteOldFile($oldFile);
-                } else {
-                    $result[$key] = $oldFile;
-                }
-            } else {
-                if ($deleteFlag) {
-                    $this->deleteOldFile($oldFile);
-                    $result[$key] = '';
-                } else {
-                    $result[$key] = $oldFile;
                 }
             }
         }
@@ -67,25 +58,42 @@ class FileUploadManager
     public function arrayFiles($filePost)
     {
         $fileArray = [];
+        
+        // 입력이 배열이 아닌 경우 처리
+        if (!is_array($filePost)) {
+            error_log("Invalid input: not an array");
+            return $fileArray;
+        }
 
-        if (is_array($filePost)) {
-            foreach ($filePost as $key => $value) {
-                if (is_array($value)) {
-                    foreach ($value as $subKey => $subValue) {
-                        if (is_array($subValue)) {
-                            foreach ($subValue as $finalKey => $finalValue) {
-                                $fileArray[$finalKey][$subKey] = $finalValue;
-                            }
-                        } else {
-                            $fileArray[$key][$subKey] = $subValue;
-                        }
-                    }
-                } else {
-                    $fileArray[$key] = $value;
+        // name이 배열인 경우 (다중 파일 업로드)
+        if (isset($filePost['name']) && is_array($filePost['name'])) {
+            // 파일 개수만큼 반복
+            foreach ($filePost['name'] as $key => $name) {
+                // 빈 파일 건너뛰기
+                if (empty($name)) {
+                    continue;
                 }
+
+                $fileArray[$key] = [
+                    'name' => $filePost['name'][$key],
+                    'full_path' => $filePost['full_path'][$key] ?? '',
+                    'type' => $filePost['type'][$key],
+                    'tmp_name' => $filePost['tmp_name'][$key],
+                    'error' => $filePost['error'][$key],
+                    'size' => $filePost['size'][$key]
+                ];
             }
-        } else {
-            $fileArray = $filePost;
+        }
+        // 단일 파일인 경우
+        elseif (isset($filePost['name']) && !is_array($filePost['name'])) {
+            $fileArray[$key] = [
+                'name' => $filePost['name'],
+                'full_path' => $filePost['full_path'] ?? '',
+                'type' => $filePost['type'],
+                'tmp_name' => $filePost['tmp_name'],
+                'error' => $filePost['error'],
+                'size' => $filePost['size']
+            ];
         }
 
         return $fileArray;
@@ -98,25 +106,25 @@ class FileUploadManager
         }
 
         $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($extension, $this->allowedExtensions)) {
+
+        // 금지된 확장자 검사 (disAllowedExtensions가 설정된 경우에만)
+        if (!empty($this->disAllowedExtensions) && in_array($extension, $this->disAllowedExtensions)) {
             return false;
         }
 
         if (!is_uploaded_file($file['tmp_name'])) {
             return false;
         }
+        
         return true;
     }
 
-    private function uploadFile($file, $position)
+    private function uploadFile($file, $prefix, $tempFilePath)
     {
         $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        
-        // 강화된 유일한 파일 이름 생성
-        $filename = $this->generateUniqueFileName($position, $extension);
-        
-        $destpath = $this->tempFilePath . '/' . $filename;
-        
+        $filename = $this->generateUniqueFileName($prefix, $extension);
+        $destpath = $tempFilePath . '/' . $filename;
+
         if (move_uploaded_file($file['tmp_name'], $destpath)) {
             chmod($destpath, $this->filePermission);
             return $filename;
@@ -126,26 +134,26 @@ class FileUploadManager
         }
     }
 
-    private function generateUniqueFileName($position, $extension)
+    private function generateUniqueFileName($prefix, $extension)
     {
         $randomString = bin2hex(random_bytes(8));
         $timestamp = time();
-        $hashedName = md5($randomString . $timestamp . $position);
-        return $position . '_' . substr($hashedName, 0, 16) . '.' . $extension;
+        $hashedName = md5($randomString . $timestamp . $prefix);
+        return $prefix . '_' . substr($hashedName, 0, 16) . '.' . $extension;
     }
 
-    public function deleteOldFile($oldFile)
+    public function deleteOldFile($oldFile, $oldFilePath)
     {
         if (!$oldFile) return;
 
-        $oldFilePath = $this->tempFilePath . '/' . $oldFile;
+        $oldFilePath = $oldFilePath . '/' . $oldFile;
         if (file_exists($oldFilePath)) {
             @unlink($oldFilePath);
         }
 
         // 썸네일 삭제
         $fn = preg_replace("/\.[^\.]+$/i", "", basename($oldFile));
-        $thumbs = glob($this->tempFilePath . '/thumb-' . $fn . '*');
+        $thumbs = glob($oldFilePath . '/thumb-' . $fn . '*');
         if (is_array($thumbs)) {
             foreach ($thumbs as $thumb) {
                 if (file_exists($thumb)) {

@@ -29,8 +29,17 @@ foreach($addMeta as $meta) {
 <title><?= $seoTitle; ?></title>
 <link rel="canonical" href="<?= $canonical; ?>">
 <link rel="icon" href="<?= $icoImage; ?>" type="image/x-icon">
+<link href="/assets/js/lib/jquery/jquery-ui.css?<?=time();?>" rel="stylesheet">
+<script src="/assets/js/lib/jquery/jquery-3.7.1.min.js"></script>
+<script src="/assets/js/lib/jquery/jquery-migrate-3.5.0.min.js"></script>
+<script src="/assets/js/lib/jquery/jquery-ui.min.js"></script>
+<!--
+<script src="/assets/js/lib/fullpage/fullpage.min.js"></script>
+<link href="/assets/js/lib/fullpage/fullpage.css" rel="stylesheet">
+-->
 <link href="/assets/js/lib/swiper/swiper-bundle.min.css" rel="stylesheet">
 <script src="/assets/js/lib/swiper/swiper-bundle.min.js"></script>
+<script src="/assets/basic/js/common.js"></script>
 <link href="/assets/basic/css/common.css?<?=time();?>" rel="stylesheet">
 <link href="/assets/basic/css/common-custom.css?<?=time();?>" rel="stylesheet">
 <link href="/assets/basic/css/style.css?<?=time();?>" rel="stylesheet">
@@ -42,6 +51,9 @@ foreach ($this->getAssets('css') as $cssFile) {
 }
 ?>
 <style>
+:root { 
+--coloraccent: #dc3545;
+}
 <?php if ($config_domain['cf_content_max_width'] && $config_domain['cf_content_max_width'] > 100) { ?>
 .max-layout { width: 100%; max-width: <?= $config_domain['cf_content_max_width']; ?>px; margin: 0 auto; }
 <?php } else { ?>

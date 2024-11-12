@@ -188,6 +188,7 @@ class TemplateController
 
         $message = '처리하였습니다.';
         $url = '/admin/template/templateForm/'.$table.'?ct_id='.$result['ins_id'];
+
         CommonHelper::alertAndRedirect($message, $url);
     }
 }

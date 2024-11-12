@@ -79,6 +79,7 @@ class DatabaseQuery
         $options += [
             'field' => '*',
             'order' => '',
+            'rawWhere' => '',
             'addField' => '',
             'addWhere' => '',
             'joins' => [],
@@ -191,6 +192,10 @@ class DatabaseQuery
             }
         }
 
+        if ($options['rawWhere']) {
+            $sqlWhere .= $sqlWhere ? " AND {$options['rawWhere']}" : " WHERE {$options['rawWhere']}";
+        }
+
         // 추가 WHERE 조건 처리
         if ($options['addWhere']) {
             $sqlWhere .= $sqlWhere ? " AND {$options['addWhere']}" : " WHERE {$options['addWhere']}";
@@ -238,6 +243,9 @@ class DatabaseQuery
             default:
                 throw new Exception('유효하지 않은 쿼리 모드');
         }
+
+        //error_log("SQL QUERY::".print_r($sql, true));
+        //error_log("VALUES::".print_r($values, true));
 
         // 쿼리 실행
         try {

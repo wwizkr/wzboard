@@ -26,8 +26,6 @@ use Web\PublicHtml\Helper\MembersHelper;
 
 // Helper
 use Web\PublicHtml\Helper\SessionManager;
-use Web\PublicHtml\Middleware\CsrfTokenHandler;
-use Web\PublicHtml\Middleware\FormDataMiddleware;
 use Web\PublicHtml\Helper\CookieManager;
 use Web\PublicHtml\Helper\ConfigHelper;
 use Web\PublicHtml\Helper\CryptoHelper;
@@ -37,6 +35,8 @@ use Web\PublicHtml\Helper\CacheHelper;
 // Middleware
 use Web\PublicHtml\Middleware\AuthMiddleware;
 use Web\PublicHtml\Middleware\NavigationMiddleware;
+use Web\PublicHtml\Middleware\CsrfTokenHandler;
+use Web\PublicHtml\Middleware\FormDataMiddleware;
 
 // Template
 use Web\PublicHtml\Service\TemplateService;

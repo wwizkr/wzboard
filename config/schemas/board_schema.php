@@ -11,6 +11,7 @@ $schema = [
                         'board_articles' => '게시판 게시글 테이블',
                         'board_comments' => '게시판 댓글 테이블',
                         'board_attachements' => '게시판 첨부파일테이블',
+                        'board_links' => '게시판 링크 테이블',
                         'board_reactions'=> '게시판 반응테이블',
                         'initial_data' => '설치 시 게시판별 기본 입력값'
                       ],
@@ -50,13 +51,14 @@ $schema = [
                                 write_point INT NOT NULL NOT NULL DEFAULT 0,
                                 download_point INT NOT NULL DEFAULT 0,
                                 comment_point INT NOT NULL DEFAULT 0,
-                                is_article_reaction VARCHAR(255) NOT NULL DEFAULT 'like:좋아요,dislike:싫어요',
-                                is_use_comment BOOLEAN DEFAULT TRUE,
-                                is_comment_reaction VARCHAR(255) NOT NULL DEFAULT 'like:좋아요,dislike:싫어요',
+                                is_article_reaction VARCHAR(255) NOT NULL DEFAULT '',
+                                is_use_comment TINYINT NOT NULL DEFAULT 1,
+                                is_comment_reaction VARCHAR(255) NOT NULL DEFAULT '',
+                                is_use_link TINYINT NOT NULL DEFAULT 0,
                                 is_use_file TINYINT NOT NULL DEFAULT 1,
                                 file_size_limit INT DEFAULT 2097152,
                                 board_list_type TINYINT UNSIGNED NOT NULL DEFAULT 0,
-                                use_separate_table BOOLEAN DEFAULT FALSE,
+                                use_separate_table TINYINT NOT NULL DEFAULT 0,
                                 table_name VARCHAR(100) NOT NULL DEFAULT '',
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -152,20 +154,34 @@ $schema = [
                         'board_attachments' => "
                             CREATE TABLE IF NOT EXISTS board_attachments (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
+                                board_no INT NOT NULL DEFAULT 0,
                                 article_no INT NOT NULL,
                                 filename VARCHAR(255) NOT NULL DEFAULT '',
                                 filesize INT NOT NULL DEFAULT 0,
                                 filepath VARCHAR(255) NOT NULL DEFAULT '',
                                 fileurl VARCHAR(255) NOT NULL DEFAULT '',
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                INDEX idx_article_no (article_no)
+                                INDEX idx_article_no (board_no, article_no)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                        ",
+                        
+                        'board_links' => "
+                            CREATE TABLE IF NOT EXISTS board_attachments (
+                                no INT AUTO_INCREMENT PRIMARY KEY,
+                                board_no INT NOT NULL DEFAULT 0,
+                                article_no INT NOT NULL,
+                                link VARCHAR(255) NOT NULL DEFAULT '',
+                                hit INT NOT NULL DEFAULT 0,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                INDEX idx_article_no (board_no, article_no)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
                         
                         'board_articles_reactions' => "
                             CREATE TABLE IF NOT EXISTS board_reactions (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
-                                article_no INT NOT NULL,
+                                board_no INT NOT NULL DEFAULT 0,
+                                article_no INT NOT NULL DEFAULT 0,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
                                 reaction_type VARCHAR(12) NOT NULL DEFAULT '',
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -177,12 +193,14 @@ $schema = [
                         'board_comments_reactions' => "
                             CREATE TABLE IF NOT EXISTS board_reactions (
                                 no INT AUTO_INCREMENT PRIMARY KEY,
-                                comment_no INT NOT NULL,
+                                board_no INT NOT NULL DEFAULT 0,
+                                article_no INT NOT NULL DEFAULT 0,
+                                comment_no INT NOT DEFAULT 0,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
                                 reaction_type VARCHAR(12) NOT NULL DEFAULT '',
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 UNIQUE KEY idx_comment_user_reaction (comment_no, mb_id),
-                                INDEX idx_comment_no (comment_no)
+                                INDEX idx_comment_no (board_no, article_no, comment_no)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
 

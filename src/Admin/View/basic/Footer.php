@@ -4,6 +4,7 @@
     <p>&copy; <?php echo date('Y'); ?> 회사명. All rights reserved.</p>
 </footer>
 <script>
+const activeCode = '<?= $activeCode ?? ''; ?>';
 document.getElementById('sidebarToggle').addEventListener('click', function () {
     var sidebar = document.getElementById('sidebar');
     if (window.innerWidth <= 768) {
@@ -13,6 +14,41 @@ document.getElementById('sidebarToggle').addEventListener('click', function () {
     }
 });
 document.addEventListener('DOMContentLoaded', function() {
+    //------------------------------------------------------------//
+    /*
+     * 필수 함수. activeCode 는 메뉴코드를 의미하는 필수 변수
+     */
+    // 모든 form 요소를 찾습니다.
+    document.querySelectorAll('form').forEach(function(form) {
+        // 새로운 hidden input 요소를 생성합니다.
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'activeCode';
+        hiddenInput.value = activeCode;
+
+        // form에 hidden input을 추가합니다.
+        form.appendChild(hiddenInput);
+    });
+
+    // 모든 a 요소를 찾습니다.
+    document.querySelectorAll('a').forEach(function(link) {
+        // href 속성을 가져옵니다.
+        let href = link.getAttribute('href');
+        
+        // href가 있을 때만 처리
+        if (href) {
+            // URL 객체를 생성합니다.
+            const url = new URL(href, window.location.origin);
+
+            // activeCode 파라미터가 없는 경우 추가합니다.
+            if (!url.searchParams.has('activeCode')) {
+                url.searchParams.append('activeCode', activeCode);
+                link.setAttribute('href', url.toString());
+            }
+        }
+    });
+    //------------------------------------------------------------//
+
     // 현재 URL을 가져옵니다.
     var currentUrl = window.location.pathname;
 

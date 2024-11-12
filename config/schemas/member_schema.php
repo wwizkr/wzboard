@@ -6,6 +6,7 @@ $schema = [
     'schema_array' => [
                         'members' => '회원 테이블',
                         'members_level' => '회원 레벨 설정 테이블',
+                        'members_auth' => '관리자 권한 테이블',
                         'initial_data' => '설치 시 게시판별 기본 입력값'
                       ],
     'schema_content' => [
@@ -13,6 +14,7 @@ $schema = [
                             CREATE TABLE IF NOT EXISTS members (
                                 mb_no INT AUTO_INCREMENT PRIMARY KEY,
                                 cf_id INT UNSIGNED NOT NULL DEFAULT 1,
+                                cf_class VARCHAR(25) DEFAULT NULL,
                                 mb_id VARCHAR(50) NOT NULL DEFAULT '',
                                 userName VARCHAR(50) NOT NULL DEFAULT '',
                                 nickName VARCHAR(50) NOT NULL DEFAULT '',
@@ -60,9 +62,12 @@ $schema = [
                                 min_point INT UNSIGNED NOT NULL DEFAULT 0,
                                 min_posts INT UNSIGNED NOT NULL DEFAULT 0,
                                 min_comments INT UNSIGNED NOT NULL DEFAULT 0,
-                                min_days_since_join INT UNSIGNED NOT NULL DEFAULT 0,
-                                min_purchase_amount DECIMAL(10, 2) UNSIGNED NOT NULL DEFAULT 0,
+                                min_login_count INT UNSIGNED NOT NULL DEFAULT 0,
+                                min_days_join INT UNSIGNED NOT NULL DEFAULT 0,
+                                purchase_amount DECIMAL(10, 2) UNSIGNED NOT NULL DEFAULT 0,
                                 auto_level_up TINYINT NOT NULL DEFAULT 1,
+                                level_up_point INT UNSIGNED NOT NULL DEFAULT 0,
+                                level_use TINYINT NOT NULL DEFAULT 1,
                                 is_admin TINYINT NOT NULL DEFAULT 0,
                                 is_super TINYINT NOT NULL DEFAULT 0,
                                 description TEXT,
@@ -71,11 +76,26 @@ $schema = [
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                         ",
 
+                        'members_auth' => "
+                            CREATE TABLE IF NOT EXISTS members_auth (
+                                no INT AUTO_INCREMENT PRIMARY KEY,
+                                cf_id INT UNSIGNED NOT NULL DEFAULT 1,
+                                level_id INT UNSIGNED NOT NULL DEFAULT 0,
+                                menuCate VARCHAR(25) NOT NULL DEFAULT '',
+                                menuCode VARCHAR(12) NOT NULL DEFAULT '',
+                                menuAuth VARCHAR(12) NOT NULL DEFAULT '',
+                                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                UNIQUE KEY UNI (cf_id, level_id, menuCode)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                        ",
+
                         'initial_data' => [
                             'members' => [
                                 'data' => [
                                     [
                                         'cf_id' => 1,
+                                        'cf_class' => 1,
                                         'mb_id' => 'admin',
                                         'email' => 'admin@example.com',
                                         'nickName' => '최고관리자',
@@ -98,8 +118,8 @@ $schema = [
                                     [ 'level_id' => 6, 'level_name' => 'VIP 회원', 'min_point' => 5000, 'auto_level_up' => true, 'is_admin' => false, 'is_super_admin' => false, 'description' => '사이트의 주요 회원' ],
                                     [ 'level_id' => 7, 'level_name' => 'VVIP 회원','min_point' => 10000, 'auto_level_up' => false, 'is_admin' => false, 'is_super_admin' => false, 'description' => '사이트의 핵심 회원' ],
                                     [ 'level_id' => 8, 'level_name' => '특별 회원', 'min_point' => 20000, 'auto_level_up' => false, 'is_admin' => false, 'is_super_admin' => false, 'description' => '특별한 공헌을 한 회원' ],
-                                    [ 'level_id' => 9, 'level_name' => '일반관리자','min_point' => 50000, 'auto_level_up' => false, 'is_admin' => true, 'is_super_admin' => false, 'description' => '사이트 관리를 보조하는 관리자' ],
-                                    [ 'level_id' => 10,'level_name' => '최고관리자','min_point' => 100000, 'auto_level_up' => false, 'is_admin' => true, 'is_super_admin' => true, 'description' => '사이트의 최고 관리자' ]
+                                    [ 'level_id' => 9, 'level_name' => '일반관리자','min_point' => 0, 'auto_level_up' => false, 'is_admin' => true, 'is_super_admin' => false, 'description' => '사이트 관리를 보조하는 관리자' ],
+                                    [ 'level_id' => 10,'level_name' => '최고관리자','min_point' => 0, 'auto_level_up' => false, 'is_admin' => true, 'is_super_admin' => true, 'description' => '사이트의 최고 관리자' ]
                                 ],
                                 'encrypt' => []
                             ],

@@ -26,10 +26,10 @@ class BannerController
     protected function setAssets(): void
     {
         $this->adminViewRenderer->addAsset('css', '/assets/js/lib/color-picker/jquery.minicolors.css');
-        $this->adminViewRenderer->addAsset('css', '/assets/js/jquery-ui.css');
-        $this->adminViewRenderer->addAsset('js', '/assets/js/jquery-3.7.1.min.js');
-        $this->adminViewRenderer->addAsset('js', '/assets/js/jquery-migrate-3.5.0.min.js');
-        $this->adminViewRenderer->addAsset('js', '/assets/js/jquery-ui.min.js');
+        $this->adminViewRenderer->addAsset('css', '/assets/js/lib/jquery-ui.css');
+        $this->adminViewRenderer->addAsset('js', '/assets/js/lib/jquery-3.7.1.min.js');
+        $this->adminViewRenderer->addAsset('js', '/assets/js/lib/jquery-migrate-3.5.0.min.js');
+        $this->adminViewRenderer->addAsset('js', '/assets/js/lib/jquery-ui.min.js');
         $this->adminViewRenderer->addAsset('js', '/assets/js/lib/color-picker/jquery.minicolors.min.js');
     }
 

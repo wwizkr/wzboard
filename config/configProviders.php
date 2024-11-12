@@ -68,7 +68,7 @@ class ConfigProvider
 
     private function setDeviceSpecificConfig(&$config_domain_data)
     {
-        $isMobile = preg_match('/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i', $_SERVER['HTTP_USER_AGENT']);
+        $isMobile = isset($_SERVER['HTTP_USER_AGENT']) ? preg_match('/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i', $_SERVER['HTTP_USER_AGENT']) : 0;
 
         if ($isMobile) {
             $config_domain_data['cf_page_rows'] = $config_domain_data['cf_mo_page_rows'];
@@ -265,6 +265,13 @@ class ConfigProvider
                 'desc' => '모바일 하단의 메뉴 등에 사용되는 글자 색상입니다.',
                 'default' => 'colorblack',
             ],
+        ];
+    }
+
+    public function getDisAllowedFileSet()
+    {
+        return [
+            'php', 'pht', 'phtm', 'htm', 'cgi', 'pl', 'exe', 'jsp', 'asp', 'inc', 'phar', 'js', 'shtml', 'sh', 'py', 'rb', 'ps1', 'dylib', 'so', 'dll', 'docm', 'xlsm', 'pptm', 'jar', 'msi', 'vb', 'vbs', 'wsf', 'reg', 'scr'
         ];
     }
 }

@@ -40,13 +40,18 @@
                         <div class="list-col col-custom-60 text-center">번호</div>
                         <div class="list-col col-custom-140 text-center">그룹명</div>
                         <div class="list-col col-custom-120 text-center">게시판 스킨</div>
-                        <div class="list-col col-custom-120 text-center">게시판 ID</div>
+                        <div class="list-col col-custom-100 text-center">게시판 ID</div>
                         <div class="list-col col-custom-auto text-center">게시판명</div>
+                        <div class="list-col col-custom-100 text-center">접근레벨</div>
+                        <div class="list-col col-custom-100 text-center">읽기레벨</div>
+                        <div class="list-col col-custom-100 text-center">쓰기레벨</div>
+                        <div class="list-col col-custom-100 text-center">댓글레벨</div>
+                        <div class="list-col col-custom-100 text-center">다운레벨</div>
                         <div class="list-col col-custom-60 text-center">읽기P</div>
                         <div class="list-col col-custom-60 text-center">쓰기P</div>
                         <div class="list-col col-custom-60 text-center">댓글P</div>
                         <div class="list-col col-custom-60 text-center">다운P</div>
-                        <div class="list-col col-custom-200 text-center">관리</div>
+                        <div class="list-col col-custom-180 text-center">관리</div>
                     </div>
                 </li>
                 <?php
@@ -62,8 +67,13 @@
                                 echo '<div class="list-col col-custom-60 text-center">'.$num.'</div>';
                                 echo '<div class="list-col col-custom-140 text-center">'.$val['groupSelect'].'</div>';
                                 echo '<div class="list-col col-custom-120 text-center">'.$val['skinSelect'].'</div>';
-                                echo '<div class="list-col col-custom-120 text-center">'.$val['board_id'].'</div>';
+                                echo '<div class="list-col col-custom-100 text-center">'.$val['board_id'].'</div>';
                                 echo '<div class="list-col col-custom-auto text-center">'.$val['board_name'].'</div>';
+                                echo '<div class="list-col col-custom-100 text-center">'.$val['levelSelect']['list_level'].'</div>';
+                                echo '<div class="list-col col-custom-100 text-center">'.$val['levelSelect']['read_level'].'</div>';
+                                echo '<div class="list-col col-custom-100 text-center">'.$val['levelSelect']['write_level'].'</div>';
+                                echo '<div class="list-col col-custom-100 text-center">'.$val['levelSelect']['comment_level'].'</div>';
+                                echo '<div class="list-col col-custom-100 text-center">'.$val['levelSelect']['download_level'].'</div>';
                                 echo '<div class="list-col col-custom-60 text-center">';
                                     echo '<input type="text" name="listData[read_point]['.$key.']" value="'.$val['read_point'].'" data-proto="'.$val['read_point'].'" class="frm_input frm_full text-center">';
                                 echo '</div>';
@@ -76,7 +86,7 @@
                                 echo '<div class="list-col col-custom-60 text-center">';
                                     echo '<input type="text" name="listData[download_point]['.$key.']" value="'.$val['download_point'].'" data-proto="'.$val['download_point'].'" class="frm_input frm_full text-center">';
                                 echo '</div>';
-                                echo '<div class="list-col col-custom-200 text-center">';
+                                echo '<div class="list-col list-col-row col-custom-180 text-center">';
                                     echo '<a href="/admin/boardadmin/boardform/'.$val['board_id'].'" class="btn btn-ssm btn-fill-accent">수정</a>';
                                     echo '<a href="" class="btn btn-ssm btn-fill-darkgray ml-1">삭제</a>';
                                     echo '<a href="/admin/board/'.$val['board_id'].'/list" class="btn btn-ssm btn-fill-darkgray ml-1">목록</a>';

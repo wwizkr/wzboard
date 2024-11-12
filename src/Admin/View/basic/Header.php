@@ -9,7 +9,9 @@
             <ul class="navbar-nav w-100">
                 <?php foreach ($menu as $key => $item): ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= $item['url']; ?>"><?= $item['label']; ?></a>
+                        <a class="nav-link" href="<?= $item['url'] . (strpos($item['url'], '?') === false ? '?' : '&') . 'activeCode=' . $item['code'];; ?>">
+                        <?= $item['label']; ?>
+                        </a>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -23,7 +25,7 @@
                     <a class="nav-link" href="/" target="_blank">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Extra Menu 2</a>
+                    <a class="nav-link" href="/auth/logout">로그아웃</a>
                 </li>
             </ul>
             
@@ -41,23 +43,20 @@
         <!-- Sidebar (사이드바) -->
         <div id="sidebar" class="col-auto col-md-3 col-lg-2 px-sm-2 bg-light">
             <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2">
-                <a href="/" class="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-decoration-none">
-                    <span class="fs-5 d-none d-sm-inline">Menu</span>
-                </a>
                 <ul class="nav flex-column">
                     <?php foreach ($menu as $key => $item): ?>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="<?= isset($item['submenu']) ? '#' : $item['url']; ?>" <?= isset($item['submenu']) ? 'data-bs-toggle="collapse"' : ''; ?>>
+                            <a class="nav-link d-flex align-items-center" href="<?= isset($item['submenu']) ? '#' : $item['url'] . (strpos($item['url'], '?') === false ? '?' : '&') . 'activeCode=' . $item['code']; ?>" <?= isset($item['submenu']) ? 'data-bs-toggle="collapse"' : ''; ?>>
                                 <?php if (isset($item['icon'])): ?>
                                     <i class="<?= $item['icon']; ?> me-2"></i>
                                 <?php endif; ?>
                                 <?= $item['label']; ?>
                             </a>
                             <?php if (isset($item['submenu'])): ?>
-                                <ul id="<?= $key; ?>Submenu" class="collapse">
+                                <ul id="<?= $key; ?>Submenu" class="collapse <?= isset($activeCode) && $item['code'] === substr($activeCode,0,3) ? 'show' : ''; ?>">
                                     <?php foreach ($item['submenu'] as $subItem): ?>
                                         <li class="nav-item">
-                                            <a class="nav-link ms-3" href="<?= $subItem['url']; ?>"><?= $subItem['label']; ?></a>
+                                            <a class="nav-link sub-link ms-3 <?= isset($activeCode) && $subItem['code'] === $activeCode ? 'active' : ''; ?>" href="<?= $subItem['url'] . (strpos($subItem['url'], '?') === false ? '?' : '&') . 'activeCode=' . $subItem['code']; ?>"><?= $subItem['label']; ?></a>
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>

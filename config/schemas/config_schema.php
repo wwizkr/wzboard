@@ -11,6 +11,7 @@ $schema = [
                         'config_domain' => "
                             CREATE TABLE IF NOT EXISTS `config_domain` (
                                 `cf_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                                `cf_class` VARCHAR(25) DEFAULT NULL
                                 `cf_domain` VARCHAR(55) NOT NULL DEFAULT '',
                                 `cf_status` ENUM('Y','N') NOT NULL DEFAULT 'Y',
                                 `cf_expire` DATETIME NOT NULL DEFAULT '2099-12-31 23:59:59',
@@ -122,7 +123,10 @@ $schema = [
                         'initial_data' => [
                             'config_domain' => [
                                 'data' => [
-                                    ['cf_super_admin' => 'admin']
+                                    [
+                                        'cf_class' => '1',
+                                        'cf_super_admin' => 'admin',
+                                    ]
                                 ],
                                 'encrypt' => []
                             ],

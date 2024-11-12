@@ -34,12 +34,17 @@ class BoardadminController
 
     public function group(): array
     {
+        $level = $this->membersService->getMemberLevelData();
+        $levelData = $this->membersService->formatLevelDataArray($level);
+        $levelSelect = $this->adminBoardsHelper->getLevelSelectBox('listData');
+        
+        $groupList = $this->adminBoardsService->getBoardsGroup(null, $levelData);
+
         $viewData = [
             'title' => '게시판 그룹 관리',
-            'content' => '',
             'config_domain' => $this->config_domain,
-            'groupData' => $this->adminBoardsService->getBoardsGroup(),
-            'levelData' => $this->membersService->getLevelData(),
+            'groupList' => $groupList,
+            'levelSelect' => $levelSelect,
         ];
 
         return [
@@ -79,7 +84,7 @@ class BoardadminController
 
     public function category(): array
     {
-        $level = $this->membersService->getLevelData();
+        $level = $this->membersService->getMemberLevelData();
         $levelData = $this->membersService->formatLevelDataArray($level);
         $levelSelect = $this->adminBoardsHelper->getLevelSelectBox('listData');
 
@@ -128,7 +133,10 @@ class BoardadminController
 
     public function boards(): array
     {
-        $boardData = $this->adminBoardsService->getBoardsList();
+        $level = $this->membersService->getMemberLevelData();
+        $levelData = $this->membersService->formatLevelDataArray($level);
+        
+        $boardData = $this->adminBoardsService->getBoardsList($levelData);
 
         $params = $boardData['params'];
 
@@ -177,7 +185,7 @@ class BoardadminController
             'groupData' => $this->adminBoardsService->getBoardsGroup(),
             'categoryData' => $this->adminBoardsService->getCategoryData(),
             'boardCategory' => !empty($boardConfig) ? $this->adminBoardsService->getBoardsCategoryMapping($boardConfig['no']) : [],
-            'levelData' => $this->membersService->getLevelData(),
+            'levelData' => $this->membersService->getMemberLevelData(),
             'skinData' => $this->adminBoardsHelper->getBoardSkinDir(),
             'boardConfig' => $boardConfig,
             'levelSelect' => $levelSelect,

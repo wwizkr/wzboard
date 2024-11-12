@@ -8,9 +8,6 @@ use Web\PublicHtml\Helper\CommonHelper;
 use Web\Admin\Helper\AdminCommonHelper;
 use Web\PublicHtml\Helper\FileUploadManager;
 
-//use Web\PublicHtml\Helper\ConfigHelper;
-//use Web\PublicHtml\Helper\CacheHelper;
-//use Web\PublicHtml\Helper\CryptoHelper;
 use InvalidArgumentException;
 
 use Web\PublicHtml\Traits\TemplateItemDataTrait;
@@ -126,54 +123,102 @@ class AdminTemplateService
         $ct_list_box_mocols   = !empty($_POST['ct_list_box_mocols']) ? implode(",",$_POST['ct_list_box_mocols']) : '';
         $ct_list_box_items    = !empty($_POST['template_items']) ? implode(":",$_POST['template_items']) : '';
 
-        $uploadManager = new FileUploadManager(WZ_STORAGE_PATH . '/template/'.$this->config_domain['cf_id'].'/'.$table, 0644, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+        $uploadPath = WZ_STORAGE_PATH . '/template/'.$this->config_domain['cf_id'].'/'.$table;
+        $uploadManager = new FileUploadManager(0644, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
 
-        // 배경 이미지 처리
-        $ct_list_bgimage = '';
+        // 배경 이미지 처리 :: 리스트 설정
+        $old_list_bgimage_name = isset($_POST['ct_list_old_bgimage']) && $_POST['ct_list_old_bgimage'] ? $_POST['ct_list_old_bgimage'] : '';
+        $old_list_bgimage_del = isset($_POST['ct_list_bgimage_del']) && $_POST['ct_list_bgimage_del'] ? $_POST['ct_list_bgimage_del'] : '';
+        $ct_list_bgimage = $old_list_bgimage_name;
+
+        if ($old_list_bgimage_name && isset($old_list_bgimage_del) && $old_list_bgimage_del == '1') {
+            $uploadManager->deleteOldFile($old_list_bgimage_name, $uploadPath);
+            $ct_list_bgimage = '';
+        }
         if (isset($_FILES['ct_list_bgimage']) && !empty($_FILES['ct_list_bgimage']['name'])) {
-            $bgImageResult = $uploadManager->handleFileUploads(
-                $_FILES['ct_list_bgimage'],
-                $ct_list_old_bgimage ?? '',
-                $ct_position,
-                [isset($ct_list_bgimage_del) && $ct_list_bgimage_del == '1']
-            );
+            $fileArray = $uploadManager->arrayFiles($_FILES['ct_list_bgimage']);
+
+            $bgImageResult = $uploadManager->handleFileUploads($uploadPath, $fileArray, $ct_position);
             $ct_list_bgimage = $bgImageResult[0] ?? '';
+
+            if ($old_list_bgimage && $ct_list_bgimage) {
+                $uploadManager->deleteOldFile($old_list_bgimage, $uploadPath);
+            }
         }
 
-        // PC 이미지 처리
-        $ct_subject_pc_image = '';
-        if (isset($_FILES['ct_subject_pc_image']) && !empty($_FILES['ct_subject_pc_image']['name'])) {
-            $pcImageResult = $uploadManager->handleFileUploads(
-                $_FILES['ct_subject_pc_image'],
-                $subject_pc_old_image ?? [],
-                $ct_position,
-                $subject_pc_del_image ?? []
-            );
-            $ct_subject_pc_image = implode(",", $pcImageResult);
+        // 박스 배경 이미지 처리 :: 칸 설정 - 배열
+        $old_list_box_bgimage_name = isset($_POST['ct_list_box_old_bgimage']) ? $_POST['ct_list_box_old_bgimage'] : [];
+        $old_list_box_bgimage_del = isset($_POST['ct_list_box_old_bgimage_del']) ? $_POST['ct_list_box_old_bgimage_del'] : [];
+        if (!empty($old_list_box_bgimage_del)) {
+            foreach($old_list_box_bgimage_del as $key => $val) {
+                if ($val == 1 && isset($old_list_box_bgimage_name[$key]) && $old_list_box_bgimage_name[$key]) {
+                    $uploadManager->deleteOldFile($old_list_box_bgimage_name[$key], $uploadPath);
+                    $old_list_box_bgimage_name[$key] = '';
+                }
+            }
         }
+        $ct_list_box_bgimage = implode(",", $old_list_box_bgimage_name);
 
-        // 모바일 이미지 처리
-        $ct_subject_mo_image = '';
-        if (isset($_FILES['ct_subject_mo_image']) && !empty($_FILES['ct_subject_mo_image']['name'])) {
-            $mobileImageResult = $uploadManager->handleFileUploads(
-                $_FILES['ct_subject_mo_image'],
-                $subject_mobile_old_image ?? [],
-                $ct_position,
-                $subject_mobile_del_image ?? []
-            );
-            $ct_subject_mo_image = implode(",", $mobileImageResult);
-        }
-
-        // 박스 배경 이미지 처리
-        $ct_list_box_bgimage = '';
         if (isset($_FILES['ct_list_box_bgimage']) && !empty($_FILES['ct_list_box_bgimage']['name'])) {
-            $boxBgImageResult = $uploadManager->handleFileUploads(
-                $_FILES['ct_list_box_bgimage'],
-                $ct_list_box_old_bgimage ?? [],
-                $ct_position,
-                $ct_list_box_bgimage_del ?? []
-            );
-            $ct_list_box_bgimage = implode(",", $boxBgImageResult);
+            $fileArray = $uploadManager->arrayFiles($_FILES['ct_list_box_bgimage']);
+            $boxBgImageResult = $uploadManager->handleFileUploads($uploadPath, $fileArray, $ct_position);
+            if (!empty($boxBgImageResult)) {
+                foreach($boxBgImageResult as $key=>$val) {
+                    $uploadManager->deleteOldFile($old_list_box_bgimage_name[$key], $uploadPath);
+                    $old_list_box_bgimage_name[$key] = $val;
+                }
+                $ct_list_box_bgimage = implode(",", $old_list_box_bgimage_name);
+            }
+        }
+        
+        // PC 이미지 처리 :: 칸 설정 - 배열
+        $old_subject_pc_image_name = isset($_POST['subject_pc_old_image']) ? $_POST['subject_pc_old_image'] : [];
+        $old_subject_pc_image_del = isset($_POST['subject_pc_del_image']) ? $_POST['subject_pc_del_image'] : [];
+        if (!empty($old_subject_pc_image_del)) {
+            foreach($old_subject_pc_image_del as $key => $val) {
+                if ($val == 1 && isset($old_subject_pc_image_name[$key]) && $old_subject_pc_image_name[$key]) {
+                    $uploadManager->deleteOldFile($old_subject_pc_image_name[$key], $uploadPath);
+                    $old_subject_pc_image_name[$key] = '';
+                }
+            }
+        }
+        $ct_subject_pc_image = implode(",", $old_subject_pc_image_name);
+
+        if (isset($_FILES['ct_subject_pc_image']) && !empty($_FILES['ct_subject_pc_image']['name'])) {
+            $fileArray = $uploadManager->arrayFiles($_FILES['ct_subject_pc_image']);
+            $boxBgImageResult = $uploadManager->handleFileUploads($uploadPath, $fileArray, $ct_position);
+            if (!empty($boxBgImageResult)) {
+                foreach($boxBgImageResult as $key=>$val) {
+                    $uploadManager->deleteOldFile($old_subject_pc_image_name[$key], $uploadPath);
+                    $old_subject_pc_image_name[$key] = $val;
+                }
+                $ct_subject_pc_image = implode(",", $old_subject_pc_image_name);
+            }
+        }
+
+        // MOBILE 이미지 처리 :: 칸 설정 - 배열
+        $old_subject_mo_image_name = isset($_POST['subject_mo_old_image']) ? $_POST['subject_mo_old_image'] : [];
+        $old_subject_mo_image_del = isset($_POST['subject_mo_del_image']) ? $_POST['subject_mo_del_image'] : [];
+        if (!empty($old_subject_mo_image_del)) {
+            foreach($old_subject_mo_image_del as $key => $val) {
+                if ($val == 1 && isset($old_subject_mo_image_name[$key]) && $old_subject_mo_image_name[$key]) {
+                    $uploadManager->deleteOldFile($old_subject_mo_image_name[$key], $uploadPath);
+                    $old_subject_mo_image_name[$key] = '';
+                }
+            }
+        }
+        $ct_subject_mo_image = implode(",", $old_subject_mo_image_name);
+
+        if (isset($_FILES['ct_subject_mo_image']) && !empty($_FILES['ct_subject_mo_image']['name'])) {
+            $fileArray = $uploadManager->arrayFiles($_FILES['ct_subject_mo_image']);
+            $boxBgImageResult = $uploadManager->handleFileUploads($uploadPath, $fileArray, $ct_position);
+            if (!empty($boxBgImageResult)) {
+                foreach($boxBgImageResult as $key=>$val) {
+                    $uploadManager->deleteOldFile($old_subject_mo_image_name[$key], $uploadPath);
+                    $old_subject_mo_image_name[$key] = $val;
+                }
+                $ct_subject_mo_image = implode(",", $old_subject_mo_image_name);
+            }
         }
         
         $param['cf_id'] = ['i', $this->config_domain['cf_id']];
@@ -262,7 +307,7 @@ class AdminTemplateService
                             $result = $this->processedBannerItem($table, $ciData);
                             break;
                         case 'image':
-                            $result = $this->processedImageItem($table, $ciData, $key, $uploadManager);
+                            $result = $this->processedImageItem($table, $ciData, $key, $uploadManager, $uploadPath);
                             break;
                         case 'movie':
                             $data['data']['items'] = [];
@@ -357,12 +402,15 @@ class AdminTemplateService
         }
     }
 
-    private function processedImageItem(string $table, array $ciData, int $key, FileUploadManager $uploadManager): void
+    private function processedImageItem(string $table, array $ciData, int $key, FileUploadManager $uploadManager, string $uploadPath): void
     {
         $imageData = $_POST['image_items'][$key] ?? [];
         
         $pc_old_image = $_POST['pc_old_image'][$key] ?? [];
         $mo_old_image = $_POST['mo_old_image'][$key] ?? [];
+        $pc_del_image = $_POST['pc_del_image'][$key] ?? [];
+        $mo_del_image = $_POST['mo_del_image'][$key] ?? [];
+        
         $temp_pc_images = $_FILES['temp_pc_image']['name'][$key] ?? [];
         $temp_mo_images = $_FILES['temp_mo_image']['name'][$key] ?? [];
 
@@ -370,35 +418,46 @@ class AdminTemplateService
             $pc_image = $pc_old_image[$index] ?? '';
             $mo_image = $mo_old_image[$index] ?? '';
 
+            // 기존이미지 삭제
+            if (isset($pc_del_image[$index]) && $pc_del_image[$index] == 1 && $pc_image) {
+                $uploadManager->deleteOldFile($uploadPath, $pc_image);
+                $pc_image = '';
+            }
+
+            if (isset($mo_del_image[$index]) && $mo_del_image[$index] == 1 && $mo_image) {
+                $uploadManager->deleteOldFile($uploadPath, $mo_image);
+                $mo_image = '';
+            }
+
             // PC 이미지 업로드 처리
-            if (!empty($temp_pc_images[$index])) {
-                $pc_image_file = [
+            if (!empty($temp_pc_images[$index])) { //handleFileUploads($uploadPath, $fileArray, $ct_position); $fileArray => 2차 배열로
+                $pc_image_file[] = [
                     'name' => $_FILES['temp_pc_image']['name'][$key][$index],
                     'type' => $_FILES['temp_pc_image']['type'][$key][$index],
                     'tmp_name' => $_FILES['temp_pc_image']['tmp_name'][$key][$index],
                     'error' => $_FILES['temp_pc_image']['error'][$key][$index],
                     'size' => $_FILES['temp_pc_image']['size'][$key][$index]
                 ];
-                $pc_upload_result = $uploadManager->handleFileUploads($pc_image_file, '', $ciData['ct_id'] . '_pc_' . $index);
+                $pc_upload_result = $uploadManager->handleFileUploads($uploadPath, $pc_image_file, $ciData['ct_id'] . '_pc_' . $index);
                 $pc_image = $pc_upload_result[0] ?? $pc_image;
                 if (!empty($pc_upload_result[0]) && !empty($pc_old_image[$index])) {
-                    $uploadManager->deleteOldFile($pc_old_image[$index]);
+                    $uploadManager->deleteOldFile($uploadPath, $pc_old_image[$index]);
                 }
             }
 
             // 모바일 이미지 업로드 처리
             if (!empty($temp_mo_images[$index])) {
-                $mo_image_file = [
+                $mo_image_file[] = [
                     'name' => $_FILES['temp_mo_image']['name'][$key][$index],
                     'type' => $_FILES['temp_mo_image']['type'][$key][$index],
                     'tmp_name' => $_FILES['temp_mo_image']['tmp_name'][$key][$index],
                     'error' => $_FILES['temp_mo_image']['error'][$key][$index],
                     'size' => $_FILES['temp_mo_image']['size'][$key][$index]
                 ];
-                $mo_upload_result = $uploadManager->handleFileUploads($mo_image_file, '', $ciData['ct_id'] . '_mo_' . $index);
+                $mo_upload_result = $uploadManager->handleFileUploads($uploadPath, $mo_image_file, $ciData['ct_id'] . '_mo_' . $index);
                 $mo_image = $mo_upload_result[0] ?? $mo_image;
                 if (!empty($mo_upload_result[0]) && !empty($mo_old_image[$index])) {
-                    $uploadManager->deleteOldFile($mo_old_image[$index]);
+                    $uploadManager->deleteOldFile($uploadPath, $mo_old_image[$index]);
                 }
             }
 

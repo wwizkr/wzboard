@@ -23,9 +23,13 @@ class AdminBoardsService
     // ---------------------------
     // 그룹 관리
     // ---------------------------
-    public function getBoardsGroup($group_id='')
+    public function getBoardsGroup($group_id='', $levelData = [])
     {
-        return $this->adminBoardsModel->getBoardsGroup($group_id);
+        $groupData = $this->adminBoardsModel->getBoardsGroup($group_id);
+
+        $groupList = $this->processedAddLevelSelectData($groupData, $levelData);
+
+        return $groupList;
     }
 
     /**
@@ -58,17 +62,18 @@ class AdminBoardsService
     {
         $categoryData = $this->adminBoardsModel->getCategoryData($category_no);
 
-        $categoryList = $this->processedCategoryData($categoryData, $levelData);
+        $categoryList = $this->processedAddLevelSelectData($categoryData, $levelData);
 
         return $categoryList;
     }
-
-    private function processedCategoryData($categoryData, $levelData)
+    
+    // 리스트에 레벨선택 셀렉트 박스를 추가
+    private function processedAddLevelSelectData($listData, $levelData)
     {
-        $categoryList = [];
-        foreach($categoryData as $key=>$val) {
-            $categoryList[$key] = $val;
-            $categoryList[$key]['levelSelect'] = [
+        $list = [];
+        foreach($listData as $key=>$val) {
+            $list[$key] = $val;
+            $list[$key]['levelSelect'] = [
                 'list_level' => CommonHelper::makeSelectBox('listData[list_level]', $levelData , $val['list_level'], 'list_level_'.$key, 'frm_input frm_full', '비회원'),
                 'read_level' => CommonHelper::makeSelectBox('listData[read_level]', $levelData , $val['read_level'], 'read_level_'.$key, 'frm_input frm_full', '비회원'),
                 'write_level' => CommonHelper::makeSelectBox('listData[write_level]', $levelData , $val['write_level'], 'write_level_'.$key, 'frm_input frm_full', '비회원'),
@@ -77,7 +82,7 @@ class AdminBoardsService
             ];
         }
 
-        return $categoryList;
+        return $list;
     }
 
     public function insertBoardsCategory($data)
@@ -103,7 +108,7 @@ class AdminBoardsService
     // 게시판 관리
     // ---------------------------
 
-    public function getBoardsList()
+    public function getBoardsList($levelData = [])
     {
         // 게시판 그룹 배열
         $boardsGroup = $this->getBoardsGroup();
@@ -177,6 +182,14 @@ class AdminBoardsService
                 'frm_input frm_full',
                 '스킨선택'
             );
+
+            $boardList[$key]['levelSelect'] = [
+                'list_level' => CommonHelper::makeSelectBox('listData[list_level]', $levelData , $val['list_level'], 'list_level_'.$key, 'frm_input frm_full', '비회원'),
+                'read_level' => CommonHelper::makeSelectBox('listData[read_level]', $levelData , $val['read_level'], 'read_level_'.$key, 'frm_input frm_full', '비회원'),
+                'write_level' => CommonHelper::makeSelectBox('listData[write_level]', $levelData , $val['write_level'], 'write_level_'.$key, 'frm_input frm_full', '비회원'),
+                'comment_level' => CommonHelper::makeSelectBox('listData[comment_level]', $levelData , $val['comment_level'], 'commnent_level_'.$key, 'frm_input frm_full', '비회원'),
+                'download_level' => CommonHelper::makeSelectBox('listData[download_level]', $levelData , $val['download_level'], 'download_level_'.$key, 'frm_input frm_full', '비회원'),
+            ];
         }
 
         return [

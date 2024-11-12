@@ -11,7 +11,7 @@
     <div class="table-flex table-container">
         <!-- 메뉴 트리 영역 -->
         <div class="col-12 col-md-4 order-2 order-md-1">
-            <h2 class="form-title">메뉴맵</h2>
+            <h2 class="form-title">메뉴 맵</h2>
             <div class="table-roll">
                 <ul id="menuTree" class="ztree" style="max-height:560px;overflow-y:auto;"></ul>
             </div>
@@ -24,9 +24,8 @@
                 </button>
             </div>
         </div>
-        <div class="col-12 col-md-1 order-1 mobile-none"></div>
         <!-- 입력폼 영역 -->
-        <div class="col-12 col-md-4 order-1 order-md-2">
+        <div class="col-12 col-md-4 order-1 order-md-2 px-3">
             <form name="frm" id="frm">
             <input type="hidden" name="no" value="" id="no">
             <input type="hidden" name="me_code" value="" id="me_code">
@@ -371,17 +370,6 @@ async function menuOrder(event, treeId, treeNodes, targetNode, moveType, isCopy)
     } catch (error) {
         console.error("Error:", error);
     }
-    
-    /*
-    $.ajax({
-        type: "POST",
-        url: "/admin/settings/menuOrder",
-        data: { act: "menuorder", menu: menuData },
-        success: function(response) {
-            console.log(response);
-        }
-    });
-    */
 }
 
 document.addEventListener('DOMContentLoaded', function () {

@@ -82,7 +82,7 @@ class BoardsModel
         $nextWhere = $where;
         $nextWhere['no'] = ['i', $article_no, 'and', '>'];
 
-        [$addWhere, $bindValues] = $this->buildSearchConditions($searchQuery ?? '', $filters);
+        [$addWhere, $bindValues] = CommonHelper::buildSearchConditions($searchQuery ?? '', $filters);
 
         $processedQueries = CommonHelper::additionalModelQueries($additionalQueries, $addWhere, $bindValues);
 
@@ -162,6 +162,82 @@ class BoardsModel
         ];
         $result = $this->db->sqlBindQuery('select', 'board_articles', [], $where, []);
         return $result[0] ?? null;
+    }
+
+    public function getArticleFileData($board_no, $article_no)
+    {
+        $where = [
+            'board_no' => ['i', $board_no],
+            'article_no' => ['i', $article_no],
+        ];
+        $result = $this->db->sqlBindQuery('select', 'board_attachments', [], $where, []);
+
+        return $result;
+    }
+
+    public function getArticleFileDataByNo($board_no, $article_no, $file_no)
+    {
+        $where = [
+            'board_no' => ['i', $board_no],
+            'article_no' => ['i', $article_no],
+            'no' => ['i', $file_no],
+        ];
+        $result = $this->db->sqlBindQuery('select', 'board_attachments', [], $where, []);
+
+        return $result[0] ?? [];
+    }
+
+    public function getArticleFileDataDeleteByNo($board_no, $article_no, $file_no)
+    {
+        $where = [
+            'board_no' => ['i', $board_no],
+            'article_no' => ['i', $article_no],
+            'no' => ['i', $file_no],
+        ];
+        $result = $this->db->sqlBindQuery('delete', 'board_attachments', [], $where, []);
+
+        return $result[0] ?? [];
+    }
+
+    public function insertArticleFileData($param)
+    {
+        return $this->db->sqlBindQuery('insert', 'board_attachments', $param);
+    }
+
+    public function getArticleLinkData($board_no, $article_no)
+    {
+        $where = [
+            'board_no' => ['i', $board_no],
+            'article_no' => ['i', $article_no],
+        ];
+        $result = $this->db->sqlBindQuery('select', 'board_links', [], $where, []);
+
+        return $result;
+    }
+
+    public function updateArticleLinkData($board_no, $article_no, $link)
+    {
+        $url = $link['url'];
+        $no = $link['no'];
+        
+        if ($no) {
+            $param['link'] = ['s', $url];
+            $where = [
+                'board_no' => ['i', $board_no],
+                'article_no' => ['i', $article_no],
+                'no' => ['i', $no],
+            ];
+            
+            return $this->db->sqlBindQuery('update', 'board_links', $param, $where);
+        } else {
+            $param = [
+                'board_no' => ['i', $board_no],
+                'article_no' => ['i', $article_no],
+                'link' => ['s', $url],
+            ];
+
+            return $this->db->sqlBindQuery('insert', 'board_links', $param);
+        }
     }
 
     public function articleViewCountUpdate(array $articleData): void
@@ -295,7 +371,7 @@ class BoardsModel
         }
     }
 
-    public function processedLikeAction($mb_id, $table, $action, $no)
+    public function processedLikeAction($mb_id, $table, $action, $no, $articleNo, $boardNo)
     {
         $data = [];
 
@@ -316,7 +392,12 @@ class BoardsModel
         
         $param = [];
         $where['mb_id'] = ['s', $mb_id];
+        $where['board_no'] = ['i', $boardNo];
         $where[$reaction_field] = ['i', $no];
+        if ($table === 'articles') {
+            $where['article_no'] = ['i', $articleNo];
+        }
+        
         $options = [
         ];
 
@@ -338,10 +419,15 @@ class BoardsModel
 
         if ($mode == 'insert') {
             $insert_param = [
+                'board_no' => ['i', $boardNo],
                 $reaction_field => ['i', $no],
                 'mb_id' => ['s', $mb_id],
                 'reaction_type' => ['s', $action],
             ];
+            
+            if ($table === 'articles') {
+                $insert_param['article_no'] = ['i', $articleNo];
+            }
 
             $result = $this->db->sqlBindQuery('insert', $reaction_table, $insert_param);
 
